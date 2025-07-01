@@ -4,10 +4,10 @@ import { sports } from "@/lib/types";
 // Schema for adding/editing a match
 export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
-  teamA: z.string().min(2, { message: "Team A name must be at least 2 characters." }),
-  teamB: z.string().min(2, { message: "Team B name must be at least 2 characters." }),
-  teamACountry: z.string().optional(),
-  teamBCountry: z.string().optional(),
+  teamA: z.string().optional(),
+  teamB: z.string().optional(),
+  teamACountry: z.string({ required_error: "Country for Team A is required." }).min(1, { message: "Country for Team A is required."}),
+  teamBCountry: z.string({ required_error: "Country for Team B is required." }).min(1, { message: "Country for Team B is required."}),
   teamALogo: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   teamBLogo: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   startTime: z.date({ required_error: "A start date and time is required." }),

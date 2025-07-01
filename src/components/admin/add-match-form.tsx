@@ -63,7 +63,7 @@ export function AddMatchForm() {
     } else {
         toast({
             title: "Match Created",
-            description: `${data.teamA} vs ${data.teamB} has been added.`,
+            description: `The match has been added.`,
         });
         router.push("/admin/matches");
     }
@@ -163,9 +163,9 @@ export function AddMatchForm() {
                   name="teamA"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Team A Name</FormLabel>
+                      <FormLabel>Team A Name (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Warriors" {...field} />
+                        <Input placeholder="Defaults to country name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -187,9 +187,9 @@ export function AddMatchForm() {
                   name="teamB"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Team B Name</FormLabel>
+                      <FormLabel>Team B Name (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Titans" {...field} />
+                        <Input placeholder="Defaults to country name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

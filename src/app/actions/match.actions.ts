@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Match } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
+import { countries } from '@/lib/countries';
 
 // Server action to create a new match
 export async function createMatch(values: MatchFormValues) {
@@ -17,13 +18,23 @@ export async function createMatch(values: MatchFormValues) {
 
         const { sport, teamA, teamB, teamALogo, teamBLogo, startTime, teamACountry, teamBCountry } = validatedFields.data;
 
+        const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
+        const countryB = countries.find(c => c.code.toLowerCase() === teamBCountry.toLowerCase());
+
+        if (!countryA || !countryB) {
+            return { error: 'Invalid country selection.' };
+        }
+        
+        const teamAName = teamA && teamA.trim() ? teamA.trim() : countryA.name;
+        const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
+
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { name: teamA, logoUrl: teamALogo || `https://placehold.co/40x40.png`, countryCode: teamACountry },
-            teamB: { name: teamB, logoUrl: teamBLogo || `https://placehold.co/40x40.png`, countryCode: teamBCountry },
+            teamA: { name: teamAName, logoUrl: teamALogo || `https://placehold.co/40x40.png`, countryCode: teamACountry },
+            teamB: { name: teamBName, logoUrl: teamBLogo || `https://placehold.co/40x40.png`, countryCode: teamBCountry },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',
