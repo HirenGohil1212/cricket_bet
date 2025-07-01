@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -69,21 +68,16 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
               {countries.map((country) => (
                 <CommandItem
                   key={country.code}
-                  value={country.name}
+                  value={country.code}
                   onSelect={(currentValue) => {
-                    const countryCode = countries.find(
-                      (c) => c.name.toLowerCase() === currentValue.toLowerCase()
-                    )?.code;
-                    if (countryCode) {
-                        onChange(countryCode === value ? "" : countryCode);
-                    }
+                    onChange(currentValue === value ? "" : currentValue);
                     setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value?.toLowerCase() === country.code.toLowerCase() ? "opacity-100" : "opacity-0"
+                      value === country.code ? "opacity-100" : "opacity-0"
                     )}
                   />
                    <div className="flex items-center gap-2">
