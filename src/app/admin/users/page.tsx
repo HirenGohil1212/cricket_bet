@@ -72,7 +72,7 @@ export default async function AdminUsersPage() {
                                 <TableCell>
                                     <Badge variant="outline">{user.referralCode}</Badge>
                                 </TableCell>
-                                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell className="whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

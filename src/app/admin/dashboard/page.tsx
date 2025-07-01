@@ -35,7 +35,7 @@ export default async function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -83,7 +83,7 @@ export default async function AdminDashboardPage() {
                         <CardTitle>Admin Actions</CardTitle>
                         <CardDescription>Quick links to manage your application.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <CardContent className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                         <Link href="/admin/matches" className="p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                             <h3 className="font-semibold">Manage Matches</h3>
                             <p className="text-sm text-muted-foreground">View, add, or edit matches and results.</p>

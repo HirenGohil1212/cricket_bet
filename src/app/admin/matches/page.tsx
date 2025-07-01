@@ -10,12 +10,12 @@ export default async function AdminMatchesPage() {
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <CardTitle>Matches</CardTitle>
                         <CardDescription>Manage your games and see their status.</CardDescription>
                     </div>
-                    <Button asChild>
+                    <Button asChild className="w-full sm:w-auto">
                         <Link href="/admin/matches/add">Add New Match</Link>
                     </Button>
                 </div>

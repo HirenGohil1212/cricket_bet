@@ -49,11 +49,11 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                                     <Image src={match.teamA.logoUrl || 'https://placehold.co/40x40.png'} alt={match.teamA.name} width={24} height={24} className="rounded-full border" data-ai-hint="logo" />
                                      <Image src={match.teamB.logoUrl || 'https://placehold.co/40x40.png'} alt={match.teamB.name} width={24} height={24} className="rounded-full border" data-ai-hint="logo" />
                                 </div>
-                                <span>{match.teamA.name} vs {match.teamB.name}</span>
+                                <span className="whitespace-nowrap">{match.teamA.name} vs {match.teamB.name}</span>
                             </div>
                         </TableCell>
                         <TableCell>{match.sport}</TableCell>
-                        <TableCell>{new Date(match.startTime).toLocaleString()}</TableCell>
+                        <TableCell className="whitespace-nowrap">{new Date(match.startTime).toLocaleString()}</TableCell>
                         <TableCell>
                             <Badge variant={getStatusVariant(match.status)}>{match.status}</Badge>
                         </TableCell>
