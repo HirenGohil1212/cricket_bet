@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, LayoutDashboard, Users, ArrowLeft } from "lucide-react";
+import { Terminal, LayoutDashboard, Users, ArrowLeft, Swords } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,10 @@ export default function AdminLayout({
                         <Link href="/admin/users" className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all", pathname === "/admin/users" ? "bg-muted text-primary" : "text-muted-foreground hover:text-primary")}>
                            <Users className="h-4 w-4" />
                            Users
+                        </Link>
+                         <Link href="/admin/matches" className={cn("flex items-center gap-3 rounded-lg px-3 py-2 transition-all", pathname.startsWith("/admin/matches") ? "bg-muted text-primary" : "text-muted-foreground hover:text-primary")}>
+                           <Swords className="h-4 w-4" />
+                           Matches
                         </Link>
                      </div>
                 </div>
@@ -87,6 +91,7 @@ function AdminSkeleton() {
              <Skeleton className="h-6 w-32" />
           </div>
           <div className="space-y-2 mt-6">
+            <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
