@@ -45,11 +45,19 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                     <TableRow key={match.id}>
                         <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
-                                <div className="flex -space-x-2">
-                                    <Image src={match.teamA.logoUrl || 'https://placehold.co/40x40.png'} alt={match.teamA.name} width={24} height={24} className="rounded-full border" data-ai-hint="logo" />
-                                     <Image src={match.teamB.logoUrl || 'https://placehold.co/40x40.png'} alt={match.teamB.name} width={24} height={24} className="rounded-full border" data-ai-hint="logo" />
+                                <div className="flex items-center gap-2">
+                                    {match.teamA.countryCode && (
+                                        <Image src={`https://flagpedia.net/data/flags/w40/${match.teamA.countryCode.toLowerCase()}.webp`} alt={match.teamA.name} width={20} height={15} className="rounded-sm" />
+                                    )}
+                                    <span>{match.teamA.name}</span>
                                 </div>
-                                <span className="whitespace-nowrap">{match.teamA.name} vs {match.teamB.name}</span>
+                                <span className="text-xs text-muted-foreground">vs</span>
+                                <div className="flex items-center gap-2">
+                                    <span>{match.teamB.name}</span>
+                                     {match.teamB.countryCode && (
+                                        <Image src={`https://flagpedia.net/data/flags/w40/${match.teamB.countryCode.toLowerCase()}.webp`} alt={match.teamB.name} width={20} height={15} className="rounded-sm" />
+                                    )}
+                                </div>
                             </div>
                         </TableCell>
                         <TableCell>{match.sport}</TableCell>

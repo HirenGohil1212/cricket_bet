@@ -15,15 +15,15 @@ export async function createMatch(values: MatchFormValues) {
             return { error: 'Invalid fields.' };
         }
 
-        const { sport, teamA, teamB, teamALogo, teamBLogo, startTime } = validatedFields.data;
+        const { sport, teamA, teamB, teamALogo, teamBLogo, startTime, teamACountry, teamBCountry } = validatedFields.data;
 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { name: teamA, logoUrl: teamALogo || `https://placehold.co/40x40.png` },
-            teamB: { name: teamB, logoUrl: teamBLogo || `https://placehold.co/40x40.png` },
+            teamA: { name: teamA, logoUrl: teamALogo || `https://placehold.co/40x40.png`, countryCode: teamACountry },
+            teamB: { name: teamB, logoUrl: teamBLogo || `https://placehold.co/40x40.png`, countryCode: teamBCountry },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',

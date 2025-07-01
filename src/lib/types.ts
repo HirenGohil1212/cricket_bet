@@ -7,6 +7,7 @@ export type MatchStatus = "Upcoming" | "Live" | "Finished";
 export type Team = {
   name: string;
   logoUrl: string;
+  countryCode?: string;
 };
 
 export type Match = {

@@ -6,6 +6,8 @@ export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
   teamA: z.string().min(2, { message: "Team A name must be at least 2 characters." }),
   teamB: z.string().min(2, { message: "Team B name must be at least 2 characters." }),
+  teamACountry: z.string().optional(),
+  teamBCountry: z.string().optional(),
   teamALogo: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   teamBLogo: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   startTime: z.date({ required_error: "A start date and time is required." }),

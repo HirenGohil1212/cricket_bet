@@ -31,6 +31,7 @@ import { sports } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { createMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
+import { CountrySelect } from "./country-select";
 
 
 export function AddMatchForm() {
@@ -156,7 +157,8 @@ export function AddMatchForm() {
                     </FormItem>
                   )}
                 />
-                 <FormField
+                
+                <FormField
                   control={form.control}
                   name="teamA"
                   render={({ field }) => (
@@ -169,7 +171,18 @@ export function AddMatchForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <FormField
+                  control={form.control}
+                  name="teamACountry"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Team A Country</FormLabel>
+                      <CountrySelect value={field.value} onChange={field.onChange} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
                   control={form.control}
                   name="teamB"
                   render={({ field }) => (
@@ -182,6 +195,18 @@ export function AddMatchForm() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="teamBCountry"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Team B Country</FormLabel>
+                      <CountrySelect value={field.value} onChange={field.onChange} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
             </div>
             <div className="space-y-8">
                 <FormField
