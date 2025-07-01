@@ -16,7 +16,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export default function AdminLayout({
   children,
@@ -112,13 +118,17 @@ export default function AdminLayout({
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="/admin/dashboard"
-                  className="mb-4 flex items-center gap-2 text-lg font-semibold"
-                >
-                  <Award className="h-6 w-6 text-primary" />
-                  <span>Guess & Win Admin</span>
-                </Link>
+                <SheetHeader className="mb-4 text-left">
+                  <SheetTitle>
+                    <Link
+                      href="/admin/dashboard"
+                      className="flex items-center gap-2 text-lg font-semibold"
+                    >
+                      <Award className="h-6 w-6 text-primary" />
+                      <span>Guess & Win Admin</span>
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
                 <Link
                   href="/admin/dashboard"
                   className={cn(
