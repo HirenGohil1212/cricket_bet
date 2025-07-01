@@ -14,23 +14,22 @@ import {
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Bet } from '@/lib/types';
-import { auth } from '@/lib/firebase';
 
 interface CreateBetParams {
+    userId: string;
     matchId: string;
     team: string;
     amount: number;
 }
 
 // Server action to create a new bet and update wallet
-export async function createBet({ matchId, team, amount }: CreateBetParams) {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+export async function createBet({ userId, matchId, team, amount }: CreateBetParams) {
+    if (!userId) {
         return { error: 'You must be logged in to place a bet.' };
     }
 
     try {
-        const userRef = doc(db, 'users', currentUser.uid);
+        const userRef = doc(db, 'users', userId);
         const matchRef = doc(db, 'matches', matchId);
 
         await runTransaction(db, async (transaction) => {
@@ -60,7 +59,7 @@ export async function createBet({ matchId, team, amount }: CreateBetParams) {
 
             const newBetRef = doc(collection(db, "bets"));
             transaction.set(newBetRef, {
-                userId: currentUser.uid,
+                userId: userId,
                 matchId: matchId,
                 matchDescription: matchDescription,
                 prediction: team,

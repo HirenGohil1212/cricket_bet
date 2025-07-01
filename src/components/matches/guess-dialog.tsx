@@ -71,6 +71,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     
     setIsSubmitting(true);
     const result = await createBet({
+        userId: user.uid,
         matchId: match.id,
         team: data.team,
         amount: Number(data.amount)
