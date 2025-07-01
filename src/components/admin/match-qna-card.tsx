@@ -38,8 +38,6 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
         }
     }
 
-    const canSetResults = match.status === 'Live' || match.status === 'Finished';
-
     return (
         <>
             <Card>
@@ -74,7 +72,6 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                 <CardFooter className="flex justify-end gap-2">
                     <Button 
                         onClick={() => setIsResultsDialogOpen(true)}
-                        disabled={!canSetResults || isLoading || questions.length === 0}
                     >
                         Set Results
                     </Button>
