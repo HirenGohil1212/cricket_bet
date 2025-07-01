@@ -97,9 +97,11 @@ export async function getUserDeposits(userId: string): Promise<DepositRequest[]>
 export async function getPendingDeposits(): Promise<DepositRequest[]> {
     try {
         const depositsCol = collection(db, 'deposits');
-        const q = query(depositsCol, where('status', '==', 'Pending'), orderBy('createdAt', 'asc'));
+        // Query just for pending status to avoid needing a composite index
+        const q = query(depositsCol, where('status', '==', 'Pending'));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => {
+        
+        const deposits = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -108,6 +110,11 @@ export async function getPendingDeposits(): Promise<DepositRequest[]> {
                 updatedAt: (data.updatedAt as Timestamp).toDate().toISOString(),
             } as DepositRequest;
         });
+
+        // Sort in-memory to show oldest requests first
+        deposits.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+        return deposits;
     } catch (error) {
         console.error("Error fetching pending deposits:", error);
         return [];
