@@ -28,3 +28,12 @@ export type Bet = {
   timestamp: Date;
   potentialWin: number;
 };
+
+export type UserProfile = {
+  uid: string;
+  name: string;
+  phoneNumber: string;
+  createdAt: Date;
+  walletBalance: number;
+  referralCode: string;
+};
