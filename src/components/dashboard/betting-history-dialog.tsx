@@ -99,7 +99,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                     </div>
                   </TableCell>
                   <TableCell>{bet.prediction}</TableCell>
-                  <TableCell className="text-right">₹{bet.amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <Badge className={cn("text-xs", getStatusClass(bet.status))}>
                       {bet.status}

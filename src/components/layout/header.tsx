@@ -20,7 +20,7 @@ export function Header() {
         {user && userProfile && (
             <div className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold">
               <Wallet className="h-5 w-5 text-primary" />
-              <span>₹ {userProfile.walletBalance.toFixed(2)}</span>
+              <span>INR {userProfile.walletBalance.toFixed(2)}</span>
             </div>
         )}
         <Button variant="ghost" size="icon">

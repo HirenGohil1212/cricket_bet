@@ -89,7 +89,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     } else {
         toast({
             title: "Bet Placed!",
-            description: `You bet ₹${data.amount} on ${data.team} to win. Good luck!`,
+            description: `You bet INR ${data.amount} on ${data.team} to win. Good luck!`,
         });
         router.refresh();
         onOpenChange(false);
@@ -169,7 +169,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <RadioGroupItem value={amount} id={`amount-${amount}`} className="sr-only peer" />
                           </FormControl>
                            <FormLabel htmlFor={`amount-${amount}`} className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                              <span className="font-bold text-lg">₹{amount}</span>
+                              <span className="font-bold text-lg">INR {amount}</span>
                            </FormLabel>
                         </FormItem>
                       ))}
@@ -182,7 +182,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             
             <div className="p-4 bg-accent/10 rounded-lg text-center">
               <p className="text-sm text-muted-foreground">Potential Win</p>
-              <p className="text-2xl font-bold font-headline text-primary">₹{potentialWin.toFixed(2)}</p>
+              <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
             </div>
 
             <DialogFooter>

@@ -68,7 +68,7 @@ export default async function AdminUsersPage() {
                                         {user.role}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right">₹{user.walletBalance.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">INR {user.walletBalance.toFixed(2)}</TableCell>
                                 <TableCell className="hidden md:table-cell">
                                     <Badge variant="outline">{user.referralCode}</Badge>
                                 </TableCell>

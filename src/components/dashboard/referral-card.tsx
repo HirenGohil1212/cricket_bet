@@ -32,7 +32,7 @@ export function ReferralCard() {
         </div>
         <div>
             <CardTitle className="font-headline text-lg">Refer & Earn</CardTitle>
-            <CardDescription className="text-sm">Get ₹100 bonus for each friend!</CardDescription>
+            <CardDescription className="text-sm">Get INR 100 bonus for each friend!</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
