@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -15,7 +14,7 @@ import {
   Banknote,
   Wallet,
   CircleDollarSign,
-  MessageSquareQuestion,
+  MessageSquareQuote,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -49,7 +48,7 @@ export default function AdminLayout({
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/matches", label: "Matches", icon: Swords },
-    { href: "/admin/q-and-a", label: "Q & A", icon: MessageSquareQuestion },
+    { href: "/admin/q-and-a", label: "Q & A", icon: MessageSquareQuote },
     { href: "/admin/deposits", label: "Deposits", icon: Wallet },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
     { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
