@@ -10,7 +10,7 @@ import { Banknote, CircleDollarSign } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as FormDesc } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -103,11 +103,31 @@ export function WithdrawFundsCard({ userProfile }: WithdrawFundsCardProps) {
                   <FormItem>
                     <FormLabel>Amount to Withdraw</FormLabel>
                     <FormControl>
-                        <div className="relative">
-                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input type="number" placeholder="Enter amount" className="pl-10" {...field} />
+                        <div className="flex items-start gap-2">
+                            <div className="relative flex-grow">
+                                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                  type="number" 
+                                  placeholder="Enter amount" 
+                                  className="pl-10" 
+                                  {...field} 
+                                  onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="shrink-0"
+                                onClick={() => form.setValue('amount', Math.floor(walletBalance), { shouldValidate: true })}
+                                disabled={walletBalance < 100}
+                            >
+                                Max
+                            </Button>
                         </div>
                     </FormControl>
+                    <FormDesc>
+                      Minimum withdrawal is INR 100.
+                    </FormDesc>
                     <FormMessage />
                   </FormItem>
                 )}

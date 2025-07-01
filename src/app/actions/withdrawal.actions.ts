@@ -46,8 +46,8 @@ export async function createWithdrawalRequest({ userId, userName, amount }: { us
             if (!bankAccount) {
                 throw new Error("You must add your bank details in your profile before making a withdrawal request.");
             }
-             if (amount < 1) {
-                throw new Error("Minimum withdrawal amount is INR 1.");
+             if (amount < 100) {
+                throw new Error("Minimum withdrawal amount is INR 100.");
             }
 
             await addDoc(collection(db, "withdrawals"), {

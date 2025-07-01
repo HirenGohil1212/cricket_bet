@@ -76,7 +76,7 @@ export type DepositRequestFormValues = z.infer<typeof depositRequestSchema>;
 
 // Schema for withdrawal requests
 export const withdrawalRequestSchema = z.object({
-  amount: z.coerce.number().min(1, "Minimum withdrawal amount is INR 1."),
+  amount: z.coerce.number().min(100, "Minimum withdrawal amount is INR 100."),
 });
 
 export type WithdrawalRequestFormValues = z.infer<typeof withdrawalRequestSchema>;

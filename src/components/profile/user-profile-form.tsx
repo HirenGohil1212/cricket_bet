@@ -14,27 +14,34 @@ import { useToast } from "@/hooks/use-toast";
 import { userBankAccountSchema, type UserBankAccountFormValues } from "@/lib/schemas";
 import { useAuth } from "@/context/auth-context";
 import { updateUserBankAccount } from "@/app/actions/user.actions";
-import type { UserBankAccount } from "@/lib/types";
+import { Skeleton } from "../ui/skeleton";
 
-interface UserProfileFormProps {
-  initialData: UserBankAccount | null;
-}
-
-export function UserProfileForm({ initialData }: UserProfileFormProps) {
+export function UserProfileForm() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<UserBankAccountFormValues>({
     resolver: zodResolver(userBankAccountSchema),
     defaultValues: {
-      accountHolderName: initialData?.accountHolderName || "",
-      accountNumber: initialData?.accountNumber || "",
-      ifscCode: initialData?.ifscCode || "",
-      upiId: initialData?.upiId || "",
+      accountHolderName: "",
+      accountNumber: "",
+      ifscCode: "",
+      upiId: "",
     },
   });
+
+  React.useEffect(() => {
+    if (userProfile?.bankAccount) {
+      form.reset({
+        accountHolderName: userProfile.bankAccount.accountHolderName || "",
+        accountNumber: userProfile.bankAccount.accountNumber || "",
+        ifscCode: userProfile.bankAccount.ifscCode || "",
+        upiId: userProfile.bankAccount.upiId || "",
+      });
+    }
+  }, [userProfile, form]);
 
   async function onSubmit(data: UserBankAccountFormValues) {
     if (!user) {
@@ -51,6 +58,42 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
       router.refresh();
     }
     setIsSubmitting(false);
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-4 w-2/3" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+            <div className="flex justify-end">
+                <Skeleton className="h-10 w-36" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -119,7 +162,7 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
               />
             </div>
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || loading}>
                 {isSubmitting ? "Saving..." : "Save Bank Details"}
               </Button>
             </div>
