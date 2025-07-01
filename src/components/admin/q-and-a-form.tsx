@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { Match, Sport } from "@/lib/types";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 
 // Define a schema for the Q&A form
 const answerSchema = z.object({
@@ -39,7 +39,8 @@ const answerSchema = z.object({
 const qnaFormSchema = z.object({
     matchId: z.string().min(1, "Please select a match."),
     question: z.string().min(10, "Question must be at least 10 characters long."),
-    answers: z.array(answerSchema).min(2, "You must provide at least two answers."),
+    teamA_answers: z.array(answerSchema).min(1, "You must provide at least one answer for Team A."),
+    teamB_answers: z.array(answerSchema).min(1, "You must provide at least one answer for Team B."),
 });
 
 type QnAFormValues = z.infer<typeof qnaFormSchema>;
@@ -59,19 +60,31 @@ export function QandAForm({ sport, matchesForSport }: QandAFormProps) {
         defaultValues: {
             matchId: "",
             question: "",
-            answers: [{ text: "", odds: 1.0 }, { text: "", odds: 1.0 }],
+            teamA_answers: [{ text: "", odds: 1.0 }],
+            teamB_answers: [{ text: "", odds: 1.0 }],
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields: fieldsA, append: appendA, remove: removeA } = useFieldArray({
         control: form.control,
-        name: "answers",
+        name: "teamA_answers",
+    });
+    
+    const { fields: fieldsB, append: appendB, remove: removeB } = useFieldArray({
+        control: form.control,
+        name: "teamB_answers",
     });
 
     const handleMatchChange = (matchId: string) => {
         const match = matchesForSport.find(m => m.id === matchId) || null;
         setSelectedMatch(match);
         form.setValue("matchId", matchId);
+        form.reset({
+            matchId: matchId,
+            question: "",
+            teamA_answers: [{ text: "", odds: 1.0 }],
+            teamB_answers: [{ text: "", odds: 1.0 }],
+        });
     }
 
     async function onSubmit(data: QnAFormValues) {
@@ -85,7 +98,8 @@ export function QandAForm({ sport, matchesForSport }: QandAFormProps) {
         form.reset({
             matchId: "",
             question: "",
-            answers: [{ text: "", odds: 1.0 }, { text: "", odds: 1.0 }],
+            teamA_answers: [{ text: "", odds: 1.0 }],
+            teamB_answers: [{ text: "", odds: 1.0 }],
         });
         setSelectedMatch(null);
         setIsSubmitting(false);
@@ -125,91 +139,150 @@ export function QandAForm({ sport, matchesForSport }: QandAFormProps) {
 
                 {selectedMatch && (
                     <Card className="border-dashed">
-                        <CardHeader>
-                            <CardTitle>Create Question for:</CardTitle>
-                            <div className="flex justify-around items-center pt-2">
-                                <div className="flex flex-col items-center gap-2 text-center">
-                                    <Image src={selectedMatch.teamA.logoUrl} alt={selectedMatch.teamA.name} width={40} height={40} className="rounded-full" />
-                                    <span className="font-semibold">{selectedMatch.teamA.name}</span>
-                                </div>
-                                <span className="text-muted-foreground font-bold">VS</span>
-                                <div className="flex flex-col items-center gap-2 text-center">
-                                    <Image src={selectedMatch.teamB.logoUrl} alt={selectedMatch.teamB.name} width={40} height={40} className="rounded-full" />
-                                    <span className="font-semibold">{selectedMatch.teamB.name}</span>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <FormField
-                                control={form.control}
-                                name="question"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-lg font-semibold">Question</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="e.g., Who will be the Man of the Match?" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <div className="space-y-4">
-                                <FormLabel className="text-lg font-semibold">Possible Answers</FormLabel>
-                                {fields.map((field, index) => (
-                                    <div key={field.id} className="flex items-end gap-4 p-4 border rounded-md relative">
-                                        <FormField
-                                            control={form.control}
-                                            name={`answers.${index}.text`}
-                                            render={({ field }) => (
-                                                <FormItem className="flex-grow">
-                                                    <FormLabel>Answer #{index + 1}</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="e.g., Virat Kohli" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                         <FormField
-                                            control={form.control}
-                                            name={`answers.${index}.odds`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Odds (e.g., 2.5)</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" step="0.1" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-muted-foreground hover:text-destructive shrink-0"
-                                            onClick={() => remove(index)}
-                                            disabled={fields.length <= 2}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                        <CardContent className="pt-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                                {/* Column 1: Team A */}
+                                <div className="space-y-4">
+                                    <div className="flex flex-col items-center gap-2 text-center p-4 rounded-lg bg-muted/50">
+                                        <Image src={selectedMatch.teamA.logoUrl} alt={selectedMatch.teamA.name} width={40} height={40} className="rounded-full" />
+                                        <span className="font-semibold">{selectedMatch.teamA.name}</span>
                                     </div>
-                                ))}
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => append({ text: "", odds: 1.0 })}
-                                >
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Add Answer
-                                </Button>
-                            </div>
+                                    <h4 className="font-semibold text-center text-sm text-muted-foreground">Answer Options for Team A</h4>
+                                    
+                                    {fieldsA.map((field, index) => (
+                                        <div key={field.id} className="flex items-end gap-2 p-3 border rounded-md relative bg-muted/20">
+                                            <FormField
+                                                control={form.control}
+                                                name={`teamA_answers.${index}.text`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormLabel className="text-xs">Answer #{index + 1}</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="e.g., Player Name" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`teamA_answers.${index}.odds`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-24">
+                                                        <FormLabel className="text-xs">Odds</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" step="0.1" placeholder="e.g. 2.5" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-muted-foreground hover:text-destructive shrink-0 w-7 h-7"
+                                                onClick={() => removeA(index)}
+                                                disabled={fieldsA.length <= 1}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
 
-                            <Button type="submit" disabled={isSubmitting} className="w-full">
-                                {isSubmitting ? "Saving..." : "Save Question"}
-                            </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full"
+                                        onClick={() => appendA({ text: "", odds: 1.0 })}
+                                    >
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Add Answer
+                                    </Button>
+                                </div>
+
+                                {/* Column 2: Question */}
+                                <div className="space-y-4 lg:pt-16">
+                                    <FormField
+                                        control={form.control}
+                                        name="question"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-lg font-semibold text-center block">The Question</FormLabel>
+                                                <FormControl>
+                                                    <Textarea rows={5} placeholder="e.g., How many catches will be dropped?" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={isSubmitting} className="w-full !mt-8">
+                                        {isSubmitting ? "Saving..." : "Save Question & Answers"}
+                                    </Button>
+                                </div>
+
+                                {/* Column 3: Team B */}
+                                <div className="space-y-4">
+                                     <div className="flex flex-col items-center gap-2 text-center p-4 rounded-lg bg-muted/50">
+                                        <Image src={selectedMatch.teamB.logoUrl} alt={selectedMatch.teamB.name} width={40} height={40} className="rounded-full" />
+                                        <span className="font-semibold">{selectedMatch.teamB.name}</span>
+                                    </div>
+                                    <h4 className="font-semibold text-center text-sm text-muted-foreground">Answer Options for Team B</h4>
+                                    
+                                    {fieldsB.map((field, index) => (
+                                        <div key={field.id} className="flex items-end gap-2 p-3 border rounded-md relative bg-muted/20">
+                                            <FormField
+                                                control={form.control}
+                                                name={`teamB_answers.${index}.text`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormLabel className="text-xs">Answer #{index + 1}</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="e.g., Player Name" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`teamB_answers.${index}.odds`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-24">
+                                                        <FormLabel className="text-xs">Odds</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" step="0.1" placeholder="e.g. 2.5" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-muted-foreground hover:text-destructive shrink-0 w-7 h-7"
+                                                onClick={() => removeB(index)}
+                                                disabled={fieldsB.length <= 1}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full"
+                                        onClick={() => appendB({ text: "", odds: 1.0 })}
+                                    >
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Add Answer
+                                    </Button>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
