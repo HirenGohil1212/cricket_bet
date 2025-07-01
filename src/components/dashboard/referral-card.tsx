@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { useAuth } from "@/context/auth-context";
 
 export function ReferralCard() {
   const { toast } = useToast();
-  const { userProfile }_ = useAuth();
+  const { userProfile } = useAuth();
   
   const referralCode = userProfile?.referralCode || "LOADING..."; 
 
