@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -23,18 +22,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import type { Match } from "@/lib/types";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 
 const guessFormSchema = z.object({
   team: z.string({
     required_error: "You need to select a team.",
   }),
-  amount: z.coerce.number().min(10, "Minimum bet is 10.").max(5000, "Maximum bet is 5000."),
+  amount: z.enum(['9', '19', '29'], {
+    required_error: "You need to select a bet amount.",
+  }),
 });
 
 type GuessFormValues = z.infer<typeof guessFormSchema>;
@@ -47,24 +45,18 @@ interface GuessDialogProps {
 
 export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
-  const [betAmount, setBetAmount] = useState(100);
 
   const form = useForm<GuessFormValues>({
     resolver: zodResolver(guessFormSchema),
-    defaultValues: {
-      amount: 100,
-    },
   });
-  
-  const handleSliderChange = (value: number[]) => {
-      setBetAmount(value[0]);
-      form.setValue('amount', value[0]);
-  }
+
+  const betAmount = form.watch('amount');
+  const potentialWin = betAmount ? Number(betAmount) * 2 : 0;
 
   function onSubmit(data: GuessFormValues) {
     toast({
       title: "Bet Placed!",
-      description: `You bet ${data.amount} on ${data.team} to win. Good luck!`,
+      description: `You bet ₹${data.amount} on ${data.team} to win. Good luck!`,
     });
     onOpenChange(false);
     form.reset();
@@ -124,36 +116,34 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               control={form.control}
               name="amount"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-headline">Bet Amount</FormLabel>
+                <FormItem className="space-y-3">
+                  <FormLabel className="font-headline">Select Bet Amount</FormLabel>
                   <FormControl>
-                    <div className="flex items-center gap-4">
-                       <Input {...field} type="number" className="w-24" onChange={(e) => {
-                           field.onChange(e);
-                           setBetAmount(Number(e.target.value));
-                       }} />
-                       <Slider
-                           value={[betAmount]}
-                           onValueChange={handleSliderChange}
-                           max={5000}
-                           min={10}
-                           step={10}
-                           className="flex-1"
-                       />
-                    </div>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="grid grid-cols-3 gap-4"
+                    >
+                      {['9', '19', '29'].map((amount) => (
+                        <FormItem key={amount} className="flex-1">
+                          <FormControl>
+                             <RadioGroupItem value={amount} id={`amount-${amount}`} className="sr-only peer" />
+                          </FormControl>
+                           <FormLabel htmlFor={`amount-${amount}`} className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                              <span className="font-bold text-lg">₹{amount}</span>
+                           </FormLabel>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>10</span>
-                      <span>5000</span>
-                  </div>
                 </FormItem>
               )}
             />
             
             <div className="p-4 bg-accent/10 rounded-lg text-center">
               <p className="text-sm text-muted-foreground">Potential Win</p>
-              <p className="text-2xl font-bold font-headline text-primary">₹{(betAmount * 1.8).toFixed(2)}</p>
+              <p className="text-2xl font-bold font-headline text-primary">₹{potentialWin.toFixed(2)}</p>
             </div>
 
             <DialogFooter>

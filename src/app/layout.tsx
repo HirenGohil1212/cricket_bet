@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'ScoreCast',
+  title: 'Guess and Win',
   description: 'Predict scores and win!',
 };
 
