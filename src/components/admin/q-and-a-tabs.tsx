@@ -2,8 +2,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sports } from "@/lib/types";
 import type { Sport, Match } from "@/lib/types";
-import { QandAForm } from "./q-and-a-form";
 import { SportIcon } from "@/components/icons";
+import { MatchQnaCard } from "./match-qna-card";
 
 interface QandATabsProps {
     matches: Match[];
@@ -23,11 +23,16 @@ export function QandATabs({ matches }: QandATabsProps) {
         ))}
       </TabsList>
       {sports.map((sport) => (
-        <TabsContent key={sport} value={sport} className="mt-6">
-          <QandAForm 
-            sport={sport} 
-            matchesForSport={upcomingMatches.filter(m => m.sport === sport)} 
-          />
+        <TabsContent key={sport} value={sport} className="mt-6 space-y-6">
+           {upcomingMatches.filter(m => m.sport === sport).length > 0 ? (
+                upcomingMatches
+                    .filter(m => m.sport === sport)
+                    .map(match => <MatchQnaCard key={match.id} match={match} />)
+           ) : (
+                <div className="text-center text-muted-foreground py-12 border rounded-md">
+                    <p>No upcoming or live {sport} matches found for this sport.</p>
+                </div>
+           )}
         </TabsContent>
       ))}
     </Tabs>

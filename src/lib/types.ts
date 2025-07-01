@@ -81,3 +81,20 @@ export type WithdrawalRequest = {
   updatedAt: string;
   userBankAccount: UserBankAccount;
 };
+
+export type QnaOption = {
+  text: string;
+  odds: number;
+};
+
+export type QnaItem = {
+  question: string;
+  options: QnaOption[];
+};
+
+export type Question = QnaItem & {
+  id: string;
+  createdAt: string;
+  status: 'active' | 'closed' | 'settled';
+  result: string | null;
+};

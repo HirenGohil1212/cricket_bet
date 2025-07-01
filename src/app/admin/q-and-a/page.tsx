@@ -10,7 +10,7 @@ export default async function QandAPage() {
             <CardHeader>
                 <CardTitle>Match Questions & Answers</CardTitle>
                 <CardDescription>
-                    Create and manage custom questions for upcoming matches.
+                    Manage custom questions for upcoming and live matches.
                 </CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,70 +1,92 @@
 
 'use server';
 
-import { collection, doc, writeBatch, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import {
+    collection,
+    doc,
+    writeBatch,
+    query,
+    getDocs,
+    Timestamp,
+} from 'firebase/firestore';
+import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
-import { qnaFormSchema, type QnAFormValues } from '@/lib/schemas';
-import type { Sport } from '@/lib/types';
+import { qnaItemSchema } from '@/lib/schemas';
+import type { Question } from '@/lib/types';
 
-export async function createQuestions(values: QnAFormValues, sport: Sport) {
+
+// Function to get questions for a specific match
+export async function getQuestionsForMatch(matchId: string): Promise<Question[]> {
+    if (!matchId) return [];
     try {
-        const validatedFields = qnaFormSchema.safeParse(values);
+        const questionsRef = collection(db, `matches/${matchId}/questions`);
+        const q = query(questionsRef);
+        const querySnapshot = await getDocs(q);
 
-        if (!validatedFields.success) {
-            console.error("Validation Errors:", validatedFields.error.flatten().fieldErrors);
-            return { error: 'Invalid fields provided.' };
-        }
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                question: data.question,
+                options: data.options,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+                status: data.status,
+                result: data.result,
+            } as Question;
+        });
+    } catch (error) {
+        console.error("Error fetching questions for match:", error);
+        return [];
+    }
+}
 
-        const { applyTo, matchId, questions } = validatedFields.data;
 
-        if (applyTo === 'single' && !matchId) {
-            return { error: 'A match must be selected.' };
-        }
-        
+// Updated server action to create/update questions for a single match
+export async function updateQuestionsForMatch(matchId: string, questions: z.infer<typeof qnaItemSchema>[]) {
+     if (!matchId) {
+        return { error: 'A match ID must be provided.' };
+    }
+    
+    // Zod validation for the questions array
+    const questionsSchema = z.array(qnaItemSchema);
+    const validatedQuestions = questionsSchema.safeParse(questions);
+
+    if (!validatedQuestions.success) {
+        console.error("Validation Errors:", validatedQuestions.error.flatten().fieldErrors);
+        return { error: 'Invalid question data provided.' };
+    }
+
+    try {
         const batch = writeBatch(db);
+        const questionsCollectionRef = collection(db, `matches/${matchId}/questions`);
 
-        const createQuestionsForMatch = (matchDocId: string) => {
-            const questionsCollectionRef = collection(db, `matches/${matchDocId}/questions`);
-            questions.forEach(q => {
-                const questionRef = doc(questionsCollectionRef);
-                batch.set(questionRef, {
-                    question: q.question,
-                    options: q.options,
-                    createdAt: Timestamp.now(),
-                    status: 'active', // e.g., 'active', 'closed', 'settled'
-                    result: null, // To store the winning option text later
-                });
+        // First, delete all existing questions for this match to ensure a clean slate
+        const existingQuestionsSnapshot = await getDocs(questionsCollectionRef);
+        existingQuestionsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        // Now, add the new questions
+        validatedQuestions.data.forEach(q => {
+            const questionRef = doc(questionsCollectionRef);
+            // Add default odds on the backend
+            const optionsWithOdds = q.options.map(opt => ({ ...opt, odds: 2.0 }));
+            batch.set(questionRef, {
+                question: q.question,
+                options: optionsWithOdds,
+                createdAt: Timestamp.now(),
+                status: 'active',
+                result: null,
             });
-        };
-
-        if (applyTo === 'single' && matchId) {
-            createQuestionsForMatch(matchId);
-        } else if (applyTo === 'all') {
-            // Find all upcoming matches for the given sport
-            const matchesRef = collection(db, 'matches');
-            const q = query(
-                matchesRef, 
-                where('sport', '==', sport),
-                where('status', 'in', ['Upcoming', 'Live'])
-            );
-            const querySnapshot = await getDocs(q);
-            
-            if (querySnapshot.empty) {
-                return { error: `No upcoming or live matches found for ${sport} to apply questions to.` };
-            }
-
-            querySnapshot.forEach(doc => {
-                createQuestionsForMatch(doc.id);
-            });
-        }
+        });
 
         await batch.commit();
 
-        revalidatePath('/admin/q-and-a');
-        return { success: 'Questions have been created successfully!' };
+        revalidatePath(`/admin/q-and-a`);
+        return { success: 'Questions have been updated successfully!' };
     } catch (error) {
-        console.error("Error creating questions: ", error);
-        return { error: 'Failed to create questions.' };
+        console.error("Error updating questions: ", error);
+        return { error: 'Failed to update questions.' };
     }
 }
