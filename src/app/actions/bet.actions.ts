@@ -8,8 +8,7 @@ import {
     runTransaction,
     query, 
     where,
-    Timestamp,
-    orderBy
+    Timestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -88,7 +87,7 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
     }
     try {
         const betsCol = collection(db, 'bets');
-        const q = query(betsCol, where('userId', '==', userId), orderBy('timestamp', 'desc'));
+        const q = query(betsCol, where('userId', '==', userId));
         const betSnapshot = await getDocs(q);
 
         const betList = betSnapshot.docs.map(doc => {
@@ -105,6 +104,10 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
                 potentialWin: data.potentialWin,
             } as Bet;
         });
+
+        // Sort by timestamp descending to ensure the newest bets are first.
+        betList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
         return betList;
     } catch (error) {
         console.error("Error fetching user bets:", error);
