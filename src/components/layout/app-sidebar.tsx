@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -82,7 +83,7 @@ export function AppSidebar() {
                        </Avatar>
                        <div className="flex flex-col truncate">
                          <span className="font-semibold text-sm truncate">{user.displayName || 'Welcome'}</span>
-                         <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                         <span className="text-xs text-muted-foreground truncate">{user.phoneNumber}</span>
                        </div>
                     </div>
                 </div>
