@@ -7,7 +7,7 @@ import { getQuestionsForMatch } from '@/app/actions/qna.actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AddQuestionsDialog } from './add-questions-dialog';
+import { SetResultsDialog } from './set-results-dialog';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
 interface MatchQnaCardProps {
@@ -17,26 +17,28 @@ interface MatchQnaCardProps {
 export function MatchQnaCard({ match }: MatchQnaCardProps) {
     const [questions, setQuestions] = React.useState<Question[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
-    const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+    const [isResultsDialogOpen, setIsResultsDialogOpen] = React.useState(false);
 
-    React.useEffect(() => {
+    const fetchAndSetQuestions = React.useCallback(() => {
         setIsLoading(true);
         getQuestionsForMatch(match.id).then(data => {
             setQuestions(data);
             setIsLoading(false);
         });
     }, [match.id]);
+
+    React.useEffect(() => {
+        fetchAndSetQuestions();
+    }, [fetchAndSetQuestions]);
     
     const onDialogClose = (shouldRefresh: boolean) => {
-        setIsDialogOpen(false);
+        setIsResultsDialogOpen(false);
         if (shouldRefresh) {
-            setIsLoading(true);
-            getQuestionsForMatch(match.id).then(data => {
-                setQuestions(data);
-                setIsLoading(false);
-            });
+            fetchAndSetQuestions();
         }
     }
+
+    const canSetResults = match.status === 'Live' || match.status === 'Finished';
 
     return (
         <>
@@ -70,17 +72,19 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                     )}
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                    <Button variant="outline" disabled>Set Results</Button>
-                    <Button onClick={() => setIsDialogOpen(true)}>
-                        {questions.length > 0 ? 'Edit Questions' : 'Add Questions'}
+                    <Button 
+                        onClick={() => setIsResultsDialogOpen(true)}
+                        disabled={!canSetResults || isLoading || questions.length === 0}
+                    >
+                        Set Results
                     </Button>
                 </CardFooter>
             </Card>
-            {isDialogOpen && (
-                <AddQuestionsDialog
+            {isResultsDialogOpen && (
+                <SetResultsDialog
                     match={match}
-                    existingQuestions={questions}
-                    isOpen={isDialogOpen}
+                    questions={questions}
+                    isOpen={isResultsDialogOpen}
                     onClose={onDialogClose}
                 />
             )}

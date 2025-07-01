@@ -37,6 +37,10 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
         resolver: zodResolver(qnaFormSchema),
         defaultValues,
     });
+
+    React.useEffect(() => {
+        form.reset(defaultValues);
+    }, [existingQuestions, form, defaultValues]);
     
     const handleSubmit = async (data: QnAFormValues) => {
         setIsSubmitting(true);
