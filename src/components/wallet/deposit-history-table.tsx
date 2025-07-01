@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -11,24 +10,29 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 export function DepositHistoryTable() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [deposits, setDeposits] = useState<DepositRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-        setIsLoading(true);
-        getUserDeposits(user.uid).then(userDeposits => {
-            setDeposits(userDeposits);
-            setIsLoading(false);
-        });
-    } else {
-        // This case can be hit if the auth state is still loading or user is logged out.
-        // We ensure the table is empty and not in a loading state.
-        setDeposits([]);
-        setIsLoading(false);
+    if (authLoading) {
+      // Still waiting for auth to resolve
+      setIsLoading(true);
+      return;
     }
-  }, [user]);
+
+    if (user) {
+      // Auth resolved, and we have a user. Fetch data.
+      getUserDeposits(user.uid).then(userDeposits => {
+          setDeposits(userDeposits);
+          setIsLoading(false); // Stop loading once data is fetched
+      });
+    } else {
+      // Auth resolved, but there is no user.
+      setDeposits([]);
+      setIsLoading(false); // Stop loading, show empty state
+    }
+  }, [user, authLoading]);
 
   const getStatusClass = (status: DepositRequest['status']) => {
     switch (status) {
@@ -43,7 +47,9 @@ export function DepositHistoryTable() {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell>
+          <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+          <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-10 w-full" /></TableCell>
         </TableRow>
       ));
     }
