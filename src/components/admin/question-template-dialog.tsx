@@ -24,23 +24,25 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    const defaultValues = {
+    // Memoize defaultValues to prevent re-creation on every render, which caused an infinite loop.
+    const defaultValues = React.useMemo(() => ({
         questions: existingQuestions.length > 0
             ? existingQuestions.map(q => ({
                 question: q.question,
                 options: q.options.map(opt => ({ text: opt.text }))
             }))
             : [{ question: "", options: [{ text: "" }, { text: "" }] }]
-    };
+    }), [existingQuestions]);
 
     const form = useForm<QnAFormValues>({
         resolver: zodResolver(qnaFormSchema),
         defaultValues,
     });
-
+    
+    // Reset the form whenever the defaultValues change (i.e., when existingQuestions prop changes)
     React.useEffect(() => {
         form.reset(defaultValues);
-    }, [existingQuestions, form, defaultValues]);
+    }, [defaultValues, form]);
     
     const handleSubmit = async (data: QnAFormValues) => {
         setIsSubmitting(true);
