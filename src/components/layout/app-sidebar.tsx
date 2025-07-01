@@ -18,6 +18,7 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
@@ -62,14 +63,26 @@ export function AppSidebar() {
       }
   }
 
+  const HeaderContent = () => (
+    <div className="flex items-center gap-2">
+      <Award className="w-8 h-8 text-primary" />
+      <h1 className="font-headline text-2xl font-bold">Guess and Win</h1>
+    </div>
+  );
+
   return (
     <>
       <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <Award className="w-8 h-8 text-primary" />
-            <h1 className="font-headline text-2xl font-bold">Guess and Win</h1>
-          </div>
+        {/* Header for Mobile Sheet View */}
+        <SheetHeader className="p-4 border-b md:hidden">
+            <SheetTitle>
+                <HeaderContent />
+            </SheetTitle>
+        </SheetHeader>
+
+        {/* Header for Desktop Sidebar View */}
+        <SidebarHeader className="hidden md:block">
+           <HeaderContent />
         </SidebarHeader>
 
         <SidebarContent className="p-2">
