@@ -27,11 +27,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
-import type { Sport } from "@/lib/types";
+import { sports } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { createMatch, matchSchema, type MatchFormValues } from "@/app/actions/match.actions";
+import { createMatch } from "@/app/actions/match.actions";
+import { matchSchema, type MatchFormValues } from "@/lib/schemas";
 
-const sports: Sport[] = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"];
 
 export function AddMatchForm() {
   const { toast } = useToast();

@@ -1,5 +1,7 @@
 export type Sport = "Cricket" | "Football" | "Tennis" | "Table Tennis" | "Badminton";
 
+export const sports: Sport[] = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"];
+
 export type MatchStatus = "Upcoming" | "Live" | "Finished";
 
 export type Team = {
