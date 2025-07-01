@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function AppSidebar() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  const { isMobile } = useSidebar();
 
   const handleLogout = async () => {
       try {
@@ -73,17 +75,18 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar>
-        {/* Header for Mobile Sheet View */}
-        <SheetHeader className="p-4 border-b md:hidden">
+        {/* Conditionally render the correct header for mobile vs desktop */}
+        {isMobile ? (
+          <SheetHeader className="p-4 border-b">
             <SheetTitle>
-                <HeaderContent />
+              <HeaderContent />
             </SheetTitle>
-        </SheetHeader>
-
-        {/* Header for Desktop Sidebar View */}
-        <SidebarHeader className="hidden md:block">
-           <HeaderContent />
-        </SidebarHeader>
+          </SheetHeader>
+        ) : (
+          <SidebarHeader>
+            <HeaderContent />
+          </SidebarHeader>
+        )}
 
         <SidebarContent className="p-2">
             {userProfile && (
