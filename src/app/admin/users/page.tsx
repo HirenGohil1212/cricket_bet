@@ -30,6 +30,7 @@ async function getUsers(): Promise<UserProfile[]> {
             walletBalance: data.walletBalance,
             referralCode: data.referralCode,
             createdAt: (data.createdAt as Timestamp).toDate(),
+            role: data.role || 'user',
         } as UserProfile;
     });
     return userList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -50,6 +51,7 @@ export default async function AdminUsersPage() {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Phone Number</TableHead>
+                            <TableHead>Role</TableHead>
                             <TableHead className="text-right">Wallet Balance</TableHead>
                             <TableHead>Referral Code</TableHead>
                             <TableHead>Joined On</TableHead>
@@ -60,6 +62,11 @@ export default async function AdminUsersPage() {
                             <TableRow key={user.uid}>
                                 <TableCell className="font-medium">{user.name}</TableCell>
                                 <TableCell>{user.phoneNumber}</TableCell>
+                                <TableCell>
+                                    <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                        {user.role}
+                                    </Badge>
+                                </TableCell>
                                 <TableCell className="text-right">₹{user.walletBalance.toFixed(2)}</TableCell>
                                 <TableCell>
                                     <Badge variant="outline">{user.referralCode}</Badge>

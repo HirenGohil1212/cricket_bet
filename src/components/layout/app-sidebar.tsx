@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export function AppSidebar() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -72,18 +72,18 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="p-2">
-            {user && (
+            {userProfile && (
                 <div className="p-2 mb-4">
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
                        <Avatar>
-                         <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
+                         <AvatarImage src={user?.photoURL || ''} alt={userProfile.name || 'User'}/>
                          <AvatarFallback>
                            <UserIcon />
                          </AvatarFallback>
                        </Avatar>
                        <div className="flex flex-col truncate">
-                         <span className="font-semibold text-sm truncate">{user.displayName || 'Welcome'}</span>
-                         <span className="text-xs text-muted-foreground truncate">{user.phoneNumber}</span>
+                         <span className="font-semibold text-sm truncate">{userProfile.name || 'Welcome'}</span>
+                         <span className="text-xs text-muted-foreground truncate">{userProfile.phoneNumber}</span>
                        </div>
                     </div>
                 </div>

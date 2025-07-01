@@ -119,6 +119,7 @@ export default function SignupPage() {
                 createdAt: new Date(),
                 walletBalance: 0,
                 referralCode: referralCode,
+                role: 'user',
             });
 
 

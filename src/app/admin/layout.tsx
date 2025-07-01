@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { User } from "firebase/auth";
-import { useRequireAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-context";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal, LayoutDashboard, Users, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,28 +9,19 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-// WARNING: This is a placeholder for real admin role checking.
-const isUserAdmin = (user: User | null): boolean => {
-  // In a production app, this function should check for an 'isAdmin' custom claim
-  // or a role field in the user's Firestore document.
-  // For this demo, we'll allow any logged-in user to access the admin panel.
-  // This is NOT secure for production.
-  return !!user;
-};
-
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { user, loading } = useRequireAuth();
+    const { userProfile, loading } = useAuth();
     const pathname = usePathname();
     
     if (loading) {
         return <AdminSkeleton />;
     }
     
-    if (!isUserAdmin(user)) {
+    if (!userProfile || userProfile.role !== 'admin') {
          return <AccessDenied />;
     }
 

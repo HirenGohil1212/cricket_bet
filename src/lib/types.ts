@@ -36,4 +36,5 @@ export type UserProfile = {
   createdAt: Date;
   walletBalance: number;
   referralCode: string;
+  role: 'admin' | 'user';
 };
