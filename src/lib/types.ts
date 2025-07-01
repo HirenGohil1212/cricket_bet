@@ -50,3 +50,14 @@ export type BankAccount = {
   accountNumber: string;
   ifscCode: string;
 };
+
+export type DepositRequest = {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  screenshotUrl: string;
+  status: 'Pending' | 'Completed' | 'Failed';
+  createdAt: string;
+  updatedAt: string;
+};

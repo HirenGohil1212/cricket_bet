@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield } from "lucide-react";
+import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -75,7 +75,6 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar>
-        {/* Conditionally render the correct header for mobile vs desktop */}
         {isMobile ? (
           <SheetHeader className="p-4 border-b">
             <SheetTitle>
@@ -107,9 +106,19 @@ export function AppSidebar() {
             )}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton isActive>
-                <Ticket />
-                Matches
+              <SidebarMenuButton asChild>
+                <Link href="/">
+                    <Ticket />
+                    Matches
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/wallet">
+                    <Wallet />
+                    My Wallet
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
