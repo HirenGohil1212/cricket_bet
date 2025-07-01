@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,46 +23,66 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  mobile: z.string().min(10, "Mobile number must be 10 digits").max(10, "Mobile number must be 10 digits"),
+  email: z.string().email("Please enter a valid email address."),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export default function LoginPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = React.useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      mobile: "",
+      email: "",
       password: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // TODO: Implement Firebase login
-    console.log(values);
-    toast({
-        title: "Login Submitted",
-        description: "Login functionality is not yet implemented.",
-    });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+        await signInWithEmailAndPassword(auth, values.email, values.password);
+        toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+        });
+        router.push("/");
+    } catch (error: any) {
+        let errorMessage = "Invalid credentials. Please try again.";
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            errorMessage = "Invalid email or password.";
+        } else if (error.code) {
+            errorMessage = error.message;
+        }
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Login</CardTitle>
-        <CardDescription>Enter your mobile number to login to your account.</CardDescription>
+        <CardDescription>Enter your email and password to login.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="mobile"
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mobile Number</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="9876543210" {...field} type="tel" />
+                    <Input placeholder="user@example.com" {...field} type="email" disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -71,7 +95,7 @@ export default function LoginPage() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,8 +106,8 @@ export default function LoginPage() {
                     Forgot Password?
                 </Link>
             </div>
-            <Button type="submit" className="w-full">
-              Login
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
             </Button>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}

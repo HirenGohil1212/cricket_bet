@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import React from 'react';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,28 +24,59 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  mobile: z.string().length(10, "Mobile number must be 10 digits"),
+  email: z.string().email("Please enter a valid email address."),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export default function SignupPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = React.useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
         name: "",
-        mobile: "",
+        email: "",
         password: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // TODO: Implement Firebase signup with OTP
-    console.log(values);
-    toast({
-        title: "Signup Submitted",
-        description: "Signup functionality is not yet implemented.",
-    });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
+      
+      const user = userCredential.user;
+
+      await updateProfile(user, {
+          displayName: values.name
+      });
+      
+      toast({
+          title: "Account Created!",
+          description: "You have been successfully signed up.",
+      });
+      router.push("/");
+    } catch (error: any) {
+       let errorMessage = "An unknown error occurred.";
+        if (error.code === "auth/email-already-in-use") {
+            errorMessage = "This email is already in use. Please use another one.";
+        } else if (error.code) {
+            errorMessage = error.message;
+        }
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description: errorMessage,
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -60,7 +95,7 @@ export default function SignupPage() {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="John Doe" {...field} disabled={isLoading}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -68,12 +103,12 @@ export default function SignupPage() {
             />
             <FormField
               control={form.control}
-              name="mobile"
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mobile Number</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="9876543210" {...field} type="tel" />
+                    <Input placeholder="user@example.com" {...field} type="email" disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -86,14 +121,14 @@ export default function SignupPage() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
-              Create Account
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}

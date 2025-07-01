@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
+
 import {
   Sidebar,
   SidebarHeader,
@@ -12,19 +17,38 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn } from "lucide-react";
+import { Ticket, History, Award, LogIn, LogOut, User as UserIcon } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 export function AppSidebar() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { toast } = useToast();
-  // This will be replaced by a proper auth context later
-  const isLoggedIn = false; 
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+      try {
+          await signOut(auth);
+          toast({
+              title: "Logged Out",
+              description: "You have been successfully logged out.",
+          });
+          router.push('/login');
+      } catch (error) {
+          toast({
+              variant: "destructive",
+              title: "Logout Failed",
+              description: "Something went wrong. Please try again.",
+          });
+      }
+  };
 
   const handleMyBetsClick = () => {
-      if(isLoggedIn) {
+      if(user) {
           setIsHistoryOpen(true);
       } else {
           toast({
@@ -32,6 +56,7 @@ export function AppSidebar() {
               title: "Not Logged In",
               description: "Please login to see your betting history.",
           });
+          router.push('/login');
       }
   }
 
@@ -44,7 +69,24 @@ export function AppSidebar() {
             <h1 className="font-headline text-2xl font-bold">Guess and Win</h1>
           </div>
         </SidebarHeader>
+
         <SidebarContent className="p-2">
+            {user && (
+                <div className="p-2 mb-4">
+                    <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
+                       <Avatar>
+                         <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
+                         <AvatarFallback>
+                           <UserIcon />
+                         </AvatarFallback>
+                       </Avatar>
+                       <div className="flex flex-col truncate">
+                         <span className="font-semibold text-sm truncate">{user.displayName || 'Welcome'}</span>
+                         <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                       </div>
+                    </div>
+                </div>
+            )}
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton isActive>
@@ -63,23 +105,33 @@ export function AppSidebar() {
             <ReferralCard />
           </div>
         </SidebarContent>
+
         <SidebarFooter>
             <div className="flex flex-col gap-2 p-2">
-                <Button asChild>
-                    <Link href="/login">
-                        <LogIn />
-                        Login
-                    </Link>
-                </Button>
-                 <Button variant="secondary" asChild>
-                    <Link href="/signup">
-                        Sign Up
-                    </Link>
-                </Button>
+                {loading ? null : user ? (
+                     <Button variant="ghost" onClick={handleLogout}>
+                        <LogOut />
+                        Logout
+                    </Button>
+                ) : (
+                    <>
+                        <Button asChild>
+                            <Link href="/login">
+                                <LogIn />
+                                Login
+                            </Link>
+                        </Button>
+                        <Button variant="secondary" asChild>
+                            <Link href="/signup">
+                                Sign Up
+                            </Link>
+                        </Button>
+                    </>
+                )}
             </div>
         </SidebarFooter>
       </Sidebar>
-      {isLoggedIn && <BettingHistoryDialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen} />}
+      {user && <BettingHistoryDialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen} />}
     </>
   );
 }
