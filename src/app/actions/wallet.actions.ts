@@ -61,9 +61,10 @@ export async function createDepositRequest({ userId, userName, amount, screensho
         });
 
         revalidatePath('/wallet');
+        revalidatePath('/admin/deposits');
         return { success: 'Deposit request submitted successfully! It will be reviewed shortly.' };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating deposit request: ", error);
         return { error: 'Failed to submit deposit request.' };
     }
@@ -93,12 +94,11 @@ export async function getUserDeposits(userId: string): Promise<DepositRequest[]>
 }
 
 
-// Admin function to get all pending deposit requests
-export async function getPendingDeposits(): Promise<DepositRequest[]> {
+// Admin function to get all deposit requests
+export async function getAllDeposits(): Promise<DepositRequest[]> {
     try {
         const depositsCol = collection(db, 'deposits');
-        // Query just for pending status to avoid needing a composite index
-        const q = query(depositsCol, where('status', '==', 'Pending'));
+        const q = query(depositsCol, orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         
         const deposits = querySnapshot.docs.map(doc => {
@@ -111,12 +111,9 @@ export async function getPendingDeposits(): Promise<DepositRequest[]> {
             } as DepositRequest;
         });
 
-        // Sort in-memory to show oldest requests first
-        deposits.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
         return deposits;
     } catch (error) {
-        console.error("Error fetching pending deposits:", error);
+        console.error("Error fetching all deposits:", error);
         return [];
     }
 }

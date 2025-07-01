@@ -1,21 +1,21 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPendingDeposits } from "@/app/actions/wallet.actions";
-import { DepositsTable } from "@/components/admin/deposits-table";
+import { getAllDeposits } from "@/app/actions/wallet.actions";
+import { AdminDepositsTabs } from "@/components/admin/admin-deposits-tabs";
 
 export default async function AdminDepositsPage() {
-    const deposits = await getPendingDeposits();
+    const allDeposits = await getAllDeposits();
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Pending Deposit Requests</CardTitle>
+                <CardTitle>Deposit History</CardTitle>
                 <CardDescription>
-                    Review and approve or reject user deposit requests. Approved requests will update the user's wallet.
+                    Review and manage all user deposit requests.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <DepositsTable deposits={deposits} />
+                <AdminDepositsTabs deposits={allDeposits} />
             </CardContent>
         </Card>
     );

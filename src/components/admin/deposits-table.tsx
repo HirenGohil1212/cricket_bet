@@ -8,12 +8,13 @@ import { useRouter } from 'next/navigation';
 import type { DepositRequest } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { approveDeposit, rejectDeposit } from '@/app/actions/wallet.actions';
 import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
 
 interface DepositsTableProps {
     deposits: DepositRequest[];
@@ -32,11 +33,21 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
         setIsDialogOpen(false);
         setSelectedDeposit(null);
     }
+    
+    const getStatusClass = (status: DepositRequest['status']) => {
+        switch (status) {
+          case 'Completed': return 'bg-green-500/80 text-white';
+          case 'Failed': return 'bg-red-500/80 text-white';
+          case 'Pending': return 'bg-yellow-500/80 text-black';
+          default: return 'bg-gray-500/80 text-white';
+        }
+    };
+
 
     if (deposits.length === 0) {
         return (
-            <div className="text-center text-muted-foreground py-12">
-                <p>No pending deposit requests.</p>
+            <div className="text-center text-muted-foreground py-12 border rounded-md mt-4">
+                <p>No deposit requests in this category.</p>
             </div>
         );
     }
@@ -60,10 +71,16 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
                             <TableCell className="text-right">INR {deposit.amount.toFixed(2)}</TableCell>
                             <TableCell className="hidden md:table-cell">{new Date(deposit.createdAt).toLocaleDateString()}</TableCell>
                             <TableCell>
-                                <Badge variant="secondary">{deposit.status}</Badge>
+                                <Badge className={cn("text-xs font-semibold", getStatusClass(deposit.status))}>
+                                    {deposit.status}
+                                </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button size="sm" onClick={() => handleReview(deposit)}>Review</Button>
+                                {deposit.status === 'Pending' ? (
+                                    <Button size="sm" onClick={() => handleReview(deposit)}>Review</Button>
+                                ) : (
+                                     <Button size="sm" variant="outline" disabled>Reviewed</Button>
+                                )}
                             </TableCell>
                         </TableRow>
                     ))}
