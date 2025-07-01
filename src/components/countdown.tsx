@@ -9,7 +9,7 @@ type CountdownProps = {
 
 const calculateTimeLeft = (targetDate: Date) => {
   const difference = +targetDate - +new Date();
-  let timeLeft = {};
+  let timeLeft: { [key: string]: number } = {};
 
   if (difference > 0) {
     timeLeft = {
@@ -24,13 +24,12 @@ const calculateTimeLeft = (targetDate: Date) => {
 };
 
 export const Countdown = ({ targetDate, onEnd }: CountdownProps) => {
-  const [timeLeft, setTimeLeft] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState<{[key: string]: number}>(() => calculateTimeLeft(targetDate));
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     
-    setTimeLeft(calculateTimeLeft(targetDate));
     const timer = setInterval(() => {
       const newTimeLeft = calculateTimeLeft(targetDate);
       setTimeLeft(newTimeLeft);
@@ -44,18 +43,19 @@ export const Countdown = ({ targetDate, onEnd }: CountdownProps) => {
     return () => clearInterval(timer);
   }, [targetDate, onEnd]);
 
-  if (!isClient || !timeLeft || Object.keys(timeLeft).length === 0) {
+  if (!isClient || Object.keys(timeLeft).length === 0) {
     return <span>Bets Closed</span>;
   }
   
-  // Get the most significant time unit to display
+  const { days, hours, minutes, seconds } = timeLeft;
+  
   let displayTime;
-  if (timeLeft.days > 0) {
-    displayTime = `${timeLeft.days}d ${timeLeft.hours}h`;
-  } else if (timeLeft.hours > 0) {
-    displayTime = `${timeLeft.hours}h ${timeLeft.minutes}m`;
-  } else if (timeLeft.minutes > 0 || timeLeft.seconds > 0) {
-    displayTime = `${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`;
+  if (days > 0) {
+    displayTime = `${days}d ${hours}h`;
+  } else if (hours > 0) {
+    displayTime = `${hours}h ${minutes}m`;
+  } else if (minutes > 0 || seconds > 0) {
+    displayTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   } else {
     displayTime = 'Bets Closed';
   }
