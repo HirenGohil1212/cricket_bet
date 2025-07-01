@@ -17,16 +17,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
 import { withdrawalRequestSchema, type WithdrawalRequestFormValues } from "@/lib/schemas";
 import { createWithdrawalRequest } from "@/app/actions/withdrawal.actions";
-import type { UserProfile } from "@/lib/types";
+import { Skeleton } from "../ui/skeleton";
 
-interface WithdrawFundsCardProps {
-  userProfile: UserProfile | null;
-}
-
-export function WithdrawFundsCard({ userProfile }: WithdrawFundsCardProps) {
+export function WithdrawFundsCard() {
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<WithdrawalRequestFormValues>({
@@ -66,6 +62,22 @@ export function WithdrawFundsCard({ userProfile }: WithdrawFundsCardProps) {
     }
 
     setIsSubmitting(false);
+  }
+
+  if (loading) {
+    return (
+        <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-3/5" />
+              <Skeleton className="h-4 w-4/5" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+        </Card>
+    )
   }
 
   return (
@@ -132,7 +144,7 @@ export function WithdrawFundsCard({ userProfile }: WithdrawFundsCardProps) {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting || !hasBankAccount}>
+              <Button type="submit" className="w-full" disabled={isSubmitting || !hasBankAccount || loading}>
                 {isSubmitting ? "Submitting..." : "Request Withdrawal"}
               </Button>
             </form>
