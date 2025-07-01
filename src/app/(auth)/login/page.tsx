@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -79,7 +80,14 @@ export default function LoginPage() {
                         </div>
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="password">Password</Label>
+                            <Link href="/forgot-password" passHref>
+                                <span className="text-sm font-medium text-primary hover:underline cursor-pointer">
+                                    Forgot Password?
+                                </span>
+                            </Link>
+                        </div>
                         <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
