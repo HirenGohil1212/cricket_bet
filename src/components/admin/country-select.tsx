@@ -70,9 +70,14 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
                 <CommandItem
                   key={country.code}
                   value={country.name}
-                  onSelect={() => {
-                    onChange(country.code === value ? "" : country.code)
-                    setOpen(false)
+                  onSelect={(currentValue) => {
+                    const countryCode = countries.find(
+                      (c) => c.name.toLowerCase() === currentValue.toLowerCase()
+                    )?.code;
+                    if (countryCode) {
+                        onChange(countryCode === value ? "" : countryCode);
+                    }
+                    setOpen(false);
                   }}
                 >
                   <Check
