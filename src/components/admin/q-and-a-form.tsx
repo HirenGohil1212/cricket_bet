@@ -194,29 +194,15 @@ function QuestionField({ qIndex, remove, control }: { qIndex: number; remove: (i
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 items-start gap-6 pt-4">
                 {/* Left Side Option */}
-                <div className="space-y-4">
+                <div className="space-y-2">
                     <FormLabel className="font-semibold text-center block">Option A</FormLabel>
                     <FormField
                         control={control}
                         name={`questions.${qIndex}.options.0.text`}
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Text</FormLabel>
                                 <FormControl>
                                     <Input placeholder="e.g. India" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={control}
-                        name={`questions.${qIndex}.options.0.odds`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Odds</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.1" placeholder="e.g. 1.8" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -240,29 +226,15 @@ function QuestionField({ qIndex, remove, control }: { qIndex: number; remove: (i
                 />
 
                 {/* Right Side Option */}
-                <div className="space-y-4">
+                <div className="space-y-2">
                     <FormLabel className="font-semibold text-center block">Option B</FormLabel>
                      <FormField
                         control={control}
                         name={`questions.${qIndex}.options.1.text`}
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Text</FormLabel>
                                 <FormControl>
                                     <Input placeholder="e.g. Australia" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={control}
-                        name={`questions.${qIndex}.options.1.odds`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Odds</FormLabel>
-                                <FormControl>
-                                    <Input type="number" step="0.1" placeholder="e.g. 2.1" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
