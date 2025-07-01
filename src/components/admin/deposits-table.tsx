@@ -134,11 +134,17 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="flex justify-center">
-                        <a href={deposit.screenshotUrl} target="_blank" rel="noopener noreferrer" title="View full screenshot">
-                           <Image src={deposit.screenshotUrl} alt="Payment Screenshot" width={300} height={400} className="rounded-md border object-contain" />
-                        </a>
-                    </div>
+                    {deposit.screenshotUrl ? (
+                        <div className="flex justify-center">
+                            <a href={deposit.screenshotUrl} target="_blank" rel="noopener noreferrer" title="View full screenshot">
+                               <Image src={deposit.screenshotUrl} alt="Payment Screenshot" width={300} height={400} className="rounded-md border object-contain" />
+                            </a>
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground p-4 bg-muted rounded-md">
+                            No screenshot was provided for this deposit.
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="amount">Deposit Amount (INR)</Label>
                         <Input 
@@ -161,4 +167,3 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
         </Dialog>
     );
 }
-

@@ -24,7 +24,7 @@ interface CreateDepositRequestParams {
     userId: string;
     userName: string;
     amount: number;
-    screenshotDataUri: string;
+    screenshotDataUri?: string;
 }
 
 // User action to create a deposit request
@@ -35,19 +35,19 @@ export async function createDepositRequest({ userId, userName, amount, screensho
     if (amount < 100) {
         return { error: 'Minimum deposit amount is INR 100.' };
     }
-    if (!screenshotDataUri) {
-        return { error: 'A payment screenshot is required.' };
-    }
 
     try {
-        // Upload screenshot to Firebase Storage
-        const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
-        const mimeType = screenshotDataUri.match(/data:(.*);base64,/)?.[1];
-        
-        await uploadString(storageRef, screenshotDataUri.split(',')[1], 'base64', {
-            contentType: mimeType
-        });
-        const screenshotUrl = await getDownloadURL(storageRef);
+        let screenshotUrl = "";
+        // Upload screenshot to Firebase Storage if it exists
+        if (screenshotDataUri) {
+            const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
+            const mimeType = screenshotDataUri.match(/data:(.*);base64,/)?.[1];
+            
+            await uploadString(storageRef, screenshotDataUri.split(',')[1], 'base64', {
+                contentType: mimeType
+            });
+            screenshotUrl = await getDownloadURL(storageRef);
+        }
 
         // Create deposit request document in Firestore
         await addDoc(collection(db, "deposits"), {

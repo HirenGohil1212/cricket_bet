@@ -55,7 +55,7 @@ export type BankDetailsFormValues = z.infer<typeof bankDetailsFormSchema>;
 // Schema for deposit requests
 export const depositRequestSchema = z.object({
   amount: z.coerce.number().min(100, "Minimum deposit amount is INR 100."),
-  screenshotDataUri: z.string().min(1, "A screenshot of your payment is required."),
+  screenshotDataUri: z.string().optional(),
 });
 
 export type DepositRequestFormValues = z.infer<typeof depositRequestSchema>;

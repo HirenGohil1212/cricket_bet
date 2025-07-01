@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Banknote, Copy, QrCode, UploadCloud } from "lucide-react";
+import { Banknote, Copy, QrCode } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -28,13 +28,11 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
   const router = useRouter();
   const { user, userProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [preview, setPreview] = React.useState<string | null>(null);
 
   const form = useForm<DepositRequestFormValues>({
     resolver: zodResolver(depositRequestSchema),
     defaultValues: {
       amount: 100,
-      screenshotDataUri: "",
     },
   });
 
@@ -43,24 +41,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     toast({ title: "Copied to clipboard!", description: `${field} has been copied.` });
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        form.setError("screenshotDataUri", { message: "Max file size is 5MB." });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        form.setValue("screenshotDataUri", result);
-        form.clearErrors("screenshotDataUri");
-        setPreview(result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   async function onSubmit(data: DepositRequestFormValues) {
     if (!user || !userProfile) {
       toast({ variant: "destructive", title: "Not logged in", description: "You must be logged in to add funds." });
@@ -79,7 +59,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     } else {
       toast({ title: "Request Submitted", description: result.success });
       form.reset();
-      setPreview(null);
       router.refresh(); // Refresh to show new entry in history
     }
 
@@ -143,33 +122,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                         <div className="relative">
                             <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input type="number" placeholder="Enter amount" className="pl-10" {...field} />
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="screenshotDataUri"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Payment Screenshot</FormLabel>
-                    <FormControl>
-                        <div className="flex items-center gap-4">
-                            <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                                {preview ? (
-                                    <Image src={preview} alt="Screenshot Preview" width={96} height={96} className="object-contain"/>
-                                ) : (
-                                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
-                                )}
-                            </div>
-                            <Input 
-                                type="file" 
-                                accept="image/png, image/jpeg, image/webp" 
-                                onChange={handleFileChange} 
-                                className="max-w-xs"
-                            />
                         </div>
                     </FormControl>
                     <FormMessage />
