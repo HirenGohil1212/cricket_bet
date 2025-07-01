@@ -91,7 +91,7 @@ export type QnaOption = z.infer<typeof qnaOptionSchema>;
 
 export const qnaItemSchema = z.object({
   question: z.string().min(10, "Question must be at least 10 characters."),
-  options: z.array(qnaOptionSchema).min(2, "At least two answer options are required."),
+  options: z.array(qnaOptionSchema).length(2, "Exactly two options are required, one for each side."),
 });
 export type QnaItem = z.infer<typeof qnaItemSchema>;
 

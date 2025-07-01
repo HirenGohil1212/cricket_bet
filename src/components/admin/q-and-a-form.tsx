@@ -177,11 +177,6 @@ export function QandAForm({ sport, matchesForSport }: QandAFormProps) {
 }
 
 function QuestionField({ qIndex, remove, control }: { qIndex: number; remove: (index: number) => void; control: any }) {
-    const { fields, append, remove: removeOption } = useFieldArray({
-        control,
-        name: `questions.${qIndex}.options`,
-    });
-
     return (
          <Card className="relative border-dashed">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -197,70 +192,82 @@ function QuestionField({ qIndex, remove, control }: { qIndex: number; remove: (i
                     <span className="sr-only">Remove Question</span>
                 </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
-                 <FormField
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 items-start gap-6 pt-4">
+                {/* Left Side Option */}
+                <div className="space-y-4">
+                    <FormLabel className="font-semibold text-center block">Option A</FormLabel>
+                    <FormField
+                        control={control}
+                        name={`questions.${qIndex}.options.0.text`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Text</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. India" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={control}
+                        name={`questions.${qIndex}.options.0.odds`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Odds</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.1" placeholder="e.g. 1.8" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                {/* Middle Question */}
+                <FormField
                     control={control}
                     name={`questions.${qIndex}.question`}
                     render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Question Text</FormLabel>
-                            <FormControl>
-                                <Textarea placeholder="e.g., Who will be the man of the match?" {...field} />
+                        <FormItem className="flex flex-col h-full">
+                            <FormLabel className="font-semibold text-center">Question</FormLabel>
+                            <FormControl className="flex-grow">
+                                <Textarea placeholder="e.g., Which team will win the toss?" {...field} className="h-full min-h-[100px]" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                
-                <div className="space-y-3">
-                    <FormLabel>Answer Options</FormLabel>
-                    {fields.map((optionField, oIndex) => (
-                        <div key={optionField.id} className="flex items-end gap-2">
-                            <FormField
-                                control={control}
-                                name={`questions.${qIndex}.options.${oIndex}.text`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-grow">
-                                        <FormControl>
-                                            <Input placeholder={`Option ${oIndex + 1}`} {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={control}
-                                name={`questions.${qIndex}.options.${oIndex}.odds`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Input type="number" step="0.1" placeholder="Odds" className="w-24" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-muted-foreground hover:text-destructive shrink-0 w-8 h-8"
-                                onClick={() => removeOption(oIndex)}
-                                disabled={fields.length <= 1}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => append({ text: "", odds: 1.0 })}
-                    >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Option
-                    </Button>
+
+                {/* Right Side Option */}
+                <div className="space-y-4">
+                    <FormLabel className="font-semibold text-center block">Option B</FormLabel>
+                     <FormField
+                        control={control}
+                        name={`questions.${qIndex}.options.1.text`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Text</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. Australia" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={control}
+                        name={`questions.${qIndex}.options.1.odds`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Odds</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.1" placeholder="e.g. 2.1" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
             </CardContent>
         </Card>
