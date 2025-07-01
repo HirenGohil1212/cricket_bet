@@ -29,48 +29,24 @@ export const Countdown = ({ targetDate, onEnd }: CountdownProps) => {
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    // Initial calculation
+    
     setTimeLeft(calculateTimeLeft(targetDate));
-
-    const timer = setTimeout(() => {
+    const timer = setInterval(() => {
       const newTimeLeft = calculateTimeLeft(targetDate);
       setTimeLeft(newTimeLeft);
+
       if (Object.keys(newTimeLeft).length === 0) {
         onEnd?.();
+        clearInterval(timer);
       }
     }, 1000);
 
-    return () => clearTimeout(timer);
-  });
+    return () => clearInterval(timer);
+  }, [targetDate, onEnd]);
 
   if (!isClient || !timeLeft || Object.keys(timeLeft).length === 0) {
     return <span>Bets Closed</span>;
   }
-
-  const timerComponents = Object.keys(timeLeft).map((interval) => {
-    if (!timeLeft[interval] && interval !== 'seconds' && interval !== 'minutes') {
-      return null;
-    }
-
-    // Only show relevant parts
-    if(timeLeft.days > 0) {
-      return <span key={interval}>{timeLeft.days}d {timeLeft.hours}h</span>
-    }
-    if(timeLeft.hours > 0) {
-      return <span key={interval}>{timeLeft.hours}h {timeLeft.minutes}m</span>
-    }
-
-    return (
-      <span key={interval}>
-        {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-      </span>
-    );
-  });
   
   // Get the most significant time unit to display
   let displayTime;
