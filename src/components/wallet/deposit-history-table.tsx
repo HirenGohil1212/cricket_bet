@@ -1,9 +1,11 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import type { DepositRequest } from '@/lib/types';
-import { getUserDeposits } from '@/app/actions/wallet.actions';
+import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,23 +18,45 @@ export function DepositHistoryTable() {
 
   useEffect(() => {
     if (authLoading) {
-      // Still waiting for auth to resolve
       setIsLoading(true);
       return;
     }
 
     if (user) {
-      // Auth resolved, and we have a user. Fetch data.
-      getUserDeposits(user.uid).then(userDeposits => {
-          setDeposits(userDeposits);
-          setIsLoading(false); // Stop loading once data is fetched
+      setIsLoading(true);
+      const depositsCol = collection(db, 'deposits');
+      // Query without ordering to avoid needing a composite index
+      const q = query(depositsCol, where('userId', '==', user.uid));
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const userDeposits = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+                updatedAt: (data.updatedAt as Timestamp).toDate().toISOString(),
+            } as DepositRequest;
+        });
+
+        // Sort on the client-side to ensure newest are first
+        userDeposits.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setDeposits(userDeposits);
+        setIsLoading(false);
+      }, (error) => {
+          console.error("Error fetching real-time deposits: ", error);
+          setIsLoading(false);
       });
+
+      // Cleanup subscription on component unmount
+      return () => unsubscribe();
     } else {
-      // Auth resolved, but there is no user.
       setDeposits([]);
-      setIsLoading(false); // Stop loading, show empty state
+      setIsLoading(false);
     }
   }, [user, authLoading]);
+
 
   const getStatusClass = (status: DepositRequest['status']) => {
     switch (status) {
