@@ -16,9 +16,10 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -102,6 +103,26 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+          
+          {userProfile?.role === 'admin' && (
+            <>
+                <SidebarSeparator className="my-2" />
+                <div className="px-2">
+                    <p className="text-xs font-semibold text-muted-foreground px-2 mb-1">Admin</p>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild>
+                                <Link href="/admin/dashboard">
+                                    <Shield />
+                                    Admin Panel
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </div>
+            </>
+          )}
+
           <div className="mt-6 p-2">
             <ReferralCard />
           </div>
