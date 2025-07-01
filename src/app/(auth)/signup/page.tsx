@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { 
-    createUserWithEmailAndPassword, 
     updateProfile, 
     RecaptchaVerifier, 
     signInWithPhoneNumber,
     EmailAuthProvider,
     linkWithCredential
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +107,20 @@ export default function SignupPage() {
 
             // Update the user's profile with their display name
             await updateProfile(phoneUser, { displayName: name });
+
+            // Generate a simple referral code
+            const referralCode = `GUESSWIN${phoneUser.uid.substring(0, 6).toUpperCase()}`;
+
+            // Save user data to Firestore
+            await setDoc(doc(db, "users", phoneUser.uid), {
+                uid: phoneUser.uid,
+                name: name,
+                phoneNumber: `+91${phoneNumber}`,
+                createdAt: new Date(),
+                walletBalance: 0,
+                referralCode: referralCode,
+            });
+
 
             toast({ title: "Account Created!", description: "You have been successfully signed up." });
             router.push("/");
