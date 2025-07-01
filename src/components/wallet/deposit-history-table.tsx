@@ -10,30 +10,25 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-interface DepositHistoryTableProps {
-  initialDeposits: DepositRequest[];
-}
-
-export function DepositHistoryTable({ initialDeposits }: DepositHistoryTableProps) {
+export function DepositHistoryTable() {
   const { user } = useAuth();
-  const [deposits, setDeposits] = useState<DepositRequest[]>(initialDeposits);
-  const [isLoading, setIsLoading] = useState(!initialDeposits.length);
+  const [deposits, setDeposits] = useState<DepositRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchDeposits() {
-      if (user) {
+    if (user) {
         setIsLoading(true);
-        const userDeposits = await getUserDeposits(user.uid);
-        setDeposits(userDeposits);
+        getUserDeposits(user.uid).then(userDeposits => {
+            setDeposits(userDeposits);
+            setIsLoading(false);
+        });
+    } else {
+        // This case can be hit if the auth state is still loading or user is logged out.
+        // We ensure the table is empty and not in a loading state.
+        setDeposits([]);
         setIsLoading(false);
-      }
     }
-    // If initialDeposits is empty, it might be because the user was not available on server render.
-    // So we fetch on client mount.
-    if (!initialDeposits.length) {
-        fetchDeposits();
-    }
-  }, [user, initialDeposits.length]);
+  }, [user]);
 
   const getStatusClass = (status: DepositRequest['status']) => {
     switch (status) {
@@ -48,7 +43,7 @@ export function DepositHistoryTable({ initialDeposits }: DepositHistoryTableProp
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell>
+          <TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell>
         </TableRow>
       ));
     }
@@ -56,7 +51,7 @@ export function DepositHistoryTable({ initialDeposits }: DepositHistoryTableProp
     if (deposits.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={4} className="text-center text-muted-foreground py-12">
+          <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
             You haven't made any deposits yet.
           </TableCell>
         </TableRow>
