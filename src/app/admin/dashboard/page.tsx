@@ -1,8 +1,9 @@
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Users, Swords, Banknote, LineChart } from "lucide-react";
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
 
 async function getDashboardData() {
     try {
@@ -15,9 +16,14 @@ async function getDashboardData() {
         const activeMatchesSnapshot = await getCountFromServer(activeMatchesQuery);
         const matchCount = activeMatchesSnapshot.data().count;
         
+        const withdrawalsCol = collection(db, 'withdrawals');
+        const pendingWithdrawalsQuery = query(withdrawalsCol, where('status', '==', 'Pending'));
+        const pendingWithdrawalsSnapshot = await getCountFromServer(pendingWithdrawalsQuery);
+        const pendingWithdrawals = pendingWithdrawalsSnapshot.data().count;
+
         // Placeholder for real data to be implemented later
         const totalRevenue = 0;
-        const pendingWithdrawals = 0;
+        
 
         return { userCount, matchCount, totalRevenue, pendingWithdrawals };
     } catch (error) {
@@ -92,10 +98,10 @@ export default async function AdminDashboardPage() {
                             <h3 className="font-semibold">Manage Users</h3>
                             <p className="text-sm text-muted-foreground">View and manage user profiles.</p>
                         </Link>
-                         <div className="p-4 bg-muted/30 rounded-lg cursor-not-allowed">
-                            <h3 className="font-semibold text-muted-foreground/70">Manage Withdrawals</h3>
-                            <p className="text-sm text-muted-foreground/50">Approve or deny user withdrawal requests.</p>
-                        </div>
+                         <Link href="/admin/withdrawals" className="p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                            <h3 className="font-semibold">Manage Withdrawals</h3>
+                            <p className="text-sm text-muted-foreground">Approve or deny user withdrawal requests.</p>
+                        </Link>
                         <div className="p-4 bg-muted/30 rounded-lg cursor-not-allowed">
                             <h3 className="font-semibold text-muted-foreground/70">Content Management</h3>
                             <p className="text-sm text-muted-foreground/50">Upload banner and video ads.</p>

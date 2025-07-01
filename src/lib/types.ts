@@ -1,4 +1,5 @@
 
+
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -33,6 +34,13 @@ export type Bet = {
   potentialWin: number;
 };
 
+export type UserBankAccount = {
+  accountHolderName: string;
+  accountNumber: string;
+  ifscCode: string;
+  upiId: string;
+};
+
 export type UserProfile = {
   uid: string;
   name: string;
@@ -41,6 +49,7 @@ export type UserProfile = {
   walletBalance: number;
   referralCode: string;
   role: 'admin' | 'user';
+  bankAccount?: UserBankAccount;
 };
 
 export type BankAccount = {
@@ -60,4 +69,15 @@ export type DepositRequest = {
   status: 'Pending' | 'Completed' | 'Failed';
   createdAt: string;
   updatedAt: string;
+};
+
+export type WithdrawalRequest = {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  status: 'Pending' | 'Completed' | 'Failed';
+  createdAt: string;
+  updatedAt: string;
+  userBankAccount: UserBankAccount;
 };

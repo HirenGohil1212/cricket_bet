@@ -14,6 +14,7 @@ import {
   Award,
   Banknote,
   Wallet,
+  CircleDollarSign,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -48,6 +49,7 @@ export default function AdminLayout({
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/matches", label: "Matches", icon: Swords },
     { href: "/admin/deposits", label: "Deposits", icon: Wallet },
+    { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
     { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
   ];
 
@@ -111,18 +113,18 @@ export default function AdminLayout({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
-              <SheetHeader className="mb-4">
-                <SheetTitle>
-                  <Link
-                    href="/admin/dashboard"
-                    className="flex items-center gap-2 text-lg font-semibold"
-                  >
-                    <Award className="h-6 w-6 text-primary" />
-                    <span>Guess & Win Admin</span>
-                  </Link>
+              <SheetHeader>
+                <SheetTitle asChild>
+                   <Link
+                      href="/admin/dashboard"
+                      className="flex items-center gap-2 text-lg font-semibold"
+                    >
+                      <Award className="h-6 w-6 text-primary" />
+                      <span>Guess & Win Admin</span>
+                    </Link>
                 </SheetTitle>
               </SheetHeader>
-              <nav className="grid gap-6 text-lg font-medium">
+              <nav className="grid gap-6 text-lg font-medium mt-4">
                 {renderNavLinks(true)}
               </nav>
               <div className="mt-auto">

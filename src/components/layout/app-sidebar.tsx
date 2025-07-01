@@ -72,24 +72,28 @@ export function AppSidebar() {
     </div>
   );
 
+  const MobileHeader = () => (
+    <SheetHeader className="p-4 border-b">
+        <SheetTitle asChild>
+          <HeaderContent />
+        </SheetTitle>
+    </SheetHeader>
+  )
+
+  const DesktopHeader = () => (
+     <SidebarHeader>
+        <HeaderContent />
+    </SidebarHeader>
+  )
+
   return (
     <>
       <Sidebar>
-        {isMobile ? (
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle>
-              <HeaderContent />
-            </SheetTitle>
-          </SheetHeader>
-        ) : (
-          <SidebarHeader>
-            <HeaderContent />
-          </SidebarHeader>
-        )}
-
+        {isMobile ? <MobileHeader /> : <DesktopHeader />}
+        
         <SidebarContent className="p-2">
             {userProfile && (
-                <div className="p-2 mb-4">
+                <div className="p-2 mb-2">
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
                        <Avatar>
                          <AvatarImage src={user?.photoURL || ''} alt={userProfile.name || 'User'}/>
@@ -125,6 +129,14 @@ export function AppSidebar() {
               <SidebarMenuButton onClick={handleMyBetsClick}>
                 <History />
                 My Bets
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/profile">
+                    <UserIcon />
+                    My Profile
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -120,6 +120,7 @@ export default function SignupPage() {
                 walletBalance: 0,
                 referralCode: referralCode,
                 role: 'user',
+                bankAccount: null,
             });
 
 

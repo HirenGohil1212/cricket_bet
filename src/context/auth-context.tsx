@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -38,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     referralCode: data.referralCode,
                     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                     role: data.role,
+                    bankAccount: data.bankAccount || undefined,
                 };
                 setUserProfile(profile);
             } else {
