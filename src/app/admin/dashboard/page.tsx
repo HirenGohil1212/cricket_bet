@@ -1,15 +1,34 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Users, Swords, Banknote, LineChart } from "lucide-react";
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 
-export default function AdminDashboardPage() {
-    // Placeholder data - will be replaced with real data later
-    const userCount = 125;
-    const matchCount = 42;
-    const totalRevenue = 5420.50;
-    const pendingWithdrawals = 3;
+async function getDashboardData() {
+    try {
+        const usersCol = collection(db, 'users');
+        const userSnapshot = await getCountFromServer(usersCol);
+        const userCount = userSnapshot.data().count;
 
+        const matchesCol = collection(db, 'matches');
+        const activeMatchesQuery = query(matchesCol, where('status', 'in', ['Live', 'Upcoming']));
+        const activeMatchesSnapshot = await getCountFromServer(activeMatchesQuery);
+        const matchCount = activeMatchesSnapshot.data().count;
+        
+        // Placeholder for real data to be implemented later
+        const totalRevenue = 0;
+        const pendingWithdrawals = 0;
+
+        return { userCount, matchCount, totalRevenue, pendingWithdrawals };
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        // Return zeros if there's an error (e.g., Firestore rules or collections don't exist)
+        return { userCount: 0, matchCount: 0, totalRevenue: 0, pendingWithdrawals: 0 };
+    }
+}
+
+export default async function AdminDashboardPage() {
+    const { userCount, matchCount, totalRevenue, pendingWithdrawals } = await getDashboardData();
 
     return (
         <div>
