@@ -31,6 +31,7 @@ export async function createMatch(values: MatchFormValues) {
         });
 
         revalidatePath('/admin/matches');
+        revalidatePath('/');
         return { success: 'Match created successfully!' };
     } catch (error) {
         console.error("Error creating match: ", error);
@@ -46,6 +47,7 @@ export async function deleteMatch(matchId: string) {
     try {
         await deleteDoc(doc(db, "matches", matchId));
         revalidatePath('/admin/matches');
+        revalidatePath('/');
         return { success: 'Match deleted successfully!' };
     } catch (error) {
         console.error("Error deleting match: ", error);
@@ -68,9 +70,10 @@ export async function getMatches(): Promise<Match[]> {
                 teamA: data.teamA,
                 teamB: data.teamB,
                 status: data.status,
-                startTime: (data.startTime as Timestamp).toDate(),
-                score: data.score,
-                winner: data.winner,
+                startTime: (data.startTime as Timestamp).toDate().toISOString(),
+                // Ensure score and winner are always strings to avoid serialization errors
+                score: data.score || '', 
+                winner: data.winner || '',
             } as Match;
         });
         return matchList;

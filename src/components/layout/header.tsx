@@ -6,7 +6,7 @@ import { Wallet, Bell } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8">
@@ -17,11 +17,10 @@ export function Header() {
         <h1 className="font-headline text-2xl font-bold">Matches</h1>
       </div>
       <div className="flex flex-1 items-center justify-end gap-4">
-        {user && (
+        {user && userProfile && (
             <div className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold">
               <Wallet className="h-5 w-5 text-primary" />
-              {/* TODO: Fetch balance from Firestore */}
-              <span>₹ 1,250.75</span>
+              <span>₹ {userProfile.walletBalance.toFixed(2)}</span>
             </div>
         )}
         <Button variant="ghost" size="icon">

@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockMatches } from "@/lib/data";
+import { sports } from "@/lib/types";
 import type { Sport } from "@/lib/types";
 import { MatchList } from "./match-list";
 import { SportIcon } from "@/components/icons";
+import { getMatches } from "@/app/actions/match.actions";
 
-export function MatchTabs() {
-  const sports: Sport[] = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"];
+export async function MatchTabs() {
+  const allMatches = await getMatches();
   
   return (
     <Tabs defaultValue="Cricket" className="w-full">
@@ -19,7 +20,7 @@ export function MatchTabs() {
       </TabsList>
       {sports.map((sport) => (
         <TabsContent key={sport} value={sport} className="mt-6">
-          <MatchList matches={mockMatches.filter(m => m.sport === sport)} sport={sport} />
+          <MatchList matches={allMatches.filter(m => m.sport === sport)} sport={sport} />
         </TabsContent>
       ))}
     </Tabs>

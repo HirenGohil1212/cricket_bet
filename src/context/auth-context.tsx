@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     phoneNumber: data.phoneNumber,
                     walletBalance: data.walletBalance,
                     referralCode: data.referralCode,
-                    createdAt: (data.createdAt as Timestamp).toDate(),
+                    createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                     role: data.role,
                 };
                 setUserProfile(profile);

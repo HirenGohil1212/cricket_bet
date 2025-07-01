@@ -5,17 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Gift } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 export function ReferralCard() {
   const { toast } = useToast();
-  const referralCode = "SC2024XYZ";
+  const { userProfile }_ = useAuth();
+  
+  const referralCode = userProfile?.referralCode || "LOADING..."; 
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(referralCode);
-    toast({
-      title: "Copied to clipboard!",
-      description: "Your referral code is ready to be shared.",
-    });
+    if (userProfile?.referralCode) {
+      navigator.clipboard.writeText(userProfile.referralCode);
+      toast({
+        title: "Copied to clipboard!",
+        description: "Your referral code is ready to be shared.",
+      });
+    }
   };
 
   return (
@@ -33,7 +38,7 @@ export function ReferralCard() {
         <p className="text-xs text-muted-foreground">Share your code with friends. When they sign up and place their first bet, you both get a bonus.</p>
         <div className="flex items-center space-x-2">
           <Input readOnly value={referralCode} className="font-mono bg-background" />
-          <Button variant="ghost" size="icon" onClick={handleCopy}>
+          <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!userProfile?.referralCode}>
             <Copy className="h-4 w-4" />
           </Button>
         </div>

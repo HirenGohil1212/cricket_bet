@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp, orderBy, query } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { 
     Table, 
@@ -20,7 +20,8 @@ import { Badge } from '@/components/ui/badge';
 
 async function getUsers(): Promise<UserProfile[]> {
     const usersCol = collection(db, 'users');
-    const userSnapshot = await getDocs(usersCol);
+    const q = query(usersCol, orderBy('createdAt', 'desc'));
+    const userSnapshot = await getDocs(q);
     const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data();
         return {
@@ -29,11 +30,11 @@ async function getUsers(): Promise<UserProfile[]> {
             phoneNumber: data.phoneNumber,
             walletBalance: data.walletBalance,
             referralCode: data.referralCode,
-            createdAt: (data.createdAt as Timestamp).toDate(),
+            createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
             role: data.role || 'user',
         } as UserProfile;
     });
-    return userList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return userList;
 }
 
 export default async function AdminUsersPage() {
@@ -71,7 +72,7 @@ export default async function AdminUsersPage() {
                                 <TableCell>
                                     <Badge variant="outline">{user.referralCode}</Badge>
                                 </TableCell>
-                                <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>
+                                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

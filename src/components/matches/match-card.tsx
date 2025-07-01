@@ -74,7 +74,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
           <div className="flex flex-col items-center gap-2">
             <div className="text-center bg-accent/10 text-accent-foreground p-2 rounded-md w-full">
                 <p className="text-xs">Betting closes in:</p>
-                <Countdown targetDate={startTime} />
+                <Countdown targetDate={new Date(startTime)} />
             </div>
             <Button
               className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90"

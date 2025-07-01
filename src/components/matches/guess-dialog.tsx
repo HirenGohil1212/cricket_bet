@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,17 +25,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import type { Match } from "@/lib/types";
 import Image from "next/image";
-
-const guessFormSchema = z.object({
-  team: z.string({
-    required_error: "You need to select a team.",
-  }),
-  amount: z.enum(['9', '19', '29'], {
-    required_error: "You need to select a bet amount.",
-  }),
-});
-
-type GuessFormValues = z.infer<typeof guessFormSchema>;
+import { betSchema, type BetFormValues } from "@/lib/schemas";
+import { createBet } from "@/app/actions/bet.actions";
+import { useAuth } from "@/context/auth-context";
 
 interface GuessDialogProps {
   match: Match | null;
@@ -45,27 +37,69 @@ interface GuessDialogProps {
 
 export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const form = useForm<GuessFormValues>({
-    resolver: zodResolver(guessFormSchema),
+  const form = useForm<BetFormValues>({
+    resolver: zodResolver(betSchema),
+    defaultValues: {
+      matchId: match?.id,
+    }
   });
+
+  // Reset form when match changes
+  React.useEffect(() => {
+    if (match) {
+        form.reset({
+            matchId: match.id,
+            team: undefined,
+            amount: undefined,
+        });
+    }
+  }, [match, form]);
+
 
   const betAmount = form.watch('amount');
   const potentialWin = betAmount ? Number(betAmount) * 2 : 0;
 
-  function onSubmit(data: GuessFormValues) {
-    toast({
-      title: "Bet Placed!",
-      description: `You bet ₹${data.amount} on ${data.team} to win. Good luck!`,
+  async function onSubmit(data: BetFormValues) {
+    if (!user) {
+        toast({ variant: "destructive", title: "Not Logged In", description: "You must be logged in to place a bet." });
+        return;
+    }
+    if (!match) return;
+    
+    setIsSubmitting(true);
+    const result = await createBet({
+        matchId: match.id,
+        team: data.team,
+        amount: Number(data.amount)
     });
-    onOpenChange(false);
-    form.reset();
+
+    if (result.error) {
+        toast({
+            variant: "destructive",
+            title: "Bet Failed",
+            description: result.error,
+        });
+    } else {
+        toast({
+            title: "Bet Placed!",
+            description: `You bet ₹${data.amount} on ${data.team} to win. Good luck!`,
+        });
+        onOpenChange(false);
+    }
+    setIsSubmitting(false);
   }
 
   if (!match) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        if (!isSubmitting) {
+            onOpenChange(isOpen);
+        }
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
@@ -147,8 +181,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </div>
 
             <DialogFooter>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
-                Place Bet
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting}>
+                {isSubmitting ? "Placing Bet..." : "Place Bet"}
               </Button>
             </DialogFooter>
           </form>

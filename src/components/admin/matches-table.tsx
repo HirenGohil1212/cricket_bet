@@ -53,7 +53,7 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                             </div>
                         </TableCell>
                         <TableCell>{match.sport}</TableCell>
-                        <TableCell>{match.startTime.toLocaleString()}</TableCell>
+                        <TableCell>{new Date(match.startTime).toLocaleString()}</TableCell>
                         <TableCell>
                             <Badge variant={getStatusVariant(match.status)}>{match.status}</Badge>
                         </TableCell>
