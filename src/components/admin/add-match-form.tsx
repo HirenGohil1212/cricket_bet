@@ -216,7 +216,7 @@ export function AddMatchForm() {
                     <FormItem>
                       <FormLabel>Team A Logo URL (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://placehold.co/40x40.png" {...field} />
+                        <Input placeholder="Defaults to country flag" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -229,7 +229,7 @@ export function AddMatchForm() {
                     <FormItem>
                       <FormLabel>Team B Logo URL (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://placehold.co/40x40.png" {...field} />
+                        <Input placeholder="Defaults to country flag" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

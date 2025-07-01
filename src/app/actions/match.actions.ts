@@ -28,13 +28,17 @@ export async function createMatch(values: MatchFormValues) {
         const teamAName = teamA && teamA.trim() ? teamA.trim() : countryA.name;
         const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
 
+        // Use country flag as default logo if no custom logo is provided
+        const teamAFlagUrl = `https://flagpedia.net/data/flags/w80/${teamACountry.toLowerCase()}.webp`;
+        const teamBFlagUrl = `https://flagpedia.net/data/flags/w80/${teamBCountry.toLowerCase()}.webp`;
+
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { name: teamAName, logoUrl: teamALogo || `https://placehold.co/40x40.png`, countryCode: teamACountry },
-            teamB: { name: teamBName, logoUrl: teamBLogo || `https://placehold.co/40x40.png`, countryCode: teamBCountry },
+            teamA: { name: teamAName, logoUrl: teamALogo || teamAFlagUrl, countryCode: teamACountry },
+            teamB: { name: teamBName, logoUrl: teamBLogo || teamBFlagUrl, countryCode: teamBCountry },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',

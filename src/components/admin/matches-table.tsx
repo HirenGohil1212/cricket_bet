@@ -46,17 +46,13 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                         <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
-                                    {match.teamA.countryCode && (
-                                        <Image src={`https://flagpedia.net/data/flags/w40/${match.teamA.countryCode.toLowerCase()}.webp`} alt={match.teamA.name} width={20} height={15} className="rounded-sm" />
-                                    )}
+                                    <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="rounded-sm object-contain" />
                                     <span>{match.teamA.name}</span>
                                 </div>
                                 <span className="text-xs text-muted-foreground">vs</span>
                                 <div className="flex items-center gap-2">
+                                     <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="rounded-sm object-contain" />
                                     <span>{match.teamB.name}</span>
-                                     {match.teamB.countryCode && (
-                                        <Image src={`https://flagpedia.net/data/flags/w40/${match.teamB.countryCode.toLowerCase()}.webp`} alt={match.teamB.name} width={20} height={15} className="rounded-sm" />
-                                    )}
                                 </div>
                             </div>
                         </TableCell>
