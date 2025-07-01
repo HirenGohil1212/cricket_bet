@@ -1,8 +1,10 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import React from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +40,7 @@ interface GuessDialogProps {
 export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<BetFormValues>({
@@ -88,6 +91,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             title: "Bet Placed!",
             description: `You bet ₹${data.amount} on ${data.team} to win. Good luck!`,
         });
+        router.refresh();
         onOpenChange(false);
     }
     setIsSubmitting(false);
