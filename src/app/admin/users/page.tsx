@@ -51,28 +51,28 @@ export default async function AdminUsersPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Phone Number</TableHead>
+                            <TableHead className="hidden sm:table-cell">Phone Number</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead className="text-right">Wallet Balance</TableHead>
-                            <TableHead>Referral Code</TableHead>
-                            <TableHead>Joined On</TableHead>
+                            <TableHead className="hidden md:table-cell">Referral Code</TableHead>
+                            <TableHead className="hidden md:table-cell">Joined On</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {users.map((user) => (
                             <TableRow key={user.uid}>
                                 <TableCell className="font-medium">{user.name}</TableCell>
-                                <TableCell>{user.phoneNumber}</TableCell>
+                                <TableCell className="hidden sm:table-cell">{user.phoneNumber}</TableCell>
                                 <TableCell>
                                     <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                                         {user.role}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">₹{user.walletBalance.toFixed(2)}</TableCell>
-                                <TableCell>
+                                <TableCell className="hidden md:table-cell">
                                     <Badge variant="outline">{user.referralCode}</Badge>
                                 </TableCell>
-                                <TableCell className="whitespace-nowrap">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell className="hidden whitespace-nowrap md:table-cell">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

@@ -32,8 +32,8 @@ export function MatchesTable({ matches }: MatchesTableProps) {
             <TableHeader>
                 <TableRow>
                     <TableHead>Match</TableHead>
-                    <TableHead>Sport</TableHead>
-                    <TableHead>Start Time</TableHead>
+                    <TableHead className="hidden md:table-cell">Sport</TableHead>
+                    <TableHead className="hidden lg:table-cell">Start Time</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>
                         <span className="sr-only">Actions</span>
@@ -47,17 +47,17 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
                                     <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="rounded-sm object-contain" />
-                                    <span>{match.teamA.name}</span>
+                                    <span className="truncate">{match.teamA.name}</span>
                                 </div>
                                 <span className="text-xs text-muted-foreground">vs</span>
                                 <div className="flex items-center gap-2">
                                      <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="rounded-sm object-contain" />
-                                    <span>{match.teamB.name}</span>
+                                    <span className="truncate">{match.teamB.name}</span>
                                 </div>
                             </div>
                         </TableCell>
-                        <TableCell>{match.sport}</TableCell>
-                        <TableCell className="whitespace-nowrap">{new Date(match.startTime).toLocaleString()}</TableCell>
+                        <TableCell className="hidden md:table-cell">{match.sport}</TableCell>
+                        <TableCell className="hidden lg:table-cell whitespace-nowrap">{new Date(match.startTime).toLocaleString()}</TableCell>
                         <TableCell>
                             <Badge variant={getStatusVariant(match.status)}>{match.status}</Badge>
                         </TableCell>

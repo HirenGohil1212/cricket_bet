@@ -31,11 +31,11 @@ export default async function AdminDashboardPage() {
     const { userCount, matchCount, totalRevenue, pendingWithdrawals } = await getDashboardData();
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <>
+            <div className="flex items-center">
+                <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
             </div>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -107,6 +107,6 @@ export default async function AdminDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </>
     );
 }
