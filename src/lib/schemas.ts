@@ -80,3 +80,33 @@ export const withdrawalRequestSchema = z.object({
 });
 
 export type WithdrawalRequestFormValues = z.infer<typeof withdrawalRequestSchema>;
+
+
+// Schema for Q&A (Admin)
+export const qnaOptionSchema = z.object({
+    text: z.string().min(1, "Option text cannot be empty."),
+    odds: z.coerce.number({invalid_type_error: "Must be a number"}).min(1, "Odds must be at least 1."),
+});
+export type QnaOption = z.infer<typeof qnaOptionSchema>;
+
+export const qnaItemSchema = z.object({
+  question: z.string().min(10, "Question must be at least 10 characters."),
+  options: z.array(qnaOptionSchema).min(2, "At least two answer options are required."),
+});
+export type QnaItem = z.infer<typeof qnaItemSchema>;
+
+
+export const qnaFormSchema = z.object({
+  applyTo: z.enum(["single", "all"], { required_error: "Please select an application scope."}),
+  matchId: z.string().optional(),
+  questions: z.array(qnaItemSchema).min(1, "You must add at least one question."),
+}).refine((data) => {
+    if (data.applyTo === "single") {
+        return !!data.matchId && data.matchId.length > 0;
+    }
+    return true;
+}, {
+    message: "A match must be selected when applying to a single match.",
+    path: ["matchId"],
+});
+export type QnAFormValues = z.infer<typeof qnaFormSchema>;
