@@ -2,9 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,34 +29,44 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import type { Sport } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { createMatch, matchSchema, type MatchFormValues } from "@/app/actions/match.actions";
 
 const sports: Sport[] = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"];
 
-const addMatchFormSchema = z.object({
-  sport: z.enum(sports, { required_error: "Please select a sport." }),
-  teamA: z.string().min(2, { message: "Team A name must be at least 2 characters." }),
-  teamB: z.string().min(2, { message: "Team B name must be at least 2 characters." }),
-  teamALogo: z.string().url({ message: "Please enter a valid URL for Team A logo." }).optional().or(z.literal('')),
-  teamBLogo: z.string().url({ message: "Please enter a valid URL for Team B logo." }).optional().or(z.literal('')),
-  startTime: z.date({ required_error: "A start date and time is required." }),
-});
-
-type AddMatchFormValues = z.infer<typeof addMatchFormSchema>;
-
 export function AddMatchForm() {
   const { toast } = useToast();
-  const form = useForm<AddMatchFormValues>({
-    resolver: zodResolver(addMatchFormSchema),
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const form = useForm<MatchFormValues>({
+    resolver: zodResolver(matchSchema),
+    defaultValues: {
+        sport: "Cricket",
+        teamA: "",
+        teamB: "",
+        teamALogo: "",
+        teamBLogo: "",
+    }
   });
 
-  // In a real app, this would call a server action to save to Firestore
-  function onSubmit(data: AddMatchFormValues) {
-    console.log(data);
-    toast({
-      title: "Match Created (Simulated)",
-      description: `${data.teamA} vs ${data.teamB} has been added.`,
-    });
-    form.reset();
+  async function onSubmit(data: MatchFormValues) {
+    setIsSubmitting(true);
+    const result = await createMatch(data);
+    
+    if (result.error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: result.error,
+        });
+    } else {
+        toast({
+            title: "Match Created",
+            description: `${data.teamA} vs ${data.teamB} has been added.`,
+        });
+        router.push("/admin/matches");
+    }
+    setIsSubmitting(false);
   }
 
   return (
@@ -114,12 +125,31 @@ export function AddMatchForm() {
                           <Calendar
                             mode="single"
                             selected={field.value}
-                            onSelect={field.onChange}
+                            onSelect={(date) => {
+                                if (!date) return;
+                                const time = field.value ? format(field.value, 'HH:mm:ss') : '00:00:00';
+                                const [h, m, s] = time.split(':');
+                                date.setHours(parseInt(h), parseInt(m), parseInt(s));
+                                field.onChange(date);
+                             }}
                             disabled={(date) =>
                               date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
                             initialFocus
                           />
+                           <div className="p-2 border-t">
+                             <Input 
+                               type="time"
+                               value={field.value ? format(field.value, 'HH:mm') : ''}
+                               onChange={(e) => {
+                                  const date = field.value || new Date();
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  const newDate = new Date(date);
+                                  newDate.setHours(parseInt(hours), parseInt(minutes));
+                                  field.onChange(newDate);
+                               }}
+                             />
+                           </div>
                         </PopoverContent>
                       </Popover>
                       <FormMessage />
@@ -159,7 +189,7 @@ export function AddMatchForm() {
                   name="teamALogo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Team A Logo URL</FormLabel>
+                      <FormLabel>Team A Logo URL (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="https://placehold.co/40x40.png" {...field} />
                       </FormControl>
@@ -172,7 +202,7 @@ export function AddMatchForm() {
                   name="teamBLogo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Team B Logo URL</FormLabel>
+                      <FormLabel>Team B Logo URL (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="https://placehold.co/40x40.png" {...field} />
                       </FormControl>
@@ -183,7 +213,9 @@ export function AddMatchForm() {
             </div>
         </div>
 
-        <Button type="submit">Create Match</Button>
+        <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Match"}
+        </Button>
       </form>
     </Form>
   )

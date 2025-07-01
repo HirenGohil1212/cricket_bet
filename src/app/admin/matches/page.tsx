@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockMatches } from "@/lib/data";
 import { MatchesTable } from "@/components/admin/matches-table";
 import Link from 'next/link';
+import { getMatches } from "@/app/actions/match.actions";
 
-export default function AdminMatchesPage() {
-    // In a real app, this would be a Firestore query that is paginated and sorted.
-    const matches = mockMatches;
+export default async function AdminMatchesPage() {
+    const matches = await getMatches();
 
     return (
         <Card>
