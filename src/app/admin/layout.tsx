@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -11,6 +12,7 @@ import {
   Swords,
   Menu,
   Award,
+  Banknote,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -40,6 +42,31 @@ export default function AdminLayout({
     return <AccessDenied />;
   }
 
+  const navLinks = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/matches", label: "Matches", icon: Swords },
+    { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
+  ];
+
+  const renderNavLinks = (isMobile = false) =>
+    navLinks.map(({ href, label, icon: Icon }) => (
+      <Link
+        key={href}
+        href={href}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+          pathname.startsWith(href)
+            ? "bg-muted text-primary"
+            : "text-muted-foreground hover:text-primary",
+          isMobile && "gap-4 text-lg"
+        )}
+      >
+        <Icon className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
+        {label}
+      </Link>
+    ));
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-background md:block">
@@ -55,42 +82,7 @@ export default function AdminLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start space-y-1 px-2 py-4 text-sm font-medium lg:px-4">
-              <Link
-                href="/admin/dashboard"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-                  pathname === "/admin/dashboard"
-                    ? "bg-muted text-primary"
-                    : "text-muted-foreground hover:text-primary"
-                )}
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="/admin/users"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-                  pathname === "/admin/users"
-                    ? "bg-muted text-primary"
-                    : "text-muted-foreground hover:text-primary"
-                )}
-              >
-                <Users className="h-4 w-4" />
-                Users
-              </Link>
-              <Link
-                href="/admin/matches"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-                  pathname.startsWith("/admin/matches")
-                    ? "bg-muted text-primary"
-                    : "text-muted-foreground hover:text-primary"
-                )}
-              >
-                <Swords className="h-4 w-4" />
-                Matches
-              </Link>
+              {renderNavLinks()}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -117,54 +109,19 @@ export default function AdminLayout({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
+              <SheetHeader className="mb-4">
+                <SheetTitle>
+                  <Link
+                    href="/admin/dashboard"
+                    className="flex items-center gap-2 text-lg font-semibold"
+                  >
+                    <Award className="h-6 w-6 text-primary" />
+                    <span>Guess & Win Admin</span>
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
               <nav className="grid gap-6 text-lg font-medium">
-                <SheetHeader className="mb-4 text-left">
-                  <SheetTitle>
-                    <Link
-                      href="/admin/dashboard"
-                      className="flex items-center gap-2 text-lg font-semibold"
-                    >
-                      <Award className="h-6 w-6 text-primary" />
-                      <span>Guess & Win Admin</span>
-                    </Link>
-                  </SheetTitle>
-                </SheetHeader>
-                <Link
-                  href="/admin/dashboard"
-                  className={cn(
-                    "flex items-center gap-4 rounded-lg px-3 py-2 transition-all",
-                    pathname === "/admin/dashboard"
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  <LayoutDashboard className="h-5 w-5" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/users"
-                  className={cn(
-                    "flex items-center gap-4 rounded-lg px-3 py-2 transition-all",
-                    pathname === "/admin/users"
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  <Users className="h-5 w-5" />
-                  Users
-                </Link>
-                <Link
-                  href="/admin/matches"
-                  className={cn(
-                    "flex items-center gap-4 rounded-lg px-3 py-2 transition-all",
-                    pathname.startsWith("/admin/matches")
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  <Swords className="h-5 w-5" />
-                  Matches
-                </Link>
+                {renderNavLinks(true)}
               </nav>
               <div className="mt-auto">
                 <Button size="sm" className="w-full" asChild>
@@ -214,6 +171,7 @@ function AdminSkeleton() {
           </div>
           <div className="flex-1 p-4">
             <div className="space-y-2">
+              <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />

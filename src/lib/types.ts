@@ -22,7 +22,7 @@ export type Match = {
 };
 
 export type Bet = {
-  id: string;
+  id:string;
   userId: string;
   matchId: string;
   matchDescription: string;
@@ -41,4 +41,12 @@ export type UserProfile = {
   walletBalance: number;
   referralCode: string;
   role: 'admin' | 'user';
+};
+
+export type BankAccount = {
+  qrCodeUrl: string;
+  upiId: string;
+  accountHolderName: string;
+  accountNumber: string;
+  ifscCode: string;
 };
