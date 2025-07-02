@@ -37,10 +37,15 @@ interface GuessDialogProps {
 
 // Dynamically create a Zod schema for the user's prediction form
 const createPredictionSchema = (questions: Question[]) => {
+    const questionSchema = z.object({
+        teamA: z.string().min(1, 'Prediction is required'),
+        teamB: z.string().min(1, 'Prediction is required'),
+    });
+
     const schemaObject = questions.reduce((acc, q) => {
-        acc[q.id] = z.string().min(1, 'Prediction is required');
+        acc[q.id] = questionSchema;
         return acc;
-    }, {} as Record<string, z.ZodString>);
+    }, {} as Record<string, typeof questionSchema>);
     
     return z.object({
         predictions: z.object(schemaObject),
@@ -78,9 +83,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         
         // Create default values for the predictions with empty strings
         const defaultPredictions = validQuestions.reduce((acc, q) => {
-          acc[q.id] = '';
+          acc[q.id] = { teamA: '', teamB: '' };
           return acc;
-        }, {} as Record<string, string>);
+        }, {} as Record<string, { teamA: string; teamB: string }>);
 
         // Reset the form with the new default values to make inputs controlled
         form.reset({
@@ -162,20 +167,37 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     ) : questions.length > 0 ? (
                        <div className="space-y-4">
                          {questions.map((q) => (
-                            <FormField
-                                key={q.id}
-                                control={form.control}
-                                name={`predictions.${q.id}`}
-                                render={({ field }) => (
-                                    <FormItem className="p-4 border rounded-lg space-y-2">
-                                        <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Your prediction..." {...field} className="text-center"/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div key={q.id} className="p-4 border rounded-lg space-y-3">
+                                <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</FormLabel>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name={`predictions.${q.id}.teamA`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Team A prediction..." {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`predictions.${q.id}.teamB`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Team B prediction..." {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
                          ))}
                        </div>
                     ) : (
