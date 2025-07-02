@@ -30,8 +30,8 @@ export async function createMatch(values: MatchFormValues) {
         const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
 
         // Use country flag as default logo if no custom logo is provided
-        const teamAFlagUrl = `https://flagpedia.net/data/flags/w160/${teamACountry.toLowerCase()}.webp`;
-        const teamBFlagUrl = `https://flagpedia.net/data/flags/w160/${teamBCountry.toLowerCase()}.webp`;
+        const teamAFlagUrl = `https://flagpedia.net/data/flags/w320/${teamACountry.toLowerCase()}.webp`;
+        const teamBFlagUrl = `https://flagpedia.net/data/flags/w320/${teamBCountry.toLowerCase()}.webp`;
 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
