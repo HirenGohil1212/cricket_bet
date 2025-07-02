@@ -71,25 +71,40 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     }
   });
 
-  const resetState = () => {
-    setIsSubmitting(false);
-    setQuestions([]);
-    setIsLoading(true);
-    form.reset({ amount: 9, predictions: {} });
-  };
-
   useEffect(() => {
-    async function fetchQuestions() {
-      if (open && match) {
-        resetState();
+    async function fetchQuestionsAndSetDefaults() {
+      if (match) {
+        setIsLoading(true);
+        setQuestions([]); // Clear old questions to avoid rendering with old state
         const fetchedQuestions = await getQuestionsForMatch(match.id);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
+        
+        // Create default values for the predictions with empty strings
+        const defaultPredictions = validQuestions.reduce((acc, q) => {
+          acc[q.id] = { teamA: '', teamB: '' };
+          return acc;
+        }, {} as Record<string, { teamA: string; teamB: string; }>);
+
+        // Reset the form with the new default values to make inputs controlled
+        form.reset({
+          amount: 9,
+          predictions: defaultPredictions,
+        });
+        
         setQuestions(validQuestions);
         setIsLoading(false);
       }
     }
-    fetchQuestions();
+
+    if (open) {
+      fetchQuestionsAndSetDefaults();
+    } else {
+      // Clear form state when dialog is closed
+      setIsSubmitting(false);
+      form.reset({ amount: 9, predictions: {} });
+    }
   }, [match, open, form]);
+
 
   async function handleSubmit(data: PredictionFormValues) {
     if (!user || !match) return;
@@ -212,7 +227,7 @@ function PredictionField({ question, match }: { question: Question, match: Match
     return (
         <div className="p-4 border rounded-lg space-y-3">
             <p className="text-center text-sm font-medium text-muted-foreground">{question.question}</p>
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
                 {/* Team A */}
                 <div className="flex flex-col items-center gap-2">
                     <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
