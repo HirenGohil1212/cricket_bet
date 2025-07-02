@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,7 +13,7 @@ import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 
 interface HomePageClientProps {
   children: React.ReactNode;
-  content: ContentSettings | null;
+  content?: ContentSettings | null;
 }
 
 const PROMO_VIDEO_SESSION_KEY = 'promoVideoShown';

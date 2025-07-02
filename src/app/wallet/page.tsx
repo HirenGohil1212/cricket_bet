@@ -6,11 +6,15 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransactionHistory } from "@/components/wallet/transaction-history";
 import { WithdrawFundsCard } from "@/components/wallet/withdraw-funds-card";
+import { getContent } from "@/app/actions/content.actions";
+import type { ContentSettings } from "@/lib/types";
 
 
-export default function WalletPage() {
+export default async function WalletPage() {
+    const content: ContentSettings | null = await getContent();
+
     return (
-        <HomePageClient>
+        <HomePageClient content={content}>
             <div className="space-y-8">
                 <Suspense fallback={<Skeleton className="h-[450px] w-full" />}>
                    <WalletActionsSection />
