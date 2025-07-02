@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import type { Match, Question } from '@/lib/types';
 import { Button } from '../ui/button';
@@ -21,6 +22,7 @@ interface ManageQnaDialogProps {
 
 export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQnaDialogProps) {
     const { toast } = useToast();
+    const router = useRouter();
     const [isSaving, setIsSaving] = React.useState(false);
     const [isSettling, setIsSettling] = React.useState(false);
     // State to hold the results for each question as an object
@@ -55,7 +57,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             toast({ variant: 'destructive', title: 'Save Failed', description: actionResult.error });
         } else {
             toast({ title: 'Success', description: actionResult.success });
-            onClose(true); // Refresh to get updated saved results
+            router.refresh();
+            onClose(false);
         }
         setIsSaving(false);
     };
@@ -68,7 +71,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             toast({ variant: 'destructive', title: 'Settlement Failed', description: actionResult.error });
         } else {
             toast({ title: 'Success', description: actionResult.success });
-            onClose(true); // Refresh data
+            router.refresh();
+            onClose(false);
         }
         setIsSettling(false);
     };
