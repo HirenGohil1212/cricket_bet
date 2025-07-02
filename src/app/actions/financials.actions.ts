@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
@@ -7,15 +8,17 @@ import { subDays, startOfDay, format } from 'date-fns';
 
 export async function getFinancialSummary() {
     try {
-        // Deposits
-        const depositsQuery = query(collection(db, 'deposits'), where('status', '==', 'Completed'));
-        const depositsSnapshot = await getDocs(depositsQuery);
-        const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+        // Deposits - Fetch all and filter in code to avoid needing an index
+        const depositsSnapshot = await getDocs(collection(db, 'deposits'));
+        const totalDeposits = depositsSnapshot.docs
+            .filter(doc => doc.data().status === 'Completed')
+            .reduce((sum, doc) => sum + doc.data().amount, 0);
 
-        // Withdrawals
-        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('status', '==', 'Completed'));
-        const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-        const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+        // Withdrawals - Fetch all and filter in code to avoid needing an index
+        const withdrawalsSnapshot = await getDocs(collection(db, 'withdrawals'));
+        const totalWithdrawals = withdrawalsSnapshot.docs
+            .filter(doc => doc.data().status === 'Completed')
+            .reduce((sum, doc) => sum + doc.data().amount, 0);
 
         // Bets
         const betsCol = collection(db, 'bets');
@@ -70,25 +73,29 @@ export async function getDailyFinancialActivity(days: number = 30): Promise<Dail
     try {
         const startTimestamp = Timestamp.fromDate(startOfDay(startDate));
 
-        // Deposits
-        const depositsQuery = query(collection(db, 'deposits'), where('status', '==', 'Completed'), where('updatedAt', '>=', startTimestamp));
+        // Deposits - Query by date range only, then filter by status in code to avoid composite index
+        const depositsQuery = query(collection(db, 'deposits'), where('updatedAt', '>=', startTimestamp));
         const depositsSnapshot = await getDocs(depositsQuery);
         depositsSnapshot.forEach(doc => {
             const data = doc.data();
-            const date = format((data.updatedAt as Timestamp).toDate(), 'yyyy-MM-dd');
-            if (activityMap.has(date)) {
-                activityMap.get(date)!.deposits += data.amount;
+            if (data.status === 'Completed') {
+                const date = format((data.updatedAt as Timestamp).toDate(), 'yyyy-MM-dd');
+                if (activityMap.has(date)) {
+                    activityMap.get(date)!.deposits += data.amount;
+                }
             }
         });
         
-        // Withdrawals
-        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('status', '==', 'Completed'), where('updatedAt', '>=', startTimestamp));
+        // Withdrawals - Query by date range only, then filter by status in code to avoid composite index
+        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('updatedAt', '>=', startTimestamp));
         const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
         withdrawalsSnapshot.forEach(doc => {
             const data = doc.data();
-            const date = format((data.updatedAt as Timestamp).toDate(), 'yyyy-MM-dd');
-            if (activityMap.has(date)) {
-                activityMap.get(date)!.withdrawals += data.amount;
+            if (data.status === 'Completed') {
+                const date = format((data.updatedAt as Timestamp).toDate(), 'yyyy-MM-dd');
+                if (activityMap.has(date)) {
+                    activityMap.get(date)!.withdrawals += data.amount;
+                }
             }
         });
 
