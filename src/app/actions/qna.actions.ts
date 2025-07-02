@@ -214,8 +214,8 @@ export async function settleMatchAndPayouts(matchId: string) {
                 const betResultRef = doc(db, 'bets', betDoc.id);
                 
                 // Robustness check for malformed bet data
-                if (!bet.userId || typeof bet.potentialWin !== 'number' || !Array.isArray(bet.predictions)) {
-                    console.warn(`Bet ${betDoc.id} is malformed. Marking as Lost.`);
+                if (!bet.userId || typeof bet.userId !== 'string' || bet.userId.trim().length === 0 || typeof bet.potentialWin !== 'number' || !Array.isArray(bet.predictions)) {
+                    console.warn(`Bet ${betDoc.id} is malformed or has invalid userId. Marking as Lost.`);
                     transaction.update(betResultRef, { status: 'Lost' });
                     return; // Skip to next bet
                 }
@@ -252,12 +252,14 @@ export async function settleMatchAndPayouts(matchId: string) {
 
             // 2. Update user wallets
             for (const userId in userWalletUpdates) {
-                const userRef = doc(db, 'users', userId);
-                const userDoc = await transaction.get(userRef);
-                if (userDoc.exists()) {
-                    const currentBalance = userDoc.data().walletBalance || 0;
-                    const newBalance = currentBalance + userWalletUpdates[userId];
-                    transaction.update(userRef, { walletBalance: newBalance });
+                if (userId && typeof userId === 'string') { // Final guard
+                    const userRef = doc(db, 'users', userId);
+                    const userDoc = await transaction.get(userRef);
+                    if (userDoc.exists()) {
+                        const currentBalance = userDoc.data().walletBalance || 0;
+                        const newBalance = currentBalance + userWalletUpdates[userId];
+                        transaction.update(userRef, { walletBalance: newBalance });
+                    }
                 }
             }
 
