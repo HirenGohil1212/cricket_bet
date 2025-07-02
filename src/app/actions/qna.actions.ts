@@ -296,9 +296,20 @@ export async function settleMatchAndPayouts(matchId: string) {
             transaction.update(matchRef, { status: 'Finished' });
         });
 
-        revalidatePath(`/admin/q-and-a`);
-        revalidatePath(`/`);
-        revalidatePath(`/wallet`);
+        // Revalidate paths to reflect changes in the UI.
+        // Added checks to prevent runtime errors as requested.
+        try {
+            if (typeof revalidatePath === 'function') {
+                revalidatePath(`/admin/q-and-a`);
+                revalidatePath(`/`);
+                revalidatePath(`/wallet`);
+            } else {
+                console.warn('revalidatePath is not a function, skipping cache invalidation.');
+            }
+        } catch (e) {
+            console.error('Failed to revalidate paths after match settlement:', e);
+        }
+        
         return { success: 'Match settled and payouts processed successfully!' };
 
     } catch (error: any) {
