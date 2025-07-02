@@ -28,8 +28,7 @@ export function BonusHistoryTable() {
       const q = query(
           transCol,
           where('userId', '==', user.uid),
-          where('type', '==', 'referral_bonus'),
-          orderBy('timestamp', 'desc')
+          where('type', '==', 'referral_bonus')
       );
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -41,6 +40,9 @@ export function BonusHistoryTable() {
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
             } as Transaction;
         });
+        
+        // Sort on the client-side to avoid needing a composite index
+        userTransactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
         setTransactions(userTransactions);
         setIsLoading(false);
