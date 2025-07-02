@@ -1,14 +1,40 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { WhatsAppSupportButton } from "@/components/whatsapp-support-button";
 import { useRequireAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ContentSettings } from "@/lib/types";
+import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 
-export function HomePageClient({ children }: { children: React.ReactNode }) {
+interface HomePageClientProps {
+  children: React.ReactNode;
+  content: ContentSettings | null;
+}
+
+const PROMO_VIDEO_SESSION_KEY = 'promoVideoShown';
+
+export function HomePageClient({ children, content }: HomePageClientProps) {
   const { user, loading } = useRequireAuth();
+  const [isPromoOpen, setIsPromoOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user && content?.youtubeUrl) {
+      try {
+        const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
+        if (!hasBeenShown) {
+          setIsPromoOpen(true);
+          sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
+        }
+      } catch (error) {
+        console.error("Session storage is not available.", error);
+        // Fallback or do nothing if sessionStorage is blocked
+      }
+    }
+  }, [user, loading, content]);
 
   if (loading || !user) {
     return (
@@ -63,6 +89,13 @@ export function HomePageClient({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <WhatsAppSupportButton />
+        {content?.youtubeUrl && (
+            <PromotionalVideoDialog 
+                youtubeUrl={content.youtubeUrl}
+                isOpen={isPromoOpen}
+                onOpenChange={setIsPromoOpen}
+            />
+        )}
       </SidebarInset>
     </SidebarProvider>
   );
