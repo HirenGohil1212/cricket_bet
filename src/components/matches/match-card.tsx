@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -103,10 +104,10 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
       )}
 
       {status === 'Finished' && (
-        <CardFooter className="p-0 border-t">
+        <CardFooter className="p-4 pt-2 pb-2 border-t">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="winners" className="border-b-0">
-              <AccordionTrigger className="py-3 px-4 text-sm hover:no-underline [&[data-state=open]]:bg-muted/50">
+              <AccordionTrigger className="py-1 text-sm hover:no-underline [&[data-state=open]]:bg-transparent">
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-amber-500" />
                   <span>
@@ -114,7 +115,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
                   </span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pb-3 px-4">
+              <AccordionContent className="pt-2 pb-0">
                 {winners && winners.length > 0 ? (
                   <ScrollArea className="h-32">
                     <div className="space-y-2 pr-4">
