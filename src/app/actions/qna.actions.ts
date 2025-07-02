@@ -226,13 +226,25 @@ export async function settleMatchAndPayouts(matchId: string) {
                     continue; // Skip to next bet
                 }
 
+                // A bet is only eligible to win if the number of predictions matches the number of active questions.
+                if (betData.predictions.length !== activeQuestions.length) {
+                    transaction.update(betRef, { status: 'Lost', reason: 'Prediction count mismatch.' });
+                    continue;
+                }
+
                 let isWinner = true;
                 for (const prediction of betData.predictions) {
                     const correctResult = resultsMap[prediction.questionId];
                     const userAnswer = prediction.predictedAnswer;
                     
+                    // If a prediction is for a question that isn't active/settled, the bet loses.
+                    if (!correctResult) {
+                        isWinner = false;
+                        break;
+                    }
+
                     let predictionIsCorrect = false;
-                    if (correctResult && userAnswer && userAnswer.teamA != null && userAnswer.teamB != null) {
+                    if (userAnswer && userAnswer.teamA != null && userAnswer.teamB != null) {
                         const teamA_match = String(userAnswer.teamA).trim().toLowerCase() === String(correctResult.teamA).trim().toLowerCase();
                         const teamB_match = String(userAnswer.teamB).trim().toLowerCase() === String(correctResult.teamB).trim().toLowerCase();
                         if (teamA_match && teamB_match) {
