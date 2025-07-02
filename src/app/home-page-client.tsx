@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
@@ -22,28 +22,33 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   const { user, loading } = useRequireAuth();
   const [isPromoOpen, setIsPromoOpen] = useState(false);
   
-  // Use a ref to track the previous auth state to detect the login event.
-  const prevUserRef = useRef(user);
+  // This state tracks if we've already run the check after the initial auth loading.
+  const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
 
   useEffect(() => {
-    // The key condition: The user was previously not logged in, but now they are.
-    const justLoggedIn = !prevUserRef.current && user;
+    // We only want to run this logic *once* after the initial authentication check is done.
+    if (!loading && !initialAuthCheckComplete) {
+      // Mark that the check has been performed to prevent re-triggering on subsequent re-renders.
+      setInitialAuthCheckComplete(true);
 
-    if (justLoggedIn && content?.youtubeUrl) {
-      try {
-        const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
-        if (!hasBeenShown) {
-          setIsPromoOpen(true);
-          sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
+      // If the auth check is complete, we have a user, and there's a video URL...
+      if (user && content?.youtubeUrl) {
+        try {
+          // Check if the video has already been shown in this session.
+          const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
+          if (!hasBeenShown) {
+            setIsPromoOpen(true);
+            // Mark it as shown for this session.
+            sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
+          }
+        } catch (error) {
+          // sessionStorage may not be available in all environments (e.g., SSR-like scenarios)
+          console.error("Session storage is not available.", error);
         }
-      } catch (error) {
-        console.error("Session storage is not available.", error);
       }
     }
+  }, [loading, initialAuthCheckComplete, user, content]);
 
-    // Update the ref for the next render cycle.
-    prevUserRef.current = user;
-  }, [user, content]);
 
   if (loading || !user) {
     return (
