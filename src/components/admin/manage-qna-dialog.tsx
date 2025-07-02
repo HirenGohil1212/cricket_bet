@@ -34,9 +34,11 @@ const createResultsSchema = (questions: Question[]) => {
         }
         return acc;
     }, {} as Record<string, z.ZodObject<{ teamA: z.ZodString, teamB: z.ZodString }>>);
-    return z.object(schemaObject);
-};
 
+    return z.object({
+        results: z.object(schemaObject),
+    });
+};
 
 export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQnaDialogProps) {
     const { toast } = useToast();
@@ -46,17 +48,17 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     type ResultsFormValues = z.infer<typeof resultsSchema>;
 
     const defaultValues = React.useMemo(() => {
-        const acc: Record<string, { teamA: string; teamB: string; }> = {};
+        const results: Record<string, { teamA: string; teamB: string; }> = {};
         questions.forEach(q => {
             if (q.status !== 'settled') {
                 // For unsettled questions, result is null, but we can default to empty strings.
-                acc[q.id] = {
+                results[q.id] = {
                     teamA: q.result?.teamA || '',
                     teamB: q.result?.teamB || '',
                 };
             }
         });
-        return acc as ResultsFormValues;
+        return { results } as ResultsFormValues;
     }, [questions]);
 
     const form = useForm<ResultsFormValues>({
@@ -70,7 +72,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     
     const handleSubmit = async (data: ResultsFormValues) => {
         setIsSubmitting(true);
-        const result = await settleMatchAndPayouts(match.id, data);
+        const result = await settleMatchAndPayouts(match.id, data.results);
         if (result.error) {
             toast({ variant: 'destructive', title: 'Settlement Failed', description: result.error });
         } else {
@@ -146,7 +148,7 @@ function ResultField({ question, match }: { question: Question, match: Match }) 
                  <div className="grid grid-cols-2 items-start gap-4">
                     <FormField
                         control={control}
-                        name={`${question.id}.teamA`}
+                        name={`results.${question.id}.teamA`}
                         render={({ field }) => (
                             <FormItem>
                                <FormLabel className="font-medium text-center block">{match.teamA.name}</FormLabel>
@@ -157,7 +159,7 @@ function ResultField({ question, match }: { question: Question, match: Match }) 
                     />
                      <FormField
                         control={control}
-                        name={`${question.id}.teamB`}
+                        name={`results.${question.id}.teamB`}
                         render={({ field }) => (
                             <FormItem>
                                <FormLabel className="font-medium text-center block">{match.teamB.name}</FormLabel>
