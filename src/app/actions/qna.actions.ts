@@ -182,7 +182,6 @@ export async function settleMatchAndPayouts(matchId: string) {
     const questionsRef = collection(db, `matches/${matchId}/questions`);
 
     try {
-        // Pre-transaction check: ensure all active questions have results before starting.
         const allQuestionsSnapshot = await getDocs(questionsRef);
         const questionsWithData = allQuestionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<Question, 'id' | 'createdAt'>, createdAt: (doc.data().createdAt as Timestamp).toDate().toISOString() }));
         
@@ -190,11 +189,12 @@ export async function settleMatchAndPayouts(matchId: string) {
         if (activeQuestions.length === 0) {
             return { error: 'No active questions to settle for this match.' };
         }
-        if (activeQuestions.some(q => !q.result || !q.result.teamA.trim() || !q.result.teamB.trim())) {
+        
+        const activeQuestionsHaveResults = activeQuestions.every(q => q.result && q.result.teamA.trim() && q.result.teamB.trim());
+        if (!activeQuestionsHaveResults) {
             return { error: 'Cannot settle match. Not all active questions have saved results.' };
         }
         
-        // Convert results to a map for easy lookup inside the transaction
         const resultsMap: Record<string, { teamA: string, teamB: string }> = {};
         questionsWithData.forEach(q => {
             if (q.result) {
@@ -211,23 +211,39 @@ export async function settleMatchAndPayouts(matchId: string) {
             // 1. Determine bet outcomes
             pendingBetsSnapshot.forEach(betDoc => {
                 const bet = betDoc.data();
-                let isWinner = true; // A bet is only won if ALL predictions are correct
+                const betResultRef = doc(db, 'bets', betDoc.id);
                 
-                for (const prediction of bet.predictions) {
-                    const winningResult = resultsMap[prediction.questionId];
-                    if (!winningResult || 
-                        prediction.predictedAnswer.teamA.trim().toLowerCase() !== winningResult.teamA.trim().toLowerCase() ||
-                        prediction.predictedAnswer.teamB.trim().toLowerCase() !== winningResult.teamB.trim().toLowerCase()
-                    ) {
-                        isWinner = false;
-                        break;
+                // Robustness check for malformed bet data
+                if (!bet.userId || typeof bet.potentialWin !== 'number' || !Array.isArray(bet.predictions)) {
+                    console.warn(`Bet ${betDoc.id} is malformed. Marking as Lost.`);
+                    transaction.update(betResultRef, { status: 'Lost' });
+                    return; // Skip to next bet
+                }
+
+                let isWinner = true;
+                if (bet.predictions.length === 0) {
+                    isWinner = false;
+                } else {
+                    for (const prediction of bet.predictions) {
+                        const winningResult = resultsMap[prediction.questionId];
+                        
+                        // A prediction is wrong if:
+                        // - The question no longer exists (winningResult is falsy)
+                        // - The user didn't provide an answer (predictedAnswer is falsy)
+                        // - The user's answer doesn't match the result
+                        if (!winningResult || 
+                            !prediction.predictedAnswer ||
+                            prediction.predictedAnswer.teamA.trim().toLowerCase() !== winningResult.teamA.trim().toLowerCase() ||
+                            prediction.predictedAnswer.teamB.trim().toLowerCase() !== winningResult.teamB.trim().toLowerCase()
+                        ) {
+                            isWinner = false;
+                            break;
+                        }
                     }
                 }
                 
-                const betResultRef = doc(db, 'bets', betDoc.id);
                 if (isWinner) {
                     transaction.update(betResultRef, { status: 'Won' });
-                    // Aggregate winnings per user
                     userWalletUpdates[bet.userId] = (userWalletUpdates[bet.userId] || 0) + bet.potentialWin;
                 } else {
                     transaction.update(betResultRef, { status: 'Lost' });
@@ -246,12 +262,9 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
 
             // 3. Update question statuses to 'settled'
-            for (const questionId in resultsMap) {
-                const question = questionsWithData.find(q => q.id === questionId);
-                if (question && question.status === 'active') {
-                    const questionRef = doc(questionsRef, questionId);
-                    transaction.update(questionRef, { status: 'settled' });
-                }
+            for (const question of activeQuestions) {
+                 const questionRef = doc(questionsRef, question.id);
+                 transaction.update(questionRef, { status: 'settled' });
             }
 
             // 4. Update match status
