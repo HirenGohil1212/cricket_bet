@@ -8,14 +8,14 @@ export default async function QandAPage() {
     const templates = await getQuestionTemplates();
     
     return (
-        <Card>
+        <Card className="flex h-full flex-col">
             <CardHeader>
                 <CardTitle>Match Questions & Answers</CardTitle>
                 <CardDescription>
                     Manage question templates for each sport, apply them to upcoming matches, and set results after a match is complete.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 overflow-y-auto">
                 <QandADashboard matches={matches} initialTemplates={templates} />
             </CardContent>
         </Card>
