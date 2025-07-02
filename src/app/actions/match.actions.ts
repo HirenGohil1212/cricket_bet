@@ -1,6 +1,6 @@
 'use server';
 
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Match } from '@/lib/types';
@@ -35,7 +35,8 @@ export async function createMatch(values: MatchFormValues) {
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
-        await addDoc(collection(db, "matches"), {
+        // Create the match document
+        const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
             teamA: { name: teamAName, logoUrl: teamALogo || teamAFlagUrl, countryCode: teamACountry },
             teamB: { name: teamBName, logoUrl: teamBLogo || teamBFlagUrl, countryCode: teamBCountry },
@@ -45,9 +46,37 @@ export async function createMatch(values: MatchFormValues) {
             winner: '',
         });
 
+        // Now, check for a question template and apply it
+        const templateRef = doc(db, 'questionTemplates', sport);
+        const templateSnap = await getDoc(templateRef);
+
+        if (templateSnap.exists()) {
+            const templateData = templateSnap.data();
+            const questions = templateData.questions;
+
+            if (questions && Array.isArray(questions) && questions.length > 0) {
+                const batch = writeBatch(db);
+                const questionsCollectionRef = collection(db, `matches/${newMatchRef.id}/questions`);
+                
+                questions.forEach((q: any) => {
+                    const questionRef = doc(questionsCollectionRef);
+                    const optionsWithOdds = q.options.map((opt: any) => ({ ...opt, odds: 2.0 }));
+                    batch.set(questionRef, {
+                        question: q.question,
+                        options: optionsWithOdds,
+                        createdAt: Timestamp.now(),
+                        status: 'active',
+                        result: null,
+                    });
+                });
+                await batch.commit();
+            }
+        }
+
         revalidatePath('/admin/matches');
+        revalidatePath('/admin/q-and-a');
         revalidatePath('/');
-        return { success: 'Match created successfully!' };
+        return { success: 'Match created successfully and questions applied!' };
     } catch (error) {
         console.error("Error creating match: ", error);
         return { error: 'Failed to create match.' };
