@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PromotionalVideoDialogProps {
   youtubeUrl: string;
@@ -44,7 +44,10 @@ export function PromotionalVideoDialog({ youtubeUrl, isOpen, onOpenChange }: Pro
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
+      <DialogContent className="sm:max-w-3xl p-0 gap-0 overflow-hidden border-0 bg-transparent shadow-none">
+        <DialogHeader className="sr-only">
+            <DialogTitle>Promotional Video</DialogTitle>
+        </DialogHeader>
         <div className="aspect-video">
           <iframe
             width="100%"
