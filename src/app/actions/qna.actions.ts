@@ -10,6 +10,7 @@ import {
     Timestamp,
     where,
     runTransaction,
+    updateDoc,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -172,17 +173,16 @@ export async function saveQuestionResults(matchId: string, results: Record<strin
 }
 
 
-// ** COMPLETELY REWRITTEN FUNCTION **
-// Settles a match and processes payouts in a robust, crash-proof manner.
+// ** COMPLETELY REWRITTEN & ROBUST FUNCTION **
+// Settles a match and processes payouts in a crash-proof manner.
 export async function settleMatchAndPayouts(matchId: string) {
     if (!matchId) return { error: 'Match ID is required.' };
 
     const matchRef = doc(db, 'matches', matchId);
-    const betsRef = collection(db, 'bets');
     const questionsRef = collection(db, `matches/${matchId}/questions`);
 
     try {
-        // STEP 1: Pre-fetch question results outside the transaction.
+        // STEP 1: Pre-fetch all necessary data.
         const allQuestionsSnapshot = await getDocs(questionsRef);
         const questionsWithData = allQuestionsSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -190,20 +190,25 @@ export async function settleMatchAndPayouts(matchId: string) {
         })) as (Question & { id: string })[];
         
         const activeQuestions = questionsWithData.filter(q => q.status === 'active');
+
+        // If there are no active questions to settle, just mark the match as finished.
         if (activeQuestions.length === 0) {
-            return { error: 'No active questions to settle for this match.' };
+            await updateDoc(matchRef, { status: 'Finished' });
+            return { success: 'Match has no active questions and has been marked as Finished.' };
         }
         
+        // Ensure every active question has a valid result object before proceeding.
         const activeQuestionsHaveResults = activeQuestions.every(q =>
             q.result && 
-            (typeof q.result.teamA === 'string' && q.result.teamA.trim() !== '') &&
-            (typeof q.result.teamB === 'string' && q.result.teamB.trim() !== '')
+            (typeof q.result.teamA === 'string') &&
+            (typeof q.result.teamB === 'string')
         );
 
         if (!activeQuestionsHaveResults) {
             return { error: 'Cannot settle match. Not all active questions have saved results for both teams.' };
         }
         
+        // Create a simple map of question IDs to results for easy lookup.
         const resultsMap: Record<string, { teamA: string, teamB: string }> = {};
         activeQuestions.forEach(q => {
             if (q.result) {
@@ -211,57 +216,60 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
         });
 
-        // STEP 2: Run the main settlement logic in a transaction.
+        // STEP 2: Use a transaction to process all pending bets atomically.
         await runTransaction(db, async (transaction) => {
+            const betsRef = collection(db, 'bets');
             const pendingBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
             const pendingBetsSnapshot = await transaction.get(pendingBetsQuery);
             
-            // Loop through each bet and process it one by one. This is crash-proof.
             for (const betDoc of pendingBetsSnapshot.docs) {
                 const betData = betDoc.data();
                 const betRef = doc(db, 'bets', betDoc.id);
 
-                if (!betData.predictions || !Array.isArray(betData.predictions) || betData.predictions.length === 0) {
-                    transaction.update(betRef, { status: 'Lost', reason: 'No predictions found' });
-                    continue; // Skip to next bet
+                // --- AGGRESSIVE VALIDATION to prevent any crashes ---
+                if (!betData || !betData.userId || typeof betData.userId !== 'string' || !betData.predictions || !Array.isArray(betData.predictions)) {
+                    transaction.update(betRef, { status: 'Lost', reason: 'Corrupted bet data.' });
+                    continue; // Skip this corrupted bet
                 }
-
-                // A bet is only eligible to win if the number of predictions matches the number of active questions.
+                
+                // A bet can only win if the number of predictions matches the number of active questions.
                 if (betData.predictions.length !== activeQuestions.length) {
                     transaction.update(betRef, { status: 'Lost', reason: 'Prediction count mismatch.' });
                     continue;
                 }
 
+                // --- COMPARISON LOGIC ---
                 let isWinner = true;
                 for (const prediction of betData.predictions) {
+                    // Validate each prediction object.
+                    if (!prediction || typeof prediction.questionId !== 'string' || !prediction.predictedAnswer) {
+                        isWinner = false;
+                        break;
+                    }
+
                     const correctResult = resultsMap[prediction.questionId];
                     const userAnswer = prediction.predictedAnswer;
-                    
-                    // If a prediction is for a question that isn't active/settled, the bet loses.
-                    if (!correctResult) {
+
+                    // If a prediction is for a question that isn't active/settled, or the answer format is wrong, the bet loses.
+                    if (!correctResult || typeof userAnswer.teamA !== 'string' || typeof userAnswer.teamB !== 'string') {
                         isWinner = false;
                         break;
                     }
 
-                    let predictionIsCorrect = false;
-                    if (userAnswer && userAnswer.teamA != null && userAnswer.teamB != null) {
-                        const teamA_match = String(userAnswer.teamA).trim().toLowerCase() === String(correctResult.teamA).trim().toLowerCase();
-                        const teamB_match = String(userAnswer.teamB).trim().toLowerCase() === String(correctResult.teamB).trim().toLowerCase();
-                        if (teamA_match && teamB_match) {
-                            predictionIsCorrect = true;
-                        }
-                    }
+                    const teamA_match = userAnswer.teamA.trim().toLowerCase() === correctResult.teamA.trim().toLowerCase();
+                    const teamB_match = userAnswer.teamB.trim().toLowerCase() === correctResult.teamB.trim().toLowerCase();
 
-                    if (!predictionIsCorrect) {
+                    if (!teamA_match || !teamB_match) {
                         isWinner = false;
-                        break;
+                        break; // One incorrect prediction is enough to lose.
                     }
                 }
 
+                // --- PAYOUT or LOSS LOGIC ---
                 if (isWinner) {
-                    // Final check before payout. If userId is invalid, the bet is lost.
-                    if (typeof betData.userId === 'string' && betData.userId.length > 0 && typeof betData.potentialWin === 'number' && betData.potentialWin > 0) {
-                        const userRef = doc(db, 'users', betData.userId);
+                    // Final validation of user and payout amount before updating balance.
+                    if (typeof betData.potentialWin === 'number' && betData.potentialWin > 0) {
+                        const userRef = doc(db, 'users', betData.userId); // This is now safe due to the aggressive validation above.
                         const userDoc = await transaction.get(userRef);
 
                         if (userDoc.exists()) {
@@ -273,30 +281,28 @@ export async function settleMatchAndPayouts(matchId: string) {
                             transaction.update(betRef, { status: 'Lost', reason: 'User not found for payout' });
                         }
                     } else {
-                        transaction.update(betRef, { status: 'Lost', reason: 'Invalid bet data for payout' });
+                        transaction.update(betRef, { status: 'Lost', reason: 'Invalid potential win amount' });
                     }
                 } else {
                     transaction.update(betRef, { status: 'Lost' });
                 }
             } // End of for...of loop for bets
 
-            // STEP 3: After processing all bets, update questions and match status.
+            // STEP 3: After processing all bets, update all active questions to 'settled' and the match to 'Finished'.
             for (const question of activeQuestions) {
-                const questionRef = doc(questionsRef, question.id);
+                const questionRef = doc(db, `matches/${matchId}/questions/${question.id}`);
                 transaction.update(questionRef, { status: 'settled' });
             }
             transaction.update(matchRef, { status: 'Finished' });
         });
 
         revalidatePath(`/admin/q-and-a`);
+        revalidatePath(`/`);
+        revalidatePath(`/wallet`);
         return { success: 'Match settled and payouts processed successfully!' };
 
     } catch (error: any) {
         console.error("Error settling match:", error);
-        let detailedError = 'Failed to settle match. An unknown error occurred inside the transaction.';
-        if (error.message) {
-            detailedError = error.message;
-        }
-        return { error: detailedError };
+        return { error: error.message || 'Failed to settle match. An unknown error occurred.' };
     }
 }
