@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -47,11 +48,10 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     const resultsSchema = React.useMemo(() => createResultsSchema(questions), [questions]);
     type ResultsFormValues = z.infer<typeof resultsSchema>;
 
-    const formValues = React.useMemo(() => {
+    const dynamicValues = React.useMemo(() => {
         const results: Record<string, { teamA: string; teamB: string; }> = {};
         questions.forEach(q => {
             if (q.status !== 'settled') {
-                // For unsettled questions, result is null, but we can default to empty strings.
                 results[q.id] = {
                     teamA: q.result?.teamA || '',
                     teamB: q.result?.teamB || '',
@@ -63,7 +63,11 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
 
     const form = useForm<ResultsFormValues>({
         resolver: zodResolver(resultsSchema),
-        values: formValues, // Use `values` to handle dynamic data
+        // Using both defaultValues and values ensures the form is initialized
+        // correctly on the first render and stays synchronized on subsequent renders.
+        // This is the key to fixing the race condition.
+        defaultValues: dynamicValues,
+        values: dynamicValues,
     });
     
     const handleSubmit = async (data: ResultsFormValues) => {
