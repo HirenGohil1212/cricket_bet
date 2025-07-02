@@ -25,8 +25,7 @@ export type Match = {
 export type Prediction = {
   questionId: string;
   questionText: string;
-  predictionA: string;
-  predictionB: string;
+  predictedOption: string;
 };
 
 export type Bet = {
@@ -110,5 +109,5 @@ export type Question = {
   options: QnaOption[];
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
-  result: { resultA: string; resultB: string } | null;
+  result: string | null; // Changed to store the winning option's text
 };

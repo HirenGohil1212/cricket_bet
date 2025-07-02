@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -39,7 +38,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [predictions, setPredictions] = useState<Record<string, { A: string; B: string }>>({});
+  const [predictions, setPredictions] = useState<Record<string, string>>({});
   const [amount, setAmount] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -59,28 +58,20 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         setIsLoading(true);
 
         const fetchedQuestions = await getQuestionsForMatch(match.id);
-        const validQuestions = fetchedQuestions.filter(q => q.options && q.options.length === 2);
+        const validQuestions = fetchedQuestions.filter(q => q.options && q.options.length === 2 && q.options.every(opt => opt.text));
         setQuestions(validQuestions);
         
         const userBets = await getUserBets(user.uid);
         const matchBets = userBets.filter(b => b.matchId === match.id);
 
-        const initialPredictions: Record<string, { A: string; B: string }> = {};
+        const initialPredictions: Record<string, string> = {};
         
-        // Pre-fill from the latest bet if it exists
         if (matchBets.length > 0) {
             const latestBet = matchBets[0]; // Already sorted by date desc
             latestBet.predictions.forEach(p => {
-                initialPredictions[p.questionId] = { A: p.predictionA, B: p.predictionB };
+                initialPredictions[p.questionId] = p.predictedOption;
             });
         }
-        
-        // Ensure all current valid questions have an entry in the predictions state
-        validQuestions.forEach(q => {
-            if (!initialPredictions[q.id]) {
-                initialPredictions[q.id] = { A: '', B: '' };
-            }
-        });
         
         setPredictions(initialPredictions);
         setIsLoading(false);
@@ -89,25 +80,18 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     fetchAllData();
   }, [match, open, user]);
 
-  const handlePredictionChange = (questionId: string, side: 'A' | 'B', value: string) => {
+  const handlePredictionChange = (questionId: string, value: string) => {
     setPredictions(prev => ({
       ...prev,
-      [questionId]: {
-        ...(prev[questionId] || { A: '', B: '' }),
-        [side]: value,
-      }
+      [questionId]: value,
     }));
   };
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (questions.length > 0) {
-      for (const q of questions) {
-        const p = predictions[q.id];
-        if (!p || !p.A || p.A.trim() === '' || !p.B || p.B.trim() === '') {
-          newErrors.predictions = 'Please provide predictions for all questions.';
-          break;
-        }
+      if (Object.keys(predictions).length !== questions.length) {
+         newErrors.predictions = 'Please provide predictions for all questions.';
       }
     }
     if (!amount) {
@@ -126,8 +110,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     const predictionsPayload: Prediction[] = questions.map(q => ({
         questionId: q.id,
         questionText: q.question,
-        predictionA: predictions[q.id].A,
-        predictionB: predictions[q.id].B,
+        predictedOption: predictions[q.id],
     }));
 
     setIsSubmitting(true);
@@ -153,11 +136,11 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Place Your Bet on {match.teamA.name} vs {match.teamB.name}</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
           <DialogDescription>
-            Answer all the questions below to place your bet. Your previous answers are pre-filled.
+             Predict the outcome for all questions for {match.teamA.name} vs {match.teamB.name}.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -171,40 +154,24 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     questions.map((q) => (
                       <div key={q.id} className="p-4 border rounded-lg">
                         <p className="text-center text-sm font-medium text-muted-foreground mb-4">{q.question}</p>
-                        <div className="flex justify-between items-start text-center gap-4">
-                            <div className="flex-1 flex flex-col items-center gap-2">
-                                <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
-                                <p className="font-semibold text-sm leading-tight">{match.teamA.name}</p>
-                                <Input
-                                  value={predictions[q.id]?.A || ''}
-                                  onChange={(e) => handlePredictionChange(q.id, 'A', e.target.value)}
-                                  placeholder={q.options[0].text}
-                                  className="text-center"
-                                  disabled={isSubmitting}
-                                />
-                            </div>
-                            
-                            <div className="flex h-full items-center pt-16">
-                                <span className="text-sm font-bold text-muted-foreground">vs</span>
-                            </div>
-                    
-                            <div className="flex-1 flex flex-col items-center gap-2">
-                                <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
-                                <p className="font-semibold text-sm leading-tight">{match.teamB.name}</p>
-                                <Input
-                                  value={predictions[q.id]?.B || ''}
-                                  onChange={(e) => handlePredictionChange(q.id, 'B', e.target.value)}
-                                  placeholder={q.options[1].text}
-                                  className="text-center"
-                                  disabled={isSubmitting}
-                                />
-                            </div>
-                        </div>
+                        <RadioGroup
+                          onValueChange={(value) => handlePredictionChange(q.id, value)}
+                          defaultValue={predictions[q.id]}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                            {q.options.map((option, index) => (
+                                 <Label key={index} htmlFor={`${q.id}-${index}`} className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center">
+                                    <RadioGroupItem value={option.text} id={`${q.id}-${index}`} className="sr-only peer" />
+                                    <span className="font-semibold text-sm leading-tight">{option.text}</span>
+                                 </Label>
+                            ))}
+                        </RadioGroup>
                       </div>
                     ))
                   ) : (
                     <div className="text-center text-muted-foreground py-12">
                       <p>No questions available for this match yet.</p>
+                      <p className="text-sm">Betting options will appear once the admin sets them.</p>
                     </div>
                   )}
                 </div>
@@ -236,7 +203,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading}>
+              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
                 {isSubmitting ? "Placing Bet..." : "Place Bet"}
               </Button>
             </DialogFooter>

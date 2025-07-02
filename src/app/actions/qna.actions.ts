@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -182,7 +181,7 @@ export async function setQuestionOptions(matchId: string, options: Record<string
 
 
 // Function to set the results for questions, settle bets, and pay out winnings
-export async function settleMatchAndPayouts(matchId: string, results: Record<string, { resultA: string, resultB: string }>) {
+export async function settleMatchAndPayouts(matchId: string, results: Record<string, string>) {
     if (!matchId) return { error: 'Match ID is required.' };
     if (Object.keys(results).length === 0) return { error: 'No results provided.' };
     
@@ -200,14 +199,11 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
             // 1. Determine bet outcomes
             pendingBetsSnapshot.forEach(betDoc => {
                 const bet = betDoc.data();
-                let isWinner = true;
+                let isWinner = true; // A bet is only won if ALL predictions are correct
                 
                 for (const prediction of bet.predictions) {
-                    const officialResult = results[prediction.questionId];
-                    if (!officialResult || 
-                        prediction.predictionA.toLowerCase().trim() !== officialResult.resultA.toLowerCase().trim() ||
-                        prediction.predictionB.toLowerCase().trim() !== officialResult.resultB.toLowerCase().trim()
-                    ) {
+                    const winningOptionText = results[prediction.questionId];
+                    if (!winningOptionText || prediction.predictedOption.toLowerCase().trim() !== winningOptionText.toLowerCase().trim()) {
                         isWinner = false;
                         break;
                     }
@@ -238,7 +234,7 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
             for (const questionId in results) {
                 const questionRef = doc(questionsRef, questionId);
                 transaction.update(questionRef, {
-                    result: results[questionId],
+                    result: results[questionId], // Store the winning option text
                     status: 'settled',
                 });
             }

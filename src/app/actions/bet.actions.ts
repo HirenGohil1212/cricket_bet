@@ -1,4 +1,3 @@
-
 'use server';
 
 import { 
@@ -96,17 +95,6 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
         const betList = betSnapshot.docs.map(doc => {
             const data = doc.data();
             
-            const predictions = data.predictions || [];
-            // Handle old bet format for backwards compatibility
-            if (data.questionId && !data.predictions) {
-                predictions.push({
-                    questionId: data.questionId,
-                    questionText: data.questionText,
-                    predictionA: data.predictionA,
-                    predictionB: data.predictionB,
-                });
-            }
-
             return {
                 id: doc.id,
                 userId: data.userId,
@@ -116,7 +104,7 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
                 status: data.status,
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
                 potentialWin: data.potentialWin,
-                predictions: predictions,
+                predictions: data.predictions || [],
             } as Bet;
         });
 

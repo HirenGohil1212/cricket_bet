@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -113,7 +112,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                                     <li key={index} className="text-xs border-l-2 pl-2 border-muted">
                                       <div className="text-muted-foreground">{p.questionText}</div>
                                       <div className="font-medium">
-                                          <span className="text-primary">{p.predictionA}</span> vs <span className="text-primary">{p.predictionB}</span>
+                                          Your answer: <span className="text-primary">{p.predictedOption}</span>
                                       </div>
                                     </li>
                                   ))}
