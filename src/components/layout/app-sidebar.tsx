@@ -38,6 +38,12 @@ export function AppSidebar() {
   const handleLogout = async () => {
       try {
           await signOut(auth);
+           // Clear the session storage key so the promo can be shown on next login.
+          try {
+            sessionStorage.removeItem('promoVideoShown');
+          } catch (error) {
+             console.error("Session storage is not available for cleanup.", error);
+          }
           toast({
               title: "Logged Out",
               description: "You have been successfully logged out.",

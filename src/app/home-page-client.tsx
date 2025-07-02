@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
@@ -21,9 +21,15 @@ const PROMO_VIDEO_SESSION_KEY = 'promoVideoShown';
 export function HomePageClient({ children, content }: HomePageClientProps) {
   const { user, loading } = useRequireAuth();
   const [isPromoOpen, setIsPromoOpen] = useState(false);
+  
+  // Use a ref to track the previous auth state to detect the login event.
+  const prevUserRef = useRef(user);
 
   useEffect(() => {
-    if (!loading && user && content?.youtubeUrl) {
+    // The key condition: The user was previously not logged in, but now they are.
+    const justLoggedIn = !prevUserRef.current && user;
+
+    if (justLoggedIn && content?.youtubeUrl) {
       try {
         const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
         if (!hasBeenShown) {
@@ -32,10 +38,12 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
         }
       } catch (error) {
         console.error("Session storage is not available.", error);
-        // Fallback or do nothing if sessionStorage is blocked
       }
     }
-  }, [user, loading, content]);
+
+    // Update the ref for the next render cycle.
+    prevUserRef.current = user;
+  }, [user, content]);
 
   if (loading || !user) {
     return (
