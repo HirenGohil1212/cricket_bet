@@ -7,7 +7,8 @@ import { getQuestionsForMatch } from '@/app/actions/qna.actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SetResultsDialog } from './set-results-dialog';
+import { SetOptionsDialog } from './set-options-dialog';
+import { SettleMatchDialog } from './settle-match-dialog';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
 interface MatchQnaCardProps {
@@ -17,7 +18,8 @@ interface MatchQnaCardProps {
 export function MatchQnaCard({ match }: MatchQnaCardProps) {
     const [questions, setQuestions] = React.useState<Question[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
-    const [isResultsDialogOpen, setIsResultsDialogOpen] = React.useState(false);
+    const [isOptionsDialogOpen, setIsOptionsDialogOpen] = React.useState(false);
+    const [isSettleDialogOpen, setIsSettleDialogOpen] = React.useState(false);
 
     const fetchAndSetQuestions = React.useCallback(() => {
         setIsLoading(true);
@@ -32,7 +34,8 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
     }, [fetchAndSetQuestions]);
     
     const onDialogClose = (shouldRefresh: boolean) => {
-        setIsResultsDialogOpen(false);
+        setIsOptionsDialogOpen(false);
+        setIsSettleDialogOpen(false);
         if (shouldRefresh) {
             fetchAndSetQuestions();
         }
@@ -71,17 +74,34 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
                     <Button 
-                        onClick={() => setIsResultsDialogOpen(true)}
+                        variant="outline"
+                        onClick={() => setIsOptionsDialogOpen(true)}
                     >
-                        Set Results
+                        Set Options
+                    </Button>
+                    <Button 
+                        onClick={() => setIsSettleDialogOpen(true)}
+                        disabled={match.status === 'Finished'}
+                    >
+                        Settle & Payout
                     </Button>
                 </CardFooter>
             </Card>
-            {isResultsDialogOpen && (
-                <SetResultsDialog
+
+            {isOptionsDialogOpen && (
+                <SetOptionsDialog
                     match={match}
                     questions={questions}
-                    isOpen={isResultsDialogOpen}
+                    isOpen={isOptionsDialogOpen}
+                    onClose={onDialogClose}
+                />
+            )}
+            
+            {isSettleDialogOpen && (
+                <SettleMatchDialog
+                    match={match}
+                    questions={questions}
+                    isOpen={isSettleDialogOpen}
                     onClose={onDialogClose}
                 />
             )}

@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -8,7 +9,7 @@ import {
     getDocs,
     Timestamp,
     where,
-    updateDoc,
+    runTransaction,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -180,34 +181,79 @@ export async function setQuestionOptions(matchId: string, options: Record<string
 }
 
 
-// Function to set the results for questions of a given match
-export async function setQuestionResults(matchId: string, results: Record<string, string>) {
+// Function to set the results for questions, settle bets, and pay out winnings
+export async function settleMatchAndPayouts(matchId: string, results: Record<string, { resultA: string, resultB: string }>) {
     if (!matchId) return { error: 'Match ID is required.' };
     if (Object.keys(results).length === 0) return { error: 'No results provided.' };
     
-    try {
-        const batch = writeBatch(db);
-        const questionsRef = collection(db, `matches/${matchId}/questions`);
+    const matchRef = doc(db, 'matches', matchId);
+    const betsRef = collection(db, 'bets');
+    const questionsRef = collection(db, `matches/${matchId}/questions`);
 
-        for (const questionId in results) {
-            const result = results[questionId];
-            if (result) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const pendingBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
+            const pendingBetsSnapshot = await transaction.get(pendingBetsQuery);
+            
+            const userWalletUpdates: Record<string, number> = {};
+            
+            // 1. Determine bet outcomes
+            pendingBetsSnapshot.forEach(betDoc => {
+                const bet = betDoc.data();
+                let isWinner = true;
+                
+                for (const prediction of bet.predictions) {
+                    const officialResult = results[prediction.questionId];
+                    if (!officialResult || 
+                        prediction.predictionA.toLowerCase().trim() !== officialResult.resultA.toLowerCase().trim() ||
+                        prediction.predictionB.toLowerCase().trim() !== officialResult.resultB.toLowerCase().trim()
+                    ) {
+                        isWinner = false;
+                        break;
+                    }
+                }
+                
+                const betResultRef = doc(db, 'bets', betDoc.id);
+                if (isWinner) {
+                    transaction.update(betResultRef, { status: 'Won' });
+                    // Aggregate winnings per user
+                    userWalletUpdates[bet.userId] = (userWalletUpdates[bet.userId] || 0) + bet.potentialWin;
+                } else {
+                    transaction.update(betResultRef, { status: 'Lost' });
+                }
+            });
+
+            // 2. Update user wallets
+            for (const userId in userWalletUpdates) {
+                const userRef = doc(db, 'users', userId);
+                const userDoc = await transaction.get(userRef);
+                if (userDoc.exists()) {
+                    const currentBalance = userDoc.data().walletBalance || 0;
+                    const newBalance = currentBalance + userWalletUpdates[userId];
+                    transaction.update(userRef, { walletBalance: newBalance });
+                }
+            }
+
+            // 3. Update question results
+            for (const questionId in results) {
                 const questionRef = doc(questionsRef, questionId);
-                batch.update(questionRef, {
-                    result: result,
+                transaction.update(questionRef, {
+                    result: results[questionId],
                     status: 'settled',
                 });
             }
-        }
-        
-        await batch.commit();
 
-        // TODO: Payout logic for winning bets would go here in a real scenario
+            // 4. Update match status
+            transaction.update(matchRef, { status: 'Finished' });
+        });
 
         revalidatePath(`/admin/q-and-a`);
-        return { success: 'Results have been saved successfully!' };
+        revalidatePath(`/wallet`);
+        revalidatePath(`/`);
+        return { success: 'Match settled and payouts processed successfully!' };
+
     } catch (error: any) {
-        console.error("Error setting results:", error);
-        return { error: error.message || 'Failed to save results.' };
+        console.error("Error settling match:", error);
+        return { error: error.message || 'Failed to settle match.' };
     }
 }

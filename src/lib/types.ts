@@ -110,5 +110,5 @@ export type Question = {
   options: QnaOption[];
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
-  result: string | null;
+  result: { resultA: string; resultB: string } | null;
 };

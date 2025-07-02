@@ -12,9 +12,8 @@ import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Textarea } from '../ui/textarea';
 
-interface SetResultsDialogProps {
+interface SetOptionsDialogProps {
     match: Match;
     questions: Question[];
     isOpen: boolean;
@@ -34,7 +33,7 @@ const createOptionsSchema = (questions: Question[]) => {
 };
 
 
-export function SetResultsDialog({ match, questions, isOpen, onClose }: SetResultsDialogProps) {
+export function SetOptionsDialog({ match, questions, isOpen, onClose }: SetOptionsDialogProps) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
