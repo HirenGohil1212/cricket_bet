@@ -25,7 +25,7 @@ import { useAuth } from "@/context/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider, useFormContext } from "react-hook-form";
 import { z } from "zod";
-import { FormControl, FormField, FormItem, FormMessage } from "../ui/form";
+import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "../ui/form";
 
 
 interface GuessDialogProps {
