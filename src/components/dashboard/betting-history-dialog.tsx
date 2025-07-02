@@ -16,6 +16,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -84,8 +85,8 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Match & Question</TableHead>
-                <TableHead>Your Prediction</TableHead>
+                <TableHead>Match &amp; Date</TableHead>
+                <TableHead>Predictions</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
@@ -95,19 +96,34 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                 <TableRow key={bet.id}>
                   <TableCell>
                     <div className="font-semibold">{bet.matchDescription}</div>
-                    <div className="text-xs text-muted-foreground">{bet.questionText}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(bet.timestamp).toLocaleDateString()}
+                        {new Date(bet.timestamp).toLocaleString()}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {bet.predictionA && bet.predictionB ? (
-                      <div>
-                        <span className="font-semibold">{bet.predictionA}</span> vs <span className="font-semibold">{bet.predictionB}</span>
-                      </div>
-                    ) : (
-                      'N/A'
-                    )}
+                  <TableCell>
+                     {bet.predictions.length > 0 ? (
+                        <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="item-1">
+                            <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                              View {bet.predictions.length} predictions
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <ul className="space-y-2 pt-2">
+                                  {bet.predictions.map((p, index) => (
+                                    <li key={index} className="text-xs border-l-2 pl-2 border-muted">
+                                      <div className="text-muted-foreground">{p.questionText}</div>
+                                      <div className="font-medium">
+                                          <span className="text-primary">{p.predictionA}</span> vs <span className="text-primary">{p.predictionB}</span>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                     ) : (
+                        <span className="text-xs text-muted-foreground">No predictions</span>
+                     )}
                   </TableCell>
                   <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
@@ -124,7 +140,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">My Betting History</DialogTitle>
           <DialogDescription>

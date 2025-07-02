@@ -22,15 +22,19 @@ export type Match = {
   winner?: string;
 };
 
+export type Prediction = {
+  questionId: string;
+  questionText: string;
+  predictionA: string;
+  predictionB: string;
+};
+
 export type Bet = {
   id:string;
   userId: string;
   matchId: string;
   matchDescription: string;
-  questionId: string;
-  questionText: string;
-  predictionA: string;
-  predictionB: string;
+  predictions: Prediction[];
   amount: number;
   status: "Won" | "Lost" | "Pending";
   timestamp: string; // Changed from Date to string

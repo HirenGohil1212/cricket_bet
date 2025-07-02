@@ -13,22 +13,22 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
-import type { Bet } from '@/lib/types';
+import type { Bet, Prediction } from '@/lib/types';
 
 interface CreateBetParams {
     userId: string;
     matchId: string;
-    questionId: string;
-    questionText: string;
-    predictionA: string;
-    predictionB: string;
+    predictions: Prediction[];
     amount: number;
 }
 
 // Server action to create a new bet and update wallet
-export async function createBet({ userId, matchId, questionId, questionText, predictionA, predictionB, amount }: CreateBetParams) {
+export async function createBet({ userId, matchId, predictions, amount }: CreateBetParams) {
     if (!userId) {
         return { error: 'You must be logged in to place a bet.' };
+    }
+    if (!predictions || predictions.length === 0) {
+        return { error: 'At least one prediction is required.' };
     }
 
     try {
@@ -65,10 +65,7 @@ export async function createBet({ userId, matchId, questionId, questionText, pre
                 userId,
                 matchId,
                 matchDescription,
-                questionId,
-                questionText,
-                predictionA,
-                predictionB,
+                predictions,
                 amount,
                 status: 'Pending',
                 timestamp: Timestamp.now(),
@@ -98,6 +95,18 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
 
         const betList = betSnapshot.docs.map(doc => {
             const data = doc.data();
+            
+            const predictions = data.predictions || [];
+            // Handle old bet format for backwards compatibility
+            if (data.questionId && !data.predictions) {
+                predictions.push({
+                    questionId: data.questionId,
+                    questionText: data.questionText,
+                    predictionA: data.predictionA,
+                    predictionB: data.predictionB,
+                });
+            }
+
             return {
                 id: doc.id,
                 userId: data.userId,
@@ -107,10 +116,7 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
                 status: data.status,
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
                 potentialWin: data.potentialWin,
-                questionId: data.questionId || '', // Add fallback for old bets
-                questionText: data.questionText || 'Match Winner', // Add fallback for old bets
-                predictionA: data.predictionA || '', 
-                predictionB: data.predictionB || '',
+                predictions: predictions,
             } as Bet;
         });
 

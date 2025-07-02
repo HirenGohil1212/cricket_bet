@@ -20,11 +20,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Match, Question } from "@/lib/types";
-import { createBet } from "@/app/actions/bet.actions";
+import type { Match, Question, Prediction, Bet } from "@/lib/types";
+import { createBet, getUserBets } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
-import { cn } from "@/lib/utils";
 
 interface GuessDialogProps {
   match: Match | null;
@@ -40,7 +39,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
   const [predictions, setPredictions] = useState<Record<string, { A: string; B: string }>>({});
   const [amount, setAmount] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,38 +47,49 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     setIsSubmitting(false);
     setQuestions([]);
     setIsLoading(true);
-    setSelectedQuestionId(null);
     setPredictions({});
     setAmount(null);
     setErrors({});
   };
 
   useEffect(() => {
-    async function fetchQuestions() {
-      if (open && match) {
+    async function fetchAllData() {
+      if (open && match && user) {
         resetState();
+        setIsLoading(true);
+
         const fetchedQuestions = await getQuestionsForMatch(match.id);
         const validQuestions = fetchedQuestions.filter(q => q.options && q.options.length === 2);
         setQuestions(validQuestions);
         
-        // Initialize predictions state
-        const initialPredictions: Record<string, { A: string; B: string }> = {};
-        validQuestions.forEach(q => {
-          initialPredictions[q.id] = { A: '', B: '' };
-        });
-        setPredictions(initialPredictions);
+        const userBets = await getUserBets(user.uid);
+        const matchBets = userBets.filter(b => b.matchId === match.id);
 
+        const initialPredictions: Record<string, { A: string; B: string }> = {};
+        
+        // Pre-fill from the latest bet if it exists
+        if (matchBets.length > 0) {
+            const latestBet = matchBets[0]; // Already sorted by date desc
+            latestBet.predictions.forEach(p => {
+                initialPredictions[p.questionId] = { A: p.predictionA, B: p.predictionB };
+            });
+        }
+        
+        // Ensure all current valid questions have an entry in the predictions state
+        validQuestions.forEach(q => {
+            if (!initialPredictions[q.id]) {
+                initialPredictions[q.id] = { A: '', B: '' };
+            }
+        });
+        
+        setPredictions(initialPredictions);
         setIsLoading(false);
       }
     }
-    fetchQuestions();
-  }, [match, open]);
+    fetchAllData();
+  }, [match, open, user]);
 
   const handlePredictionChange = (questionId: string, side: 'A' | 'B', value: string) => {
-    // When user starts typing, select the question
-    if (selectedQuestionId !== questionId) {
-      setSelectedQuestionId(questionId);
-    }
     setPredictions(prev => ({
       ...prev,
       [questionId]: {
@@ -92,13 +101,13 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!selectedQuestionId) {
-      newErrors.question = "Please select a question to bet on by typing in its fields.";
-    } else {
-      const predA = predictions[selectedQuestionId]?.A;
-      const predB = predictions[selectedQuestionId]?.B;
-      if (!predA || !predB || predA.trim() === '' || predB.trim() === '') {
-        newErrors.prediction = "Please provide a prediction for both sides of the selected question.";
+    if (questions.length > 0) {
+      for (const q of questions) {
+        const p = predictions[q.id];
+        if (!p || !p.A || p.A.trim() === '' || !p.B || p.B.trim() === '') {
+          newErrors.predictions = 'Please provide predictions for all questions.';
+          break;
+        }
       }
     }
     if (!amount) {
@@ -114,17 +123,18 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
       return;
     }
     
-    const question = questions.find(q => q.id === selectedQuestionId);
-    if (!question) return;
+    const predictionsPayload: Prediction[] = questions.map(q => ({
+        questionId: q.id,
+        questionText: q.question,
+        predictionA: predictions[q.id].A,
+        predictionB: predictions[q.id].B,
+    }));
 
     setIsSubmitting(true);
     const result = await createBet({
       userId: user.uid,
       matchId: match.id,
-      questionId: question.id,
-      questionText: question.question,
-      predictionA: predictions[selectedQuestionId].A,
-      predictionB: predictions[selectedQuestionId].B,
+      predictions: predictionsPayload,
       amount: Number(amount)
     });
 
@@ -147,7 +157,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Place Your Bet on {match.teamA.name} vs {match.teamB.name}</DialogTitle>
           <DialogDescription>
-            Select a question and type your prediction in the boxes.
+            Answer all the questions below to place your bet. Your previous answers are pre-filled.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -159,15 +169,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 w-full" />)
                   ) : questions.length > 0 ? (
                     questions.map((q) => (
-                      <div 
-                        key={q.id} 
-                        className={cn(
-                          "p-4 border rounded-lg transition-all cursor-pointer",
-                          selectedQuestionId === q.id ? "border-primary ring-2 ring-primary bg-muted/50" : "border-border",
-                          selectedQuestionId && selectedQuestionId !== q.id ? "opacity-50" : ""
-                        )}
-                        onClick={() => setSelectedQuestionId(q.id)}
-                      >
+                      <div key={q.id} className="p-4 border rounded-lg">
                         <p className="text-center text-sm font-medium text-muted-foreground mb-4">{q.question}</p>
                         <div className="flex justify-between items-start text-center gap-4">
                             <div className="flex-1 flex flex-col items-center gap-2">
@@ -207,8 +209,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                   )}
                 </div>
               </ScrollArea>
-              {errors.question && <p className="text-sm font-medium text-destructive mt-2">{errors.question}</p>}
-              {errors.prediction && <p className="text-sm font-medium text-destructive mt-2">{errors.prediction}</p>}
+              {errors.predictions && <p className="text-sm font-medium text-destructive mt-2">{errors.predictions}</p>}
             </div>
 
             <div className="space-y-3 pt-4">
@@ -235,7 +236,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting}>
+              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading}>
                 {isSubmitting ? "Placing Bet..." : "Place Bet"}
               </Button>
             </DialogFooter>
