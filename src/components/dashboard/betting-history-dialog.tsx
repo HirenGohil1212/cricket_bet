@@ -100,7 +100,15 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                         {new Date(bet.timestamp).toLocaleDateString()}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{bet.prediction}</TableCell>
+                  <TableCell className="font-medium">
+                    {bet.predictionA && bet.predictionB ? (
+                      <div>
+                        <span className="font-semibold">{bet.predictionA}</span> vs <span className="font-semibold">{bet.predictionB}</span>
+                      </div>
+                    ) : (
+                      'N/A'
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <Badge className={cn("text-xs", getStatusClass(bet.status))}>

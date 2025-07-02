@@ -29,7 +29,8 @@ export type Bet = {
   matchDescription: string;
   questionId: string;
   questionText: string;
-  prediction: string;
+  predictionA: string;
+  predictionB: string;
   amount: number;
   status: "Won" | "Lost" | "Pending";
   timestamp: string; // Changed from Date to string

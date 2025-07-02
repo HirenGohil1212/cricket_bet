@@ -1,3 +1,4 @@
+
 'use server';
 
 import { 
@@ -19,12 +20,13 @@ interface CreateBetParams {
     matchId: string;
     questionId: string;
     questionText: string;
-    prediction: string;
+    predictionA: string;
+    predictionB: string;
     amount: number;
 }
 
 // Server action to create a new bet and update wallet
-export async function createBet({ userId, matchId, questionId, questionText, prediction, amount }: CreateBetParams) {
+export async function createBet({ userId, matchId, questionId, questionText, predictionA, predictionB, amount }: CreateBetParams) {
     if (!userId) {
         return { error: 'You must be logged in to place a bet.' };
     }
@@ -65,7 +67,8 @@ export async function createBet({ userId, matchId, questionId, questionText, pre
                 matchDescription,
                 questionId,
                 questionText,
-                prediction,
+                predictionA,
+                predictionB,
                 amount,
                 status: 'Pending',
                 timestamp: Timestamp.now(),
@@ -100,13 +103,14 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
                 userId: data.userId,
                 matchId: data.matchId,
                 matchDescription: data.matchDescription,
-                prediction: data.prediction,
                 amount: data.amount,
                 status: data.status,
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
                 potentialWin: data.potentialWin,
                 questionId: data.questionId || '', // Add fallback for old bets
                 questionText: data.questionText || 'Match Winner', // Add fallback for old bets
+                predictionA: data.predictionA || '', 
+                predictionB: data.predictionB || '',
             } as Bet;
         });
 
