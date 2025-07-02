@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -155,32 +156,48 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               <ScrollArea className="h-64 pr-4 mt-3">
                 <div className="space-y-4">
                   {isLoading ? (
-                    Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+                    Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 w-full" />)
                   ) : questions.length > 0 ? (
                     questions.map((q) => (
                       <div 
                         key={q.id} 
                         className={cn(
-                          "grid grid-cols-5 items-center gap-4 p-3 border rounded-lg transition-all cursor-pointer",
-                          selectedQuestionId === q.id ? "border-primary ring-2 ring-primary" : "border-border",
+                          "p-4 border rounded-lg transition-all cursor-pointer",
+                          selectedQuestionId === q.id ? "border-primary ring-2 ring-primary bg-muted/50" : "border-border",
                           selectedQuestionId && selectedQuestionId !== q.id ? "opacity-50" : ""
                         )}
                         onClick={() => setSelectedQuestionId(q.id)}
                       >
-                        <Input
-                          value={predictions[q.id]?.A || ''}
-                          onChange={(e) => handlePredictionChange(q.id, 'A', e.target.value)}
-                          placeholder={q.options[0].text}
-                          className="text-right"
-                          disabled={isSubmitting}
-                        />
-                        <p className="col-span-3 text-center text-sm font-medium text-muted-foreground">{q.question}</p>
-                        <Input
-                          value={predictions[q.id]?.B || ''}
-                          onChange={(e) => handlePredictionChange(q.id, 'B', e.target.value)}
-                          placeholder={q.options[1].text}
-                          disabled={isSubmitting}
-                        />
+                        <p className="text-center text-sm font-medium text-muted-foreground mb-4">{q.question}</p>
+                        <div className="flex justify-between items-start text-center gap-4">
+                            <div className="flex-1 flex flex-col items-center gap-2">
+                                <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
+                                <p className="font-semibold text-sm leading-tight">{match.teamA.name}</p>
+                                <Input
+                                  value={predictions[q.id]?.A || ''}
+                                  onChange={(e) => handlePredictionChange(q.id, 'A', e.target.value)}
+                                  placeholder={q.options[0].text}
+                                  className="text-center"
+                                  disabled={isSubmitting}
+                                />
+                            </div>
+                            
+                            <div className="flex h-full items-center pt-16">
+                                <span className="text-sm font-bold text-muted-foreground">vs</span>
+                            </div>
+                    
+                            <div className="flex-1 flex flex-col items-center gap-2">
+                                <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
+                                <p className="font-semibold text-sm leading-tight">{match.teamB.name}</p>
+                                <Input
+                                  value={predictions[q.id]?.B || ''}
+                                  onChange={(e) => handlePredictionChange(q.id, 'B', e.target.value)}
+                                  placeholder={q.options[1].text}
+                                  className="text-center"
+                                  disabled={isSubmitting}
+                                />
+                            </div>
+                        </div>
                       </div>
                     ))
                   ) : (
