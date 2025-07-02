@@ -47,7 +47,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     const resultsSchema = React.useMemo(() => createResultsSchema(questions), [questions]);
     type ResultsFormValues = z.infer<typeof resultsSchema>;
 
-    const defaultValues = React.useMemo(() => {
+    const formValues = React.useMemo(() => {
         const results: Record<string, { teamA: string; teamB: string; }> = {};
         questions.forEach(q => {
             if (q.status !== 'settled') {
@@ -58,21 +58,33 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                 };
             }
         });
-        return { results } as ResultsFormValues;
+        return { results };
     }, [questions]);
 
     const form = useForm<ResultsFormValues>({
         resolver: zodResolver(resultsSchema),
-        defaultValues,
+        values: formValues, // Use `values` to handle dynamic data
     });
-    
-    React.useEffect(() => {
-        form.reset(defaultValues);
-    }, [defaultValues, form]);
     
     const handleSubmit = async (data: ResultsFormValues) => {
         setIsSubmitting(true);
-        const result = await settleMatchAndPayouts(match.id, data.results);
+        // Filter out any settled questions from the submission data
+        const unsettledResults: Record<string, { teamA: string, teamB: string }> = {};
+        for (const qId in data.results) {
+            const question = questions.find(q => q.id === qId);
+            if (question && question.status !== 'settled') {
+                unsettledResults[qId] = data.results[qId];
+            }
+        }
+        
+        if (Object.keys(unsettledResults).length === 0) {
+            toast({ variant: 'default', title: 'No Changes', description: 'All questions have already been settled.' });
+            onClose(false);
+            setIsSubmitting(false);
+            return;
+        }
+
+        const result = await settleMatchAndPayouts(match.id, unsettledResults);
         if (result.error) {
             toast({ variant: 'destructive', title: 'Settlement Failed', description: result.error });
         } else {
@@ -126,7 +138,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
 }
 
 function ResultField({ question, match }: { question: Question, match: Match }) {
-    const { control } = useFormContext();
+    const { control, formState: { errors } } = useFormContext();
     const isSettled = question.status === 'settled';
 
     return (
