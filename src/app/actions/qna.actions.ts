@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -212,8 +213,6 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
         });
 
         revalidatePath(`/admin/q-and-a`);
-        revalidatePath(`/wallet`);
-        revalidatePath(`/`);
         return { success: 'Match settled and payouts processed successfully!' };
 
     } catch (error: any) {

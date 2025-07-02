@@ -130,7 +130,6 @@ export async function approveWithdrawal(withdrawalId: string, userId: string, am
         });
 
         revalidatePath('/admin/withdrawals');
-        revalidatePath('/wallet');
         return { success: 'Withdrawal approved and wallet updated.' };
 
     } catch (error: any) {
@@ -153,7 +152,6 @@ export async function rejectWithdrawal(withdrawalId: string) {
         });
 
         revalidatePath('/admin/withdrawals');
-        revalidatePath('/wallet');
         return { success: 'Withdrawal request has been rejected.' };
 
     } catch (error: any) {

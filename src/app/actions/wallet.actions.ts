@@ -146,7 +146,6 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
         });
 
         revalidatePath('/admin/deposits');
-        revalidatePath('/wallet'); // Revalidate user's wallet page
         return { success: 'Deposit approved and wallet updated.' };
 
     } catch (error: any) {
@@ -169,7 +168,6 @@ export async function rejectDeposit(depositId: string) {
         });
 
         revalidatePath('/admin/deposits');
-        revalidatePath('/wallet');
         return { success: 'Deposit request has been rejected.' };
 
     } catch (error: any) {
