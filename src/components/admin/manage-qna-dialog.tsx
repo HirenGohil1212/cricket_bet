@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -23,29 +24,23 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     const [isSaving, setIsSaving] = React.useState(false);
     const [isSettling, setIsSettling] = React.useState(false);
     // State to hold the results for each question
-    const [results, setResults] = React.useState<Record<string, { teamA: string, teamB: string }>>({});
+    const [results, setResults] = React.useState<Record<string, string>>({});
 
     // Initialize or update results state when questions change
     React.useEffect(() => {
         if (questions) {
             const initialResults = questions.reduce((acc, q) => {
-                acc[q.id] = {
-                    teamA: q.result?.teamA || '',
-                    teamB: q.result?.teamB || '',
-                };
+                acc[q.id] = q.result || '';
                 return acc;
-            }, {} as Record<string, { teamA: string, teamB: string }>);
+            }, {} as Record<string, string>);
             setResults(initialResults);
         }
     }, [questions]);
     
-    const handleResultChange = (questionId: string, team: 'teamA' | 'teamB', value: string) => {
+    const handleResultChange = (questionId: string, value: string) => {
         setResults(prev => ({
             ...prev,
-            [questionId]: {
-                ...prev[questionId],
-                [team]: value,
-            }
+            [questionId]: value,
         }));
     };
 
@@ -79,7 +74,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
-            <DialogContent className="sm:max-w-4xl">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>Manage Q&amp;A for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
                     <DialogDescription>
@@ -92,45 +87,22 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                             const isSettled = q.status === 'settled';
 
                             return (
-                                <div key={q.id} className="p-4 border rounded-md">
-                                    <p className="text-center font-medium bg-muted p-3 rounded-md text-sm mb-4">{q.question}</p>
+                                <div key={q.id} className="p-4 border rounded-md space-y-3">
+                                    <Label htmlFor={q.id} className="font-semibold text-muted-foreground">{q.question}</Label>
                                     
                                     {isSettled && q.result ? (
-                                         <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
-                                            <div className='text-center'>
-                                              <p className='text-xs'>{match.teamA.name}</p>
-                                              <p>{q.result.teamA}</p>
-                                            </div>
-                                             <div className='text-center'>
-                                              <p className='text-xs'>{match.teamB.name}</p>
-                                              <p>{q.result.teamB}</p>
-                                            </div>
-                                         </div>
+                                        <div className="flex items-center justify-between gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
+                                           <span>Result:</span>
+                                           <span>{q.result}</span>
+                                        </div>
                                     ) : (
-                                         <div className="grid grid-cols-2 items-start gap-4">
-                                            <div className="space-y-1">
-                                               <Label className="font-medium text-center block" htmlFor={`${q.id}-teamA`}>{match.teamA.name}</Label>
-                                               <Input 
-                                                   id={`${q.id}-teamA`}
-                                                   placeholder="Enter result..."
-                                                   value={results[q.id]?.teamA || ''}
-                                                   onChange={(e) => handleResultChange(q.id, 'teamA', e.target.value)}
-                                                   disabled={isSaving || isSettling}
-                                                   className="text-center"
-                                               />
-                                            </div>
-                                             <div className="space-y-1">
-                                               <Label className="font-medium text-center block" htmlFor={`${q.id}-teamB`}>{match.teamB.name}</Label>
-                                                <Input 
-                                                   id={`${q.id}-teamB`}
-                                                   placeholder="Enter result..."
-                                                   value={results[q.id]?.teamB || ''}
-                                                   onChange={(e) => handleResultChange(q.id, 'teamB', e.target.value)}
-                                                   disabled={isSaving || isSettling}
-                                                   className="text-center"
-                                               />
-                                            </div>
-                                         </div>
+                                        <Input 
+                                           id={q.id}
+                                           placeholder="Enter correct answer..."
+                                           value={results[q.id] || ''}
+                                           onChange={(e) => handleResultChange(q.id, e.target.value)}
+                                           disabled={isSaving || isSettling}
+                                        />
                                     )}
                                 </div>
                             )

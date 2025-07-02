@@ -24,7 +24,7 @@ import { createBet } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, FormProvider, useFormContext } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "../ui/form";
 
@@ -38,12 +38,9 @@ interface GuessDialogProps {
 // Dynamically create a Zod schema for the user's prediction form
 const createPredictionSchema = (questions: Question[]) => {
     const schemaObject = questions.reduce((acc, q) => {
-        acc[q.id] = z.object({
-            teamA: z.string().min(1, 'Prediction is required'),
-            teamB: z.string().min(1, 'Prediction is required'),
-        });
+        acc[q.id] = z.string().min(1, 'Prediction is required');
         return acc;
-    }, {} as Record<string, z.ZodObject<{ teamA: z.ZodString, teamB: z.ZodString }>>);
+    }, {} as Record<string, z.ZodString>);
     
     return z.object({
         predictions: z.object(schemaObject),
@@ -81,9 +78,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         
         // Create default values for the predictions with empty strings
         const defaultPredictions = validQuestions.reduce((acc, q) => {
-          acc[q.id] = { teamA: '', teamB: '' };
+          acc[q.id] = '';
           return acc;
-        }, {} as Record<string, { teamA: string; teamB: string; }>);
+        }, {} as Record<string, string>);
 
         // Reset the form with the new default values to make inputs controlled
         form.reset({
@@ -112,10 +109,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     const predictionsPayload: Prediction[] = questions.map(q => ({
         questionId: q.id,
         questionText: q.question,
-        predictedAnswer: {
-            teamA: data.predictions[q.id].teamA,
-            teamB: data.predictions[q.id].teamB,
-        }
+        predictedAnswer: data.predictions[q.id]
     }));
 
     setIsSubmitting(true);
@@ -142,11 +136,21 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
           <DialogDescription>
-             Predict the outcome for {match.teamA.name} vs {match.teamB.name}.
+            <div className="flex items-center justify-center gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                    <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="rounded-full" data-ai-hint="logo" />
+                    <span className="font-semibold">{match.teamA.name}</span>
+                </div>
+                <span className="text-muted-foreground">vs</span>
+                 <div className="flex items-center gap-2">
+                    <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="rounded-full" data-ai-hint="logo" />
+                    <span className="font-semibold">{match.teamB.name}</span>
+                </div>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <FormProvider {...form}>
@@ -154,19 +158,26 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 <ScrollArea className="h-72 pr-4">
                   <div className="space-y-4">
                     {isLoading ? (
-                      Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)
+                      Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
                     ) : questions.length > 0 ? (
-                       <FormField
-                         control={form.control}
-                         name="predictions"
-                         render={() => (
-                           <FormItem className="space-y-4">
-                             {questions.map((q) => (
-                               <PredictionField key={q.id} question={q} match={match} />
-                             ))}
-                           </FormItem>
-                         )}
-                       />
+                       <div className="space-y-4">
+                         {questions.map((q) => (
+                            <FormField
+                                key={q.id}
+                                control={form.control}
+                                name={`predictions.${q.id}`}
+                                render={({ field }) => (
+                                    <FormItem className="p-4 border rounded-lg space-y-2">
+                                        <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Your prediction..." {...field} className="text-center"/>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                         ))}
+                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-12">
                         <p>No questions available for this match yet.</p>
@@ -219,53 +230,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
       </DialogContent>
     </Dialog>
   );
-}
-
-
-function PredictionField({ question, match }: { question: Question, match: Match }) {
-    const { control } = useFormContext();
-    return (
-        <div className="p-4 border rounded-lg space-y-3">
-            <p className="text-center text-sm font-medium text-muted-foreground">{question.question}</p>
-            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
-                {/* Team A */}
-                <div className="flex flex-col items-center gap-2">
-                    <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
-                    <Label className="text-xs font-semibold">{match.teamA.name}</Label>
-                    <FormField
-                        control={control}
-                        name={`predictions.${question.id}.teamA`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <Input placeholder="Your prediction" {...field} className="text-center"/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                <p className="text-sm font-bold text-muted-foreground">vs</p>
-                
-                {/* Team B */}
-                <div className="flex flex-col items-center gap-2">
-                     <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
-                    <Label className="text-xs font-semibold">{match.teamB.name}</Label>
-                    <FormField
-                        control={control}
-                        name={`predictions.${question.id}.teamB`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <Input placeholder="Your prediction" {...field} className="text-center"/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-            </div>
-        </div>
-    );
 }

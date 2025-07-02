@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -84,7 +85,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Match & Date</TableHead>
+                <TableHead>Match &amp; Date</TableHead>
                 <TableHead>Predictions</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Status</TableHead>
@@ -112,9 +113,8 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                                     <li key={index} className="text-xs border-l-2 pl-2 border-muted">
                                       <div className="text-muted-foreground">{p.questionText}</div>
                                       <div className="font-medium">
-                                          Your answers: 
-                                          <span className="text-primary"> {p.predictedAnswer?.teamA || 'N/A'}</span> / 
-                                          <span className="text-primary"> {p.predictedAnswer?.teamB || 'N/A'}</span>
+                                          Your answer: 
+                                          <span className="text-primary"> {p.predictedAnswer || 'N/A'}</span>
                                       </div>
                                     </li>
                                   ))}

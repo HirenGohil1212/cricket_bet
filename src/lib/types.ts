@@ -24,10 +24,7 @@ export type Match = {
 export type Prediction = {
   questionId: string;
   questionText: string;
-  predictedAnswer?: {
-      teamA: string;
-      teamB: string;
-  };
+  predictedAnswer?: string;
 };
 
 export type Bet = {
@@ -108,10 +105,7 @@ export type Question = {
   question: string;
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
-  result: {
-      teamA: string;
-      teamB: string;
-  } | null;
+  result: string | null;
 };
 
 export type Transaction = {

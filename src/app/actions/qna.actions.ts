@@ -33,7 +33,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
                 question: data.question,
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
-                result: data.result && typeof data.result === 'object' ? data.result : null,
+                result: data.result || null,
             } as Question;
         });
     } catch (error) {
@@ -146,7 +146,7 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
 }
 
 // New Function to just save the results for questions
-export async function saveQuestionResults(matchId: string, results: Record<string, { teamA: string, teamB: string }>) {
+export async function saveQuestionResults(matchId: string, results: Record<string, string>) {
     if (!matchId) return { error: 'Match ID is required.' };
 
     const batch = writeBatch(db);
@@ -155,7 +155,7 @@ export async function saveQuestionResults(matchId: string, results: Record<strin
     for (const questionId in results) {
         const resultValue = results[questionId];
         // Only save if there is some data
-        if (resultValue && (resultValue.teamA.trim() || resultValue.teamB.trim())) {
+        if (resultValue && resultValue.trim()) {
              const questionRef = doc(questionsRef, questionId);
              batch.update(questionRef, { result: resultValue });
         }
@@ -195,16 +195,14 @@ export async function settleMatchAndPayouts(matchId: string) {
         }
         
         const activeQuestionsHaveResults = activeQuestions.every(q =>
-            q.result &&
-            typeof q.result.teamA === 'string' && q.result.teamA.trim() !== '' &&
-            typeof q.result.teamB === 'string' && q.result.teamB.trim() !== ''
+            q.result && typeof q.result === 'string' && q.result.trim() !== ''
         );
 
         if (!activeQuestionsHaveResults) {
             return { error: 'Cannot settle match. Not all active questions have saved results.' };
         }
         
-        const resultsMap: Record<string, { teamA: string, teamB: string }> = {};
+        const resultsMap: Record<string, string> = {};
         activeQuestions.forEach(q => {
             if (q.result) {
                 resultsMap[q.id] = q.result;
@@ -232,13 +230,8 @@ export async function settleMatchAndPayouts(matchId: string) {
                     const userAnswer = prediction.predictedAnswer;
                     
                     let predictionIsCorrect = false;
-                    if (correctResult && userAnswer && userAnswer.teamA != null && userAnswer.teamB != null) {
-                        const userTeamA = String(userAnswer.teamA).trim().toLowerCase();
-                        const userTeamB = String(userAnswer.teamB).trim().toLowerCase();
-                        const resultTeamA = String(correctResult.teamA).trim().toLowerCase();
-                        const resultTeamB = String(correctResult.teamB).trim().toLowerCase();
-
-                        if (userTeamA === resultTeamA && userTeamB === resultTeamB) {
+                    if (correctResult != null && userAnswer != null) {
+                        if (String(userAnswer).trim().toLowerCase() === String(correctResult).trim().toLowerCase()) {
                             predictionIsCorrect = true;
                         }
                     }
