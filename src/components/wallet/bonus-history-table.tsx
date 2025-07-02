@@ -4,10 +4,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import type { Transaction } from '@/lib/types';
+import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getBonusTransactions } from '@/app/actions/referral.actions';
 import { Gift } from 'lucide-react';
 
 export function BonusHistoryTable() {
@@ -16,23 +17,44 @@ export function BonusHistoryTable() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchTransactions() {
-        if (authLoading) {
-            setIsLoading(true);
-            return;
-        }
-
-        if (user) {
-            setIsLoading(true);
-            const userTransactions = await getBonusTransactions(user.uid);
-            setTransactions(userTransactions);
-            setIsLoading(false);
-        } else {
-            setTransactions([]);
-            setIsLoading(false);
-        }
+    if (authLoading) {
+      setIsLoading(true);
+      return;
     }
-    fetchTransactions();
+
+    if (user) {
+      setIsLoading(true);
+      const transCol = collection(db, 'transactions');
+      const q = query(
+          transCol,
+          where('userId', '==', user.uid),
+          where('type', '==', 'referral_bonus'),
+          orderBy('timestamp', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const userTransactions = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
+            } as Transaction;
+        });
+
+        setTransactions(userTransactions);
+        setIsLoading(false);
+      }, (error) => {
+          console.error("Error fetching real-time bonus transactions: ", error);
+          setIsLoading(false);
+      });
+
+      // Cleanup subscription on component unmount
+      return () => unsubscribe();
+    } else {
+      setTransactions([]);
+      setIsLoading(false);
+    }
   }, [user, authLoading]);
   
   const renderContent = () => {
