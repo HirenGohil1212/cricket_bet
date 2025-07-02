@@ -135,3 +135,9 @@ export type DailyFinancialActivity = {
     deposits: number;
     withdrawals: number;
 }
+
+export type Winner = {
+    userId: string;
+    name: string;
+    payoutAmount: number;
+};

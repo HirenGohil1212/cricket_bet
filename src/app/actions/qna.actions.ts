@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { qnaFormSchema } from '@/lib/schemas';
-import type { Question, Sport, QnaFormValues } from '@/lib/types';
+import type { Question, Sport, QnaFormValues, Winner } from '@/lib/types';
 
 
 // Function to get questions for a specific match
@@ -186,7 +186,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         // --- STEP 1: Fetch all data needed, outside any transaction ---
         const matchDoc = await getDoc(matchRef);
         if (!matchDoc.exists() || matchDoc.data().status === 'Finished') {
-            return { success: 'Match is already finished or does not exist.' };
+            return { success: 'Match is already finished or does not exist.', winners: [] };
         }
 
         const questionsSnapshot = await getDocs(query(questionsRef, where('status', '==', 'active')));
@@ -194,7 +194,7 @@ export async function settleMatchAndPayouts(matchId: string) {
             // No active questions, just finish the match
             await updateDoc(matchRef, { status: 'Finished' });
             revalidatePath(`/admin/q-and-a`);
-            return { success: 'Match marked as Finished as there were no active questions.' };
+            return { success: 'Match marked as Finished as there were no active questions.', winners: [] };
         }
 
         const activeQuestions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as (Question & { id: string })[];
@@ -206,7 +206,6 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
         }
         
-        // Create a simple results map for quick lookup
         const resultsMap = activeQuestions.reduce((acc, q) => {
             acc[q.id] = q.result!;
             return acc;
@@ -226,7 +225,25 @@ export async function settleMatchAndPayouts(matchId: string) {
             });
             await batch.commit();
             revalidatePath(`/admin/q-and-a`);
-            return { success: 'No pending bets found. Match has been marked as Finished.' };
+            return { success: 'No pending bets found. Match has been marked as Finished.', winners: [] };
+        }
+        
+        // Fetch user data for winner names
+        const userIds = [...new Set(pendingBetsSnapshot.docs.map(doc => doc.data().userId).filter(Boolean))];
+        const usersMap = new Map<string, string>();
+        if (userIds.length > 0) {
+            const userBatches = [];
+            for (let i = 0; i < userIds.length; i += 30) {
+                userBatches.push(userIds.slice(i, i + 30));
+            }
+
+            for (const idBatch of userBatches) {
+                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', idBatch));
+                const usersSnapshot = await getDocs(usersQuery);
+                usersSnapshot.forEach(userDoc => {
+                    usersMap.set(userDoc.id, userDoc.data().name || 'Unknown User');
+                });
+            }
         }
 
         // --- STEP 2: Process bets in memory ---
@@ -300,6 +317,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         await batch.commit();
 
         // Now, process financial payouts transactionally per user
+        const winners: Winner[] = [];
         for (const [userId, payoutAmount] of payouts.entries()) {
             if (payoutAmount <= 0) continue;
             
@@ -315,6 +333,12 @@ export async function settleMatchAndPayouts(matchId: string) {
                     const newBalance = currentBalance + payoutAmount;
                     transaction.update(userRef, { walletBalance: newBalance });
                 });
+                // If transaction is successful, add to winners list
+                winners.push({
+                    userId,
+                    name: usersMap.get(userId) || `User ID: ${userId}`,
+                    payoutAmount
+                });
             } catch (e) {
                 console.error(`Failed to process payout for user ${userId}. Error:`, e);
                 // The transaction for this user failed, but we continue with others.
@@ -325,7 +349,11 @@ export async function settleMatchAndPayouts(matchId: string) {
         revalidatePath(`/`);
         revalidatePath(`/wallet`);
         
-        return { success: 'Match settled and payouts processed successfully!' };
+        return { 
+            success: 'Match settled and payouts processed successfully!',
+            winners,
+            totalBetsProcessed: pendingBetsSnapshot.size,
+        };
 
     } catch (error: any) {
         console.error("Error settling match:", error);
