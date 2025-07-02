@@ -27,6 +27,8 @@ export type Bet = {
   userId: string;
   matchId: string;
   matchDescription: string;
+  questionId: string;
+  questionText: string;
   prediction: string;
   amount: number;
   status: "Won" | "Lost" | "Pending";

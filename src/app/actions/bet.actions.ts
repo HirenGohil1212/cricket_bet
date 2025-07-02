@@ -17,12 +17,14 @@ import type { Bet } from '@/lib/types';
 interface CreateBetParams {
     userId: string;
     matchId: string;
-    team: string;
+    questionId: string;
+    questionText: string;
+    prediction: string;
     amount: number;
 }
 
 // Server action to create a new bet and update wallet
-export async function createBet({ userId, matchId, team, amount }: CreateBetParams) {
+export async function createBet({ userId, matchId, questionId, questionText, prediction, amount }: CreateBetParams) {
     if (!userId) {
         return { error: 'You must be logged in to place a bet.' };
     }
@@ -58,20 +60,21 @@ export async function createBet({ userId, matchId, team, amount }: CreateBetPara
 
             const newBetRef = doc(collection(db, "bets"));
             transaction.set(newBetRef, {
-                userId: userId,
-                matchId: matchId,
-                matchDescription: matchDescription,
-                prediction: team,
-                amount: amount,
+                userId,
+                matchId,
+                matchDescription,
+                questionId,
+                questionText,
+                prediction,
+                amount,
                 status: 'Pending',
                 timestamp: Timestamp.now(),
-                potentialWin: potentialWin,
+                potentialWin,
             });
         });
 
         revalidatePath('/');
-        // The client doesn't use the returned bet object, so just returning success is fine 
-        // and avoids any potential serialization issues.
+        revalidatePath('/wallet');
         return { success: 'Bet placed successfully!' };
 
     } catch (error: any) {
@@ -102,6 +105,8 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
                 status: data.status,
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
                 potentialWin: data.potentialWin,
+                questionId: data.questionId || '', // Add fallback for old bets
+                questionText: data.questionText || 'Match Winner', // Add fallback for old bets
             } as Bet;
         });
 

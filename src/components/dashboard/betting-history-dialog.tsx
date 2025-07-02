@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -83,8 +84,8 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Match</TableHead>
-                <TableHead>Bet</TableHead>
+                <TableHead>Match & Question</TableHead>
+                <TableHead>Your Prediction</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
@@ -92,13 +93,14 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
             <TableBody>
               {bets.map((bet) => (
                 <TableRow key={bet.id}>
-                  <TableCell className="font-medium">
-                    <div>{bet.matchDescription}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(bet.timestamp).toLocaleDateString()}
+                  <TableCell>
+                    <div className="font-semibold">{bet.matchDescription}</div>
+                    <div className="text-xs text-muted-foreground">{bet.questionText}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(bet.timestamp).toLocaleDateString()}
                     </div>
                   </TableCell>
-                  <TableCell>{bet.prediction}</TableCell>
+                  <TableCell className="font-medium">{bet.prediction}</TableCell>
                   <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <Badge className={cn("text-xs", getStatusClass(bet.status))}>
@@ -114,7 +116,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">My Betting History</DialogTitle>
           <DialogDescription>

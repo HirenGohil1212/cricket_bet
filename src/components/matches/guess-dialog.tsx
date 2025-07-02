@@ -3,7 +3,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import type { Match } from "@/lib/types";
-import Image from "next/image";
+import type { Match, Question } from "@/lib/types";
 import { betSchema, type BetFormValues } from "@/lib/schemas";
 import { createBet } from "@/app/actions/bet.actions";
+import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
 
 interface GuessDialogProps {
@@ -42,6 +44,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const form = useForm<BetFormValues>({
     resolver: zodResolver(betSchema),
@@ -50,17 +54,24 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     }
   });
 
-  // Reset form when match changes
-  React.useEffect(() => {
-    if (match) {
+  useEffect(() => {
+    async function fetchQuestions() {
+      if (open && match) {
+        setIsLoading(true);
         form.reset({
-            matchId: match.id,
-            team: undefined,
-            amount: undefined,
+          matchId: match.id,
+          prediction: undefined,
+          amount: undefined,
         });
+        const fetchedQuestions = await getQuestionsForMatch(match.id);
+        // Filter out questions that don't have exactly 2 options, as they can't be bet on.
+        const validQuestions = fetchedQuestions.filter(q => q.options && q.options.length === 2);
+        setQuestions(validQuestions);
+        setIsLoading(false);
+      }
     }
-  }, [match, form]);
-
+    fetchQuestions();
+  }, [match, open, form]);
 
   const betAmount = form.watch('amount');
   const potentialWin = betAmount ? Number(betAmount) * 2 : 0;
@@ -71,26 +82,29 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         return;
     }
     if (!match) return;
+
+    const [questionId, prediction] = data.prediction.split('|');
+    const question = questions.find(q => q.id === questionId);
+
+    if (!question) {
+        toast({ variant: "destructive", title: "Error", description: "Selected question not found." });
+        return;
+    }
     
     setIsSubmitting(true);
     const result = await createBet({
         userId: user.uid,
         matchId: match.id,
-        team: data.team,
+        questionId: question.id,
+        questionText: question.question,
+        prediction: prediction,
         amount: Number(data.amount)
     });
 
     if (result.error) {
-        toast({
-            variant: "destructive",
-            title: "Bet Failed",
-            description: result.error,
-        });
+        toast({ variant: "destructive", title: "Bet Failed", description: result.error });
     } else {
-        toast({
-            title: "Bet Placed!",
-            description: `You bet INR ${data.amount} on ${data.team} to win. Good luck!`,
-        });
+        toast({ title: "Bet Placed!", description: `Your bet on "${prediction}" has been placed. Good luck!` });
         router.refresh();
         onOpenChange(false);
     }
@@ -100,50 +114,59 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   if (!match) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-        if (!isSubmitting) {
-            onOpenChange(isOpen);
-        }
-    }}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Place Your Bet on {match.teamA.name} vs {match.teamB.name}</DialogTitle>
           <DialogDescription>
-            Predict the winner for {match.teamA.name} vs {match.teamB.name}.
+            Select an answer for one of the questions below and place your bet.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="team"
+              name="prediction"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel className="font-headline">Who will win?</FormLabel>
+                  <FormLabel className="font-headline text-lg">Available Questions</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      className="flex flex-col space-y-2"
+                      className="flex flex-col"
                     >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={match.teamA.name} />
-                        </FormControl>
-                        <FormLabel className="font-normal flex items-center gap-2">
-                          <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="rounded-full" data-ai-hint="logo" />
-                          {match.teamA.name}
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={match.teamB.name} />
-                        </FormControl>
-                        <FormLabel className="font-normal flex items-center gap-2">
-                           <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="rounded-full" data-ai-hint="logo" />
-                          {match.teamB.name}
-                        </FormLabel>
-                      </FormItem>
+                      <ScrollArea className="h-64 pr-4">
+                        <div className="space-y-4">
+                          {isLoading ? (
+                            Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                          ) : questions.length > 0 ? (
+                            questions.map((q) => (
+                              <div key={q.id} className="grid grid-cols-5 items-center gap-4 p-3 border rounded-lg">
+                                <FormItem className="col-span-2 flex items-center space-x-3 space-y-0 justify-end text-right">
+                                  <FormLabel className="font-normal flex-1 cursor-pointer">{q.options[0].text}</FormLabel>
+                                  <FormControl>
+                                    <RadioGroupItem value={`${q.id}|${q.options[0].text}`} />
+                                  </FormControl>
+                                </FormItem>
+                                
+                                <p className="col-span-1 text-center text-sm font-medium text-muted-foreground">{q.question}</p>
+                                
+                                <FormItem className="col-span-2 flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value={`${q.id}|${q.options[1].text}`} />
+                                  </FormControl>
+                                  <FormLabel className="font-normal flex-1 cursor-pointer">{q.options[1].text}</FormLabel>
+                                </FormItem>
+                              </div>
+                            ))
+                          ) : (
+                             <div className="text-center text-muted-foreground py-12">
+                                <p>No questions available for this match yet.</p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </RadioGroup>
                   </FormControl>
                   <FormMessage />
@@ -155,8 +178,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               control={form.control}
               name="amount"
               render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel className="font-headline">Select Bet Amount</FormLabel>
+                <FormItem className="space-y-3 pt-4">
+                  <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -186,7 +209,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </div>
 
             <DialogFooter>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting}>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting}>
                 {isSubmitting ? "Placing Bet..." : "Place Bet"}
               </Button>
             </DialogFooter>

@@ -19,8 +19,9 @@ export type MatchFormValues = z.infer<typeof matchSchema>;
 // Schema for placing a bet
 export const betSchema = z.object({
   matchId: z.string(),
-  team: z.string({
-    required_error: "You need to select a team.",
+  // The value will be a string concatenation: `${questionId}|${predictionText}`
+  prediction: z.string({
+    required_error: "You need to select an answer for one of the questions.",
   }),
   amount: z.enum(['9', '19', '29'], {
     required_error: "You need to select a bet amount.",
