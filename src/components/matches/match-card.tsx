@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -104,7 +103,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
       )}
 
       {status === 'Finished' && (
-        <div className="border-t">
+        <CardFooter className="p-0 border-t">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="winners" className="border-b-0">
               <AccordionTrigger className="py-3 px-4 text-sm hover:no-underline [&[data-state=open]]:bg-muted/50">
@@ -141,7 +140,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </div>
+        </CardFooter>
       )}
     </Card>
   );
