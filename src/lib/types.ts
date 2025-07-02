@@ -19,6 +19,7 @@ export type Match = {
   startTime: string; // Changed from Date to string
   score?: string;
   winner?: string;
+  winners?: Winner[];
 };
 
 export type Prediction = {
