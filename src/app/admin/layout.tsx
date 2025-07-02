@@ -17,6 +17,7 @@ import {
   CircleDollarSign,
   MessageSquareQuote,
   Gift,
+  GalleryHorizontal,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -55,6 +56,7 @@ export default function AdminLayout({
     { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
     { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
     { href: "/admin/referrals", label: "Referrals", icon: Gift },
+    { href: "/admin/content", label: "Content", icon: GalleryHorizontal },
   ];
 
   const renderNavLinks = (isMobile = false) =>

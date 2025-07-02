@@ -128,3 +128,9 @@ export type ReferralSettings = {
     referredUserBonus: number;
     isEnabled: boolean;
 };
+
+export type ContentSettings = {
+    youtubeUrl: string;
+    bannerImageUrl: string;
+    smallVideoUrl: string;
+};

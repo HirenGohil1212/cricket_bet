@@ -88,3 +88,28 @@ export const referralSettingsSchema = z.object({
 });
 
 export type ReferralSettingsFormValues = z.infer<typeof referralSettingsSchema>;
+
+
+// Schema for content management (Admin)
+const MAX_BANNER_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_BANNER_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_VIDEO_TYPES = ["video/mp4"];
+
+export const contentManagementSchema = z.object({
+  youtubeUrl: z.string().url({ message: "Please enter a valid YouTube URL." }).optional().or(z.literal('')),
+  bannerImage: z.any()
+    .optional()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_BANNER_SIZE), `Max banner size is 5MB.`)
+    .refine((file) => !file || (file instanceof File && ACCEPTED_BANNER_TYPES.includes(file.type)), ".jpg, .jpeg, .png and .webp files are accepted."),
+  bannerImageDataUri: z.string().optional(),
+  bannerImageUrl: z.string().url().optional().or(z.literal('')),
+  smallVideo: z.any()
+    .optional()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_VIDEO_SIZE), `Max video size is 10MB.`)
+    .refine((file) => !file || (file instanceof File && ACCEPTED_VIDEO_TYPES.includes(file.type)), "Only .mp4 videos are accepted."),
+  smallVideoDataUri: z.string().optional(),
+  smallVideoUrl: z.string().url().optional().or(z.literal('')),
+});
+
+export type ContentManagementFormValues = z.infer<typeof contentManagementSchema>;
