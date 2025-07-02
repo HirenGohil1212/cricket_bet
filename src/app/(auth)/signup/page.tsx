@@ -12,7 +12,7 @@ import {
     linkWithCredential
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ export default function SignupPage() {
     const [name, setName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
     const [otp, setOtp] = useState('');
     const [step, setStep] = useState<'details' | 'otp'>('details');
     const [isLoading, setIsLoading] = useState(false);
@@ -109,8 +110,22 @@ export default function SignupPage() {
             await updateProfile(phoneUser, { displayName: name });
 
             // Generate a simple referral code
-            const referralCode = `GUESSWIN${phoneUser.uid.substring(0, 6).toUpperCase()}`;
+            const ownReferralCode = `GUESSWIN${phoneUser.uid.substring(0, 6).toUpperCase()}`;
 
+            // Check if a valid referral code was entered
+            let referrerId: string | null = null;
+            if (referralCode.trim()) {
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where('referralCode', '==', referralCode.trim().toUpperCase()));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    referrerId = querySnapshot.docs[0].id;
+                    toast({ title: "Referral Applied!", description: "You and your friend will receive a bonus soon." });
+                } else {
+                    toast({ variant: "destructive", title: "Invalid Referral Code", description: "The code you entered was not found. You can continue without it." });
+                }
+            }
+            
             // Save user data to Firestore
             await setDoc(doc(db, "users", phoneUser.uid), {
                 uid: phoneUser.uid,
@@ -118,9 +133,12 @@ export default function SignupPage() {
                 phoneNumber: `+91${phoneNumber}`,
                 createdAt: new Date(),
                 walletBalance: 0,
-                referralCode: referralCode,
+                referralCode: ownReferralCode,
                 role: 'user',
                 bankAccount: null,
+                isFirstBetPlaced: false,
+                referralBonusAwarded: false,
+                ...(referrerId && { referredBy: referrerId }), // Conditionally add referredBy
             });
 
 
@@ -181,6 +199,10 @@ export default function SignupPage() {
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="referral">Referral Code (Optional)</Label>
+                            <Input id="referral" placeholder="GUESSWIN123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} disabled={isLoading} />
                         </div>
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? 'Sending OTP...' : 'Send OTP'}

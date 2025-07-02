@@ -1,3 +1,4 @@
+
 'use server';
 
 import { 
@@ -13,6 +14,7 @@ import {
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Bet, Prediction } from '@/lib/types';
+import { processReferral } from './referral.actions';
 
 interface CreateBetParams {
     userId: string;
@@ -34,7 +36,7 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
         const userRef = doc(db, 'users', userId);
         const matchRef = doc(db, 'matches', matchId);
 
-        await runTransaction(db, async (transaction) => {
+        const result = await runTransaction(db, async (transaction) => {
             // All reads must come before writes in a transaction
             const userDoc = await transaction.get(userRef);
             const matchDoc = await transaction.get(matchRef);
@@ -45,15 +47,21 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
             if (!matchDoc.exists()) {
                 throw new Error("Match document not found.");
             }
+            
+            const userData = userDoc.data();
+            const isFirstBet = userData.isFirstBetPlaced === false;
 
-            const currentBalance = userDoc.data().walletBalance;
+            const currentBalance = userData.walletBalance;
             if (currentBalance < amount) {
                 throw new Error("Insufficient wallet balance.");
             }
 
             // All writes must come after reads
             const newBalance = currentBalance - amount;
-            transaction.update(userRef, { walletBalance: newBalance });
+            transaction.update(userRef, { 
+                walletBalance: newBalance,
+                ...(isFirstBet && { isFirstBetPlaced: true })
+            });
             
             const matchData = matchDoc.data();
             const potentialWin = amount * 2; // Simple 2x win for now
@@ -70,7 +78,15 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
                 timestamp: Timestamp.now(),
                 potentialWin,
             });
+            
+            // Return data to be used outside the transaction
+            return { isFirstBet, referredBy: userData.referredBy };
         });
+
+        // After the transaction is successful, check if a referral needs to be processed
+        if (result.isFirstBet && result.referredBy) {
+            await processReferral(userId, result.referredBy);
+        }
 
         revalidatePath('/');
         revalidatePath('/wallet');

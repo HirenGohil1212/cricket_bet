@@ -1,5 +1,4 @@
 
-
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -59,6 +58,9 @@ export type UserProfile = {
   referralCode: string;
   role: 'admin' | 'user';
   bankAccount?: UserBankAccount;
+  referredBy?: string; // UID of the referrer
+  isFirstBetPlaced?: boolean; // Has the user placed their first bet
+  referralBonusAwarded?: boolean; // Has this user received their signup bonus
 };
 
 export type BankAccount = {
@@ -72,7 +74,7 @@ export type BankAccount = {
 export type DepositRequest = {
   id: string;
   userId: string;
-  userName: string;
+  userName:string;
   amount: number;
   screenshotUrl: string;
   status: 'Pending' | 'Completed' | 'Failed';
@@ -110,4 +112,19 @@ export type Question = {
       teamA: string;
       teamB: string;
   } | null;
+};
+
+export type Transaction = {
+    id: string;
+    userId: string;
+    type: 'referral_bonus';
+    amount: number; // positive for credit
+    description: string;
+    timestamp: string;
+};
+
+export type ReferralSettings = {
+    referrerBonus: number;
+    referredUserBonus: number;
+    isEnabled: boolean;
 };

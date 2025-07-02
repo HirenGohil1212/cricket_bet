@@ -32,11 +32,11 @@ export function ReferralCard() {
         </div>
         <div>
             <CardTitle className="font-headline text-lg">Refer & Earn</CardTitle>
-            <CardDescription className="text-sm">Get INR 100 bonus for each friend!</CardDescription>
+            <CardDescription className="text-sm">Get a bonus for each friend!</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        <p className="text-xs text-muted-foreground">Share your code with friends. When they sign up and place their first bet, you both get a bonus.</p>
+        <p className="text-xs text-muted-foreground">Share your code. When your friend signs up, makes a deposit, and places their first bet, you'll both get a bonus!</p>
         <div className="flex items-center space-x-2">
           <Input readOnly value={referralCode} className="font-mono bg-background" />
           <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!userProfile?.referralCode}>

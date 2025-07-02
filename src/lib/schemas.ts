@@ -79,3 +79,12 @@ export const qnaFormSchema = z.object({
   questions: z.array(qnaItemSchema).min(1, "You must add at least one question."),
 });
 export type QnAFormValues = z.infer<typeof qnaFormSchema>;
+
+// Schema for referral settings (Admin)
+export const referralSettingsSchema = z.object({
+  referrerBonus: z.coerce.number().min(0, "Bonus must be a positive number."),
+  referredUserBonus: z.coerce.number().min(0, "Bonus must be a positive number."),
+  isEnabled: z.boolean(),
+});
+
+export type ReferralSettingsFormValues = z.infer<typeof referralSettingsSchema>;

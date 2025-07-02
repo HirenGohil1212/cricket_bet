@@ -40,6 +40,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                     role: data.role,
                     bankAccount: data.bankAccount || undefined,
+                    referredBy: data.referredBy,
+                    isFirstBetPlaced: data.isFirstBetPlaced,
+                    referralBonusAwarded: data.referralBonusAwarded,
                 };
                 setUserProfile(profile);
             } else {
