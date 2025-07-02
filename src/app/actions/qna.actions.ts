@@ -33,7 +33,8 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
                 question: data.question,
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
-                result: data.result,
+                result: data.result && typeof data.result === 'object' ? data.result : null,
+                options: data.options || [],
             } as Question;
         });
     } catch (error) {
@@ -145,16 +146,62 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
     }
 }
 
-// Function to set the results for questions, settle bets, and pay out winnings
-export async function settleMatchAndPayouts(matchId: string, results: Record<string, { teamA: string, teamB: string }>) {
+// New Function to just save the results for questions
+export async function saveQuestionResults(matchId: string, results: Record<string, { teamA: string, teamB: string }>) {
     if (!matchId) return { error: 'Match ID is required.' };
-    if (Object.keys(results).length === 0) return { error: 'No results provided.' };
+
+    const batch = writeBatch(db);
+    const questionsRef = collection(db, `matches/${matchId}/questions`);
+
+    for (const questionId in results) {
+        const resultValue = results[questionId];
+        // Only save if there is some data
+        if (resultValue && (resultValue.teamA.trim() || resultValue.teamB.trim())) {
+             const questionRef = doc(questionsRef, questionId);
+             batch.update(questionRef, { result: resultValue });
+        }
+    }
+
+    try {
+        await batch.commit();
+        revalidatePath(`/admin/q-and-a`);
+        return { success: 'Results have been saved successfully.' };
+    } catch (error: any) {
+        console.error("Error saving question results:", error);
+        return { error: error.message || 'Failed to save results.' };
+    }
+}
+
+
+// Modified function to settle bets and payout based on pre-saved results
+export async function settleMatchAndPayouts(matchId: string) {
+    if (!matchId) return { error: 'Match ID is required.' };
     
     const matchRef = doc(db, 'matches', matchId);
     const betsRef = collection(db, 'bets');
     const questionsRef = collection(db, `matches/${matchId}/questions`);
 
     try {
+        // Pre-transaction check: ensure all active questions have results before starting.
+        const allQuestionsSnapshot = await getDocs(questionsRef);
+        const questionsWithData = allQuestionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<Question, 'id' | 'createdAt'>, createdAt: (doc.data().createdAt as Timestamp).toDate().toISOString() }));
+        
+        const activeQuestions = questionsWithData.filter(q => q.status === 'active');
+        if (activeQuestions.length === 0) {
+            return { error: 'No active questions to settle for this match.' };
+        }
+        if (activeQuestions.some(q => !q.result || !q.result.teamA.trim() || !q.result.teamB.trim())) {
+            return { error: 'Cannot settle match. Not all active questions have saved results.' };
+        }
+        
+        // Convert results to a map for easy lookup inside the transaction
+        const resultsMap: Record<string, { teamA: string, teamB: string }> = {};
+        questionsWithData.forEach(q => {
+            if (q.result) {
+                resultsMap[q.id] = q.result;
+            }
+        });
+
         await runTransaction(db, async (transaction) => {
             const pendingBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
             const pendingBetsSnapshot = await transaction.get(pendingBetsQuery);
@@ -167,8 +214,7 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
                 let isWinner = true; // A bet is only won if ALL predictions are correct
                 
                 for (const prediction of bet.predictions) {
-                    const winningResult = results[prediction.questionId];
-                    // Compare user's free-form answers with the official results
+                    const winningResult = resultsMap[prediction.questionId];
                     if (!winningResult || 
                         prediction.predictedAnswer.teamA.trim().toLowerCase() !== winningResult.teamA.trim().toLowerCase() ||
                         prediction.predictedAnswer.teamB.trim().toLowerCase() !== winningResult.teamB.trim().toLowerCase()
@@ -199,13 +245,13 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
                 }
             }
 
-            // 3. Update question results
-            for (const questionId in results) {
-                const questionRef = doc(questionsRef, questionId);
-                transaction.update(questionRef, {
-                    result: results[questionId], // Store the result object
-                    status: 'settled',
-                });
+            // 3. Update question statuses to 'settled'
+            for (const questionId in resultsMap) {
+                const question = questionsWithData.find(q => q.id === questionId);
+                if (question && question.status === 'active') {
+                    const questionRef = doc(questionsRef, questionId);
+                    transaction.update(questionRef, { status: 'settled' });
+                }
             }
 
             // 4. Update match status
