@@ -107,6 +107,15 @@ export async function getMatches(): Promise<Match[]> {
         const matchSnapshot = await getDocs(q);
         const matchList = matchSnapshot.docs.map(doc => {
             const data = doc.data();
+
+            // Fix blurry flag URLs on the fly by always requesting high-resolution images
+            if (data.teamA.logoUrl && data.teamA.logoUrl.includes('flagpedia.net')) {
+                data.teamA.logoUrl = data.teamA.logoUrl.replace('/w80/', '/w320/').replace('/w40/', '/w320/');
+            }
+            if (data.teamB.logoUrl && data.teamB.logoUrl.includes('flagpedia.net')) {
+                data.teamB.logoUrl = data.teamB.logoUrl.replace('/w80/', '/w320/').replace('/w40/', '/w320/');
+            }
+
             return {
                 id: doc.id,
                 sport: data.sport,
