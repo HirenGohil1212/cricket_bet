@@ -144,7 +144,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
-          <DialogDescription>
+          <DialogDescription asChild>
             <div className="flex items-center justify-center gap-4 mt-2">
                 <div className="flex items-center gap-2">
                     <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="rounded-full" data-ai-hint="logo" />
