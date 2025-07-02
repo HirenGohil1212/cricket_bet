@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -14,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface QuestionTemplateDialogProps {
     sport: Sport;
-    existingQuestions: Question[];
+    existingQuestions: Pick<Question, 'question'>[];
     isOpen: boolean;
     onClose: () => void;
 }
@@ -26,11 +27,8 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
     
     const defaultValues = {
         questions: existingQuestions.length > 0
-            ? existingQuestions.map(q => ({
-                question: q.question,
-                options: q.options.map(opt => ({ text: opt.text }))
-            }))
-            : [{ question: "", options: [{ text: "" }, { text: "" }] }]
+            ? existingQuestions
+            : [{ question: "" }]
     };
 
     const form = useForm<QnAFormValues>({

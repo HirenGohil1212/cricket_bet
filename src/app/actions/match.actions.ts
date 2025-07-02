@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch } from 'firebase/firestore';
@@ -60,10 +61,8 @@ export async function createMatch(values: MatchFormValues) {
                 
                 questions.forEach((q: any) => {
                     const questionRef = doc(questionsCollectionRef);
-                    const optionsWithOdds = q.options.map((opt: any) => ({ ...opt, odds: 2.0 }));
                     batch.set(questionRef, {
                         question: q.question,
-                        options: optionsWithOdds,
                         createdAt: Timestamp.now(),
                         status: 'active',
                         result: null,

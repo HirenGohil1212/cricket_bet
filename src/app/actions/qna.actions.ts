@@ -34,7 +34,6 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
                 result: data.result && typeof data.result === 'object' ? data.result : null,
-                options: data.options || [],
             } as Question;
         });
     } catch (error) {
