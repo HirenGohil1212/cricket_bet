@@ -92,48 +92,53 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
               </TableRow>
             </TableHeader>
             <TableBody>
-              {bets.map((bet) => (
-                <TableRow key={bet.id}>
-                  <TableCell>
-                    <div className="font-semibold">{bet.matchDescription}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(bet.timestamp).toLocaleString()}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                     {bet.predictions.length > 0 ? (
-                        <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="item-1">
-                            <AccordionTrigger className="text-xs py-1 hover:no-underline">
-                              View {bet.predictions.length} predictions
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                <ul className="space-y-2 pt-2">
-                                  {bet.predictions.map((p, index) => (
-                                    <li key={index} className="text-xs border-l-2 pl-2 border-muted">
-                                      <div className="text-muted-foreground">{p.questionText}</div>
-                                      <div className="font-medium">
-                                          Your answer: 
-                                          <span className="text-primary"> {p.predictedAnswer || 'N/A'}</span>
-                                      </div>
-                                    </li>
-                                  ))}
-                                </ul>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                     ) : (
-                        <span className="text-xs text-muted-foreground">No predictions</span>
-                     )}
-                  </TableCell>
-                  <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge className={cn("text-xs", getStatusClass(bet.status))}>
-                      {bet.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {bets.map((bet) => {
+                 const [teamAName, teamBName] = bet.matchDescription.split(' vs ');
+                 return (
+                    <TableRow key={bet.id}>
+                      <TableCell>
+                        <div className="font-semibold">{bet.matchDescription}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(bet.timestamp).toLocaleString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                         {bet.predictions.length > 0 ? (
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="item-1">
+                                <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                                  View {bet.predictions.length} predictions
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <ul className="space-y-2 pt-2">
+                                      {bet.predictions.map((p, index) => (
+                                        <li key={index} className="text-xs border-l-2 pl-2 border-muted space-y-1">
+                                          <div className="text-muted-foreground">{p.questionText}</div>
+                                           <div className="font-medium">
+                                               {teamAName}: <span className="text-primary">{p.predictedAnswer?.teamA || 'N/A'}</span>
+                                           </div>
+                                           <div className="font-medium">
+                                               {teamBName}: <span className="text-primary">{p.predictedAnswer?.teamB || 'N/A'}</span>
+                                           </div>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                         ) : (
+                            <span className="text-xs text-muted-foreground">No predictions</span>
+                         )}
+                      </TableCell>
+                      <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge className={cn("text-xs", getStatusClass(bet.status))}>
+                          {bet.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                 )
+              })}
             </TableBody>
           </Table>
     );
