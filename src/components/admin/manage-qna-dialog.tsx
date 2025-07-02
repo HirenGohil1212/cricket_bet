@@ -154,7 +154,7 @@ function SettlementForm({ match, questions, isSubmitting, onSettle, onCancel }: 
     );
 }
 
-// This component remains the same, it reads from the FormProvider context.
+// This component reads from the FormProvider context.
 function ResultField({ question, match }: { question: Question, match: Match }) {
     const { control } = useFormContext();
     const isSettled = question.status === 'settled';
