@@ -41,11 +41,6 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
   const { teamA, teamB, status, score, winner, sport, startTime, winners } = match;
   const { user } = useAuth();
 
-  const getTeamClass = (teamName: string) => {
-    if (status !== 'Finished') return 'text-foreground';
-    return winner === teamName ? 'font-bold text-primary' : 'text-muted-foreground opacity-70';
-  };
-
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
 
   return (
@@ -63,9 +58,13 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
       
       <CardContent className="p-4 space-y-4 flex-grow">
         <div className="flex justify-between items-center text-center">
-            <div className={cn("flex-1 flex flex-col items-center gap-2", getTeamClass(teamA.name))}>
+            {/* Team A Display */}
+            <div className="flex-1 flex flex-col items-center gap-2">
                 <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="rounded-full object-contain" data-ai-hint="logo" />
-                <p className="font-semibold text-sm leading-tight">{teamA.name}</p>
+                 <div className={cn("flex items-center gap-1.5", status === 'Finished' && winner === teamA.name && "text-primary")}>
+                    {status === 'Finished' && winner === teamA.name && <Trophy className="h-4 w-4" />}
+                    <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamA.name && "font-bold")}>{teamA.name}</p>
+                </div>
             </div>
             
             <div className="flex flex-col items-center">
@@ -75,17 +74,15 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
               </p>
             </div>
 
-            <div className={cn("flex-1 flex flex-col items-center gap-2", getTeamClass(teamB.name))}>
+            {/* Team B Display */}
+            <div className="flex-1 flex flex-col items-center gap-2">
                 <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="rounded-full object-contain" data-ai-hint="logo" />
-                <p className="font-semibold text-sm leading-tight">{teamB.name}</p>
+                 <div className={cn("flex items-center gap-1.5", status === 'Finished' && winner === teamB.name && "text-primary")}>
+                    {status === 'Finished' && winner === teamB.name && <Trophy className="h-4 w-4" />}
+                    <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamB.name && "font-bold")}>{teamB.name}</p>
+                </div>
             </div>
         </div>
-
-        {status === 'Finished' && winner && (
-          <p className="text-center text-sm text-primary font-semibold p-2 bg-primary/10 rounded-md">
-            {winner} won the match!
-          </p>
-        )}
       </CardContent>
 
       {status === 'Upcoming' && (
@@ -104,14 +101,13 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
       )}
 
       {status === 'Finished' && (
-        <CardFooter className="p-2 pt-0 border-t">
+        <CardFooter className="p-2 border-t bg-muted/50">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="winners" className="border-b-0">
-              <AccordionTrigger className="py-2 text-sm hover:no-underline [&[data-state=open]]:bg-transparent">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-amber-500" />
+              <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
+                <div className="flex items-center gap-2 mx-auto">
                   <span>
-                    {winners && winners.length > 0 ? `${winners.length} Winner(s)` : "View Results"}
+                    {winners && winners.length > 0 ? `${winners.length} Winner(s) Found` : "No Winners"}
                   </span>
                 </div>
               </AccordionTrigger>
@@ -136,7 +132,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
                     </div>
                   </ScrollArea>
                 ) : (
-                  <p className="text-center text-sm text-muted-foreground py-4">No winners for this match.</p>
+                  <p className="text-center text-sm text-muted-foreground py-4">There were no winners for this match.</p>
                 )}
               </AccordionContent>
             </AccordionItem>
