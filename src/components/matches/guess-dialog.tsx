@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -167,7 +168,19 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                          <FormItem>
                             <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
                              <FormControl>
-                                <Input type="number" placeholder="Enter amount" {...field} />
+                               <div className="grid grid-cols-3 gap-4">
+                                  {[9, 19, 29].map((val) => (
+                                    <Button
+                                      key={val}
+                                      type="button"
+                                      variant={amount === val ? "default" : "secondary"}
+                                      onClick={() => field.onChange(val)}
+                                      className="font-bold"
+                                    >
+                                      INR {val}
+                                    </Button>
+                                  ))}
+                                </div>
                             </FormControl>
                             <FormMessage />
                          </FormItem>
