@@ -4,15 +4,15 @@ import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import type { Match, Question } from '@/lib/types';
 import { Button } from '../ui/button';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { setQuestionResults } from '@/app/actions/qna.actions';
+import { setQuestionOptions } from '@/app/actions/qna.actions';
 import { useToast } from '@/hooks/use-toast';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
-import { FormControl, FormField, FormItem } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Badge } from '../ui/badge';
+import { Textarea } from '../ui/textarea';
 
 interface SetResultsDialogProps {
     match: Match;
@@ -21,11 +21,15 @@ interface SetResultsDialogProps {
     onClose: (shouldRefresh: boolean) => void;
 }
 
-const createResultsSchema = (questions: Question[]) => {
+// Create a Zod schema dynamically based on the questions
+const createOptionsSchema = (questions: Question[]) => {
     const schemaObject = questions.reduce((acc, q) => {
-        acc[q.id] = z.string().optional();
+        acc[q.id] = z.object({
+            optionA: z.string().min(1, 'Option is required'),
+            optionB: z.string().min(1, 'Option is required'),
+        });
         return acc;
-    }, {} as Record<string, z.ZodOptional<z.ZodString>>);
+    }, {} as Record<string, z.ZodObject<{ optionA: z.ZodString, optionB: z.ZodString }>>);
     return z.object(schemaObject);
 };
 
@@ -34,46 +38,36 @@ export function SetResultsDialog({ match, questions, isOpen, onClose }: SetResul
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    const resultsSchema = React.useMemo(() => createResultsSchema(questions), [questions]);
-    
-    const defaultValues = React.useMemo(() => questions.reduce((acc, q) => {
-        acc[q.id] = q.result || '';
-        return acc;
-    }, {} as Record<string, string>), [questions]);
+    // Dynamically create the schema and default values
+    const optionsSchema = React.useMemo(() => createOptionsSchema(questions), [questions]);
+    type OptionsFormValues = z.infer<typeof optionsSchema>;
 
-    const form = useForm<z.infer<typeof resultsSchema>>({
-        resolver: zodResolver(resultsSchema),
+    const defaultValues = React.useMemo(() => questions.reduce((acc, q) => {
+        acc[q.id] = {
+            optionA: q.options?.[0]?.text || '',
+            optionB: q.options?.[1]?.text || '',
+        };
+        return acc;
+    }, {} as OptionsFormValues), [questions]);
+
+    const form = useForm<OptionsFormValues>({
+        resolver: zodResolver(optionsSchema),
         defaultValues,
     });
-
+    
+    // Reset form if the questions or their options change
     React.useEffect(() => {
         form.reset(defaultValues);
     }, [defaultValues, form]);
     
-    const handleSubmit = async (data: z.infer<typeof resultsSchema>) => {
+    const handleSubmit = async (data: OptionsFormValues) => {
         setIsSubmitting(true);
-        
-        const dirtyData: Record<string, string> = {};
-        for(const qId in data) {
-            const value = data[qId];
-            if (value && value !== defaultValues[qId]) {
-                dirtyData[qId] = value;
-            }
-        }
-
-        if (Object.keys(dirtyData).length === 0) {
-            toast({ variant: 'default', title: 'No Changes', description: 'No new results were selected.' });
-            setIsSubmitting(false);
-            onClose(false);
-            return;
-        }
-
-        const result = await setQuestionResults(match.id, dirtyData);
+        const result = await setQuestionOptions(match.id, data);
         if (result.error) {
             toast({ variant: 'destructive', title: 'Update Failed', description: result.error });
         } else {
             toast({ title: 'Success', description: result.success });
-            onClose(true);
+            onClose(true); // Signal a refresh
         }
         setIsSubmitting(false);
     };
@@ -82,22 +76,22 @@ export function SetResultsDialog({ match, questions, isOpen, onClose }: SetResul
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Set Results for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
+                    <DialogTitle>Set Question Options for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
                     <DialogDescription>
-                       Select the winning option for each question. Once a result is saved, it cannot be changed.
+                       Define the specific answers for each question for this match.
                     </DialogDescription>
                 </DialogHeader>
                 <FormProvider {...form}>
                    <form onSubmit={form.handleSubmit(handleSubmit)}>
                        <div className="py-4 max-h-[60vh] overflow-y-auto space-y-6">
                            {questions.map((q, index) => (
-                               <ResultField key={q.id} question={q} index={index} />
+                               <OptionsField key={q.id} question={q} index={index} />
                            ))}
                        </div>
                        <DialogFooter>
                            <Button type="button" variant="ghost" onClick={() => onClose(false)} disabled={isSubmitting}>Cancel</Button>
                            <Button type="submit" disabled={isSubmitting}>
-                               {isSubmitting ? 'Saving...' : 'Save Results'}
+                               {isSubmitting ? 'Saving...' : 'Save Options'}
                            </Button>
                        </DialogFooter>
                    </form>
@@ -107,54 +101,42 @@ export function SetResultsDialog({ match, questions, isOpen, onClose }: SetResul
     );
 }
 
-function ResultField({ question, index }: { question: Question; index: number }) {
+
+function OptionsField({ question, index }: { question: Question; index: number }) {
     const { control } = useFormContext();
-    const isSettled = question.status === 'settled';
 
     return (
-        <FormField
-            control={control}
-            name={question.id}
-            render={({ field }) => (
-                <FormItem className="p-4 border rounded-md">
-                     <div className="flex justify-between items-start">
-                        <div>
-                           <p className="font-semibold text-muted-foreground">Question #{index + 1}</p>
-                           <p className="font-medium">{question.question}</p>
-                        </div>
-                        {isSettled && <Badge variant="secondary">Settled</Badge>}
-                    </div>
-                    <FormControl>
-                        <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4"
-                            disabled={isSettled}
-                        >
-                            <FormItem>
-                                <Label className="flex items-center justify-center p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-muted cursor-pointer data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-70" data-disabled={isSettled}>
-                                  <FormControl><RadioGroupItem value={question.options[0].text} className="sr-only" /></FormControl>
-                                  <span>{question.options[0].text}</span>
-                                </Label>
-                            </FormItem>
-
-                            <FormItem>
-                                 <Label className="flex items-center justify-center p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-muted cursor-pointer data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-70 text-muted-foreground" data-disabled={isSettled}>
-                                    <FormControl><RadioGroupItem value="void" className="sr-only" /></FormControl>
-                                    <span>Void / Cancel</span>
-                                 </Label>
-                            </FormItem>
-
-                            <FormItem>
-                                <Label className="flex items-center justify-center p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-muted cursor-pointer data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-70" data-disabled={isSettled}>
-                                  <FormControl><RadioGroupItem value={question.options[1].text} className="sr-only" /></FormControl>
-                                  <span>{question.options[1].text}</span>
-                                </Label>
-                            </FormItem>
-                        </RadioGroup>
-                    </FormControl>
-                </FormItem>
-            )}
-        />
+         <div className="p-4 border rounded-md">
+             <Label className="font-semibold text-muted-foreground">Question #{index + 1}</Label>
+             <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-4 pt-2">
+                <FormField
+                    control={control}
+                    name={`${question.id}.optionA`}
+                    render={({ field }) => (
+                        <FormItem>
+                           <Label className="font-medium text-center block">Option A</Label>
+                           <FormControl><Input placeholder="Enter answer..." {...field} /></FormControl>
+                           <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                
+                <div className="flex justify-center items-center h-full pt-1">
+                    <p className="text-center font-medium bg-muted p-3 rounded-md text-sm">{question.question}</p>
+                </div>
+                
+                 <FormField
+                    control={control}
+                    name={`${question.id}.optionB`}
+                    render={({ field }) => (
+                        <FormItem>
+                           <Label className="font-medium text-center block">Option B</Label>
+                           <FormControl><Input placeholder="Enter answer..." {...field} /></FormControl>
+                           <FormMessage />
+                        </FormItem>
+                    )}
+                />
+             </div>
+        </div>
     )
 }

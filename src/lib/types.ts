@@ -87,13 +87,20 @@ export type QnaOption = {
   odds: number;
 };
 
-export type QnaItem = {
+// Represents a question item in the template creation form
+export type QnaFormItem = {
   question: string;
-  options: QnaOption[];
 };
 
-export type Question = QnaItem & {
+// Represents the full schema for the template creation form
+export type QnaFormValues = {
+  questions: QnaFormItem[];
+};
+
+export type Question = {
   id: string;
+  question: string;
+  options: QnaOption[];
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
   result: string | null;

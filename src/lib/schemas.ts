@@ -82,14 +82,9 @@ export const withdrawalRequestSchema = z.object({
 export type WithdrawalRequestFormValues = z.infer<typeof withdrawalRequestSchema>;
 
 
-// Schema for Q&A (Admin Form)
-export const qnaOptionSchema = z.object({
-    text: z.string().min(1, "Option text cannot be empty."),
-});
-
+// Schema for Q&A Template (Admin Form)
 export const qnaItemSchema = z.object({
   question: z.string().min(10, "Question must be at least 10 characters."),
-  options: z.array(qnaOptionSchema).length(2, "Exactly two options are required."),
 });
 
 export const qnaFormSchema = z.object({

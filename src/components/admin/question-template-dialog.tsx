@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface QuestionTemplateDialogProps {
     sport: Sport;
-    existingQuestions: Question[];
+    existingQuestions: Pick<Question, 'question'>[];
     isOpen: boolean;
     onClose: () => void;
 }
@@ -24,14 +24,10 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    // Memoize defaultValues to prevent re-creation on every render, which caused an infinite loop.
     const defaultValues = React.useMemo(() => ({
         questions: existingQuestions.length > 0
-            ? existingQuestions.map(q => ({
-                question: q.question,
-                options: q.options.map(opt => ({ text: opt.text }))
-            }))
-            : [{ question: "", options: [{ text: "" }, { text: "" }] }]
+            ? existingQuestions
+            : [{ question: "" }]
     }), [existingQuestions]);
 
     const form = useForm<QnAFormValues>({
@@ -39,7 +35,6 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
         defaultValues,
     });
     
-    // Reset the form whenever the defaultValues change (i.e., when existingQuestions prop changes)
     React.useEffect(() => {
         form.reset(defaultValues);
     }, [defaultValues, form]);
@@ -63,7 +58,7 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
                 <DialogHeader>
                     <DialogTitle>Manage Question Template for {sport}</DialogTitle>
                     <DialogDescription>
-                        These questions will be applied to all upcoming and live {sport} matches. This will overwrite any existing questions on those matches.
+                        These questions will be applied to all upcoming and live {sport} matches.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 max-h-[60vh] overflow-y-auto">

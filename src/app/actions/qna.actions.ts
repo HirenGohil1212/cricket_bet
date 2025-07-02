@@ -8,12 +8,13 @@ import {
     getDocs,
     Timestamp,
     where,
+    updateDoc,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
-import { qnaItemSchema } from '@/lib/schemas';
-import type { Question, Sport } from '@/lib/types';
+import { qnaFormSchema } from '@/lib/schemas';
+import type { Question, Sport, QnaFormValues } from '@/lib/types';
 
 
 // Function to get questions for a specific match
@@ -29,7 +30,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
             return {
                 id: doc.id,
                 question: data.question,
-                options: data.options,
+                options: data.options || [],
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
                 result: data.result,
@@ -41,21 +42,12 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
     }
 }
 
-
-// Function to save a set of questions to a specific match
-export async function saveQuestionsForMatch(matchId: string, questions: z.infer<typeof qnaItemSchema>[]) {
+// Overwrites the questions for a specific match.
+export async function saveQuestionsForMatch(matchId: string, questions: { question: string; options: {text: string}[] }[]) {
      if (!matchId) {
         return { error: 'A match ID must be provided.' };
     }
     
-    const questionsSchema = z.array(qnaItemSchema);
-    const validatedQuestions = questionsSchema.safeParse(questions);
-
-    if (!validatedQuestions.success) {
-        console.error("Validation Errors:", validatedQuestions.error.flatten().fieldErrors);
-        return { error: 'Invalid question data provided.' };
-    }
-
     try {
         const batch = writeBatch(db);
         const questionsCollectionRef = collection(db, `matches/${matchId}/questions`);
@@ -65,7 +57,7 @@ export async function saveQuestionsForMatch(matchId: string, questions: z.infer<
             batch.delete(doc.ref);
         });
 
-        validatedQuestions.data.forEach(q => {
+        questions.forEach(q => {
             const questionRef = doc(questionsCollectionRef);
             const optionsWithOdds = q.options.map(opt => ({ ...opt, odds: 2.0 }));
             batch.set(questionRef, {
@@ -87,35 +79,27 @@ export async function saveQuestionsForMatch(matchId: string, questions: z.infer<
     }
 }
 
-
 // Function to get all question templates
-export async function getQuestionTemplates(): Promise<Record<Sport, Question[]>> {
-    const templates: Partial<Record<Sport, Question[]>> = {};
+export async function getQuestionTemplates(): Promise<Record<Sport, Pick<Question, 'question'>[]>> {
+    const templates: Partial<Record<Sport, Pick<Question, 'question'>[]>> = {};
     try {
         const templatesRef = collection(db, 'questionTemplates');
         const querySnapshot = await getDocs(templatesRef);
 
         querySnapshot.docs.forEach(doc => {
             const data = doc.data();
-            const questions = data.questions || [];
-            templates[doc.id as Sport] = questions.map((q: any) => ({
-                ...q,
-                id: '', 
-                createdAt: new Date().toISOString(),
-                status: 'active',
-                result: null,
-            }));
+            templates[doc.id as Sport] = data.questions || [];
         });
-        return templates as Record<Sport, Question[]>;
+        return templates as Record<Sport, Pick<Question, 'question'>[]>;
     } catch (error) {
         console.error("Error fetching question templates:", error);
-        return {} as Record<Sport, Question[]>;
+        return {} as Record<Sport, Pick<Question, 'question'>[]>;
     }
 }
 
 // Function to save a template and apply it to all upcoming/live matches
-export async function saveTemplateAndApply(sport: Sport, questions: z.infer<typeof qnaItemSchema>[]) {
-    const validatedQuestions = z.array(qnaItemSchema).safeParse(questions);
+export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValues['questions']) {
+    const validatedQuestions = qnaFormSchema.safeParse({ questions });
     if (!validatedQuestions.success) {
         return { error: 'Invalid question data provided.' };
     }
@@ -125,25 +109,28 @@ export async function saveTemplateAndApply(sport: Sport, questions: z.infer<type
     
     try {
         const batch = writeBatch(db);
-        batch.set(templateRef, { questions: validatedQuestions.data });
+        // Save the template itself
+        batch.set(templateRef, { questions: validatedQuestions.data.questions });
 
         const upcomingMatchesQuery = query(matchesRef, where('sport', '==', sport), where('status', 'in', ['Upcoming', 'Live']));
         const matchesSnapshot = await getDocs(upcomingMatchesQuery);
 
+        // Apply template to all relevant matches
         for (const matchDoc of matchesSnapshot.docs) {
             const questionsCollectionRef = collection(db, `matches/${matchDoc.id}/questions`);
             
+            // Clear existing questions
             const existingQuestionsSnapshot = await getDocs(questionsCollectionRef);
             existingQuestionsSnapshot.forEach(doc => {
                 batch.delete(doc.ref);
             });
             
-            validatedQuestions.data.forEach(q => {
+            // Add new questions from the template
+            validatedQuestions.data.questions.forEach(q => {
                 const questionRef = doc(questionsCollectionRef);
-                const optionsWithOdds = q.options.map(opt => ({ ...opt, odds: 2.0 }));
                 batch.set(questionRef, {
                     question: q.question,
-                    options: optionsWithOdds,
+                    options: [], // Options will be set per-match later
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,
@@ -158,6 +145,37 @@ export async function saveTemplateAndApply(sport: Sport, questions: z.infer<type
     } catch (error: any) {
         console.error("Error saving template and applying to matches:", error);
         return { error: error.message || 'Failed to save template.' };
+    }
+}
+
+// Function to set the options for questions of a given match
+export async function setQuestionOptions(matchId: string, options: Record<string, { optionA: string, optionB: string }>) {
+    if (!matchId) return { error: 'Match ID is required.' };
+    if (Object.keys(options).length === 0) return { error: 'No options provided.' };
+    
+    try {
+        const batch = writeBatch(db);
+        const questionsRef = collection(db, `matches/${matchId}/questions`);
+
+        for (const questionId in options) {
+            const { optionA, optionB } = options[questionId];
+            if (optionA && optionB) {
+                const questionRef = doc(questionsRef, questionId);
+                const optionsWithOdds = [
+                    { text: optionA, odds: 2.0 },
+                    { text: optionB, odds: 2.0 },
+                ];
+                batch.update(questionRef, { options: optionsWithOdds });
+            }
+        }
+        
+        await batch.commit();
+
+        revalidatePath(`/admin/q-and-a`);
+        return { success: 'Options have been saved successfully!' };
+    } catch (error: any) {
+        console.error("Error setting options:", error);
+        return { error: error.message || 'Failed to save options.' };
     }
 }
 
