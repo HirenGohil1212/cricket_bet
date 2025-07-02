@@ -24,7 +24,7 @@ export type Match = {
 export type Prediction = {
   questionId: string;
   questionText: string;
-  predictedAnswer: {
+  predictedAnswer?: {
       teamA: string;
       teamB: string;
   };
@@ -106,6 +106,7 @@ export type QnaFormValues = {
 export type Question = {
   id: string;
   question: string;
+  options: { text: string; odds: number }[];
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
   result: {
@@ -134,3 +135,10 @@ export type ContentSettings = {
     bannerImageUrl: string;
     smallVideoUrl: string;
 };
+
+export type DailyFinancialActivity = {
+    date: string;
+    revenue: number;
+    deposits: number;
+    withdrawals: number;
+}

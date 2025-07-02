@@ -106,10 +106,10 @@ export default async function AdminDashboardPage() {
                             <h3 className="font-semibold">Content Management</h3>
                             <p className="text-sm text-muted-foreground">Upload banner and video ads.</p>
                         </Link>
-                         <div className="p-4 bg-muted/30 rounded-lg cursor-not-allowed">
-                            <h3 className="font-semibold text-muted-foreground/70">Financial Reports</h3>
-                            <p className="text-sm text-muted-foreground/50">View daily and monthly summaries.</p>
-                        </div>
+                         <Link href="/admin/financial-reports" className="p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                            <h3 className="font-semibold">Financial Reports</h3>
+                            <p className="text-sm text-muted-foreground">View daily and monthly summaries.</p>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
