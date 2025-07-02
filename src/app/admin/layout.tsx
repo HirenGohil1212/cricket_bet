@@ -85,7 +85,7 @@ export default function AdminLayout({
               <span className="">Guess & Win Admin</span>
             </Link>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start space-y-1 px-2 py-4 text-sm font-medium lg:px-4">
               {renderNavLinks()}
             </nav>
@@ -100,7 +100,7 @@ export default function AdminLayout({
           </div>
         </div>
       </aside>
-      <div className="flex flex-col">
+      <div className="flex flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
