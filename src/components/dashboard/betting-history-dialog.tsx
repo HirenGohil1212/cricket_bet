@@ -84,7 +84,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Match &amp; Date</TableHead>
+                <TableHead>Match & Date</TableHead>
                 <TableHead>Predictions</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Status</TableHead>
@@ -113,8 +113,8 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                                       <div className="text-muted-foreground">{p.questionText}</div>
                                       <div className="font-medium">
                                           Your answers: 
-                                          <span className="text-primary"> {p.predictedAnswer.teamA}</span> / 
-                                          <span className="text-primary"> {p.predictedAnswer.teamB}</span>
+                                          <span className="text-primary"> {p.predictedAnswer?.teamA || 'N/A'}</span> / 
+                                          <span className="text-primary"> {p.predictedAnswer?.teamB || 'N/A'}</span>
                                       </div>
                                     </li>
                                   ))}
