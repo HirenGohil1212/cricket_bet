@@ -30,7 +30,6 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
             return {
                 id: doc.id,
                 question: data.question,
-                options: data.options || [],
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
                 result: data.result,
@@ -43,7 +42,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
 }
 
 // Overwrites the questions for a specific match.
-export async function saveQuestionsForMatch(matchId: string, questions: { question: string; options: {text: string}[] }[]) {
+export async function saveQuestionsForMatch(matchId: string, questions: { question: string; }[]) {
      if (!matchId) {
         return { error: 'A match ID must be provided.' };
     }
@@ -59,10 +58,8 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
 
         questions.forEach(q => {
             const questionRef = doc(questionsCollectionRef);
-            const optionsWithOdds = q.options.map(opt => ({ ...opt, odds: 2.0 }));
             batch.set(questionRef, {
                 question: q.question,
-                options: optionsWithOdds,
                 createdAt: Timestamp.now(),
                 status: 'active',
                 result: null,
@@ -130,7 +127,6 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
                 const questionRef = doc(questionsCollectionRef);
                 batch.set(questionRef, {
                     question: q.question,
-                    options: [], // Options will be set per-match later
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,
@@ -148,40 +144,8 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
     }
 }
 
-// Function to set the options for questions of a given match
-export async function setQuestionOptions(matchId: string, options: Record<string, { optionA: string, optionB: string }>) {
-    if (!matchId) return { error: 'Match ID is required.' };
-    if (Object.keys(options).length === 0) return { error: 'No options provided.' };
-    
-    try {
-        const batch = writeBatch(db);
-        const questionsRef = collection(db, `matches/${matchId}/questions`);
-
-        for (const questionId in options) {
-            const { optionA, optionB } = options[questionId];
-            if (optionA && optionB) {
-                const questionRef = doc(questionsRef, questionId);
-                const optionsWithOdds = [
-                    { text: optionA, odds: 2.0 },
-                    { text: optionB, odds: 2.0 },
-                ];
-                batch.update(questionRef, { options: optionsWithOdds });
-            }
-        }
-        
-        await batch.commit();
-
-        revalidatePath(`/admin/q-and-a`);
-        return { success: 'Options have been saved successfully!' };
-    } catch (error: any) {
-        console.error("Error setting options:", error);
-        return { error: error.message || 'Failed to save options.' };
-    }
-}
-
-
 // Function to set the results for questions, settle bets, and pay out winnings
-export async function settleMatchAndPayouts(matchId: string, results: Record<string, string>) {
+export async function settleMatchAndPayouts(matchId: string, results: Record<string, { teamA: string, teamB: string }>) {
     if (!matchId) return { error: 'Match ID is required.' };
     if (Object.keys(results).length === 0) return { error: 'No results provided.' };
     
@@ -202,8 +166,12 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
                 let isWinner = true; // A bet is only won if ALL predictions are correct
                 
                 for (const prediction of bet.predictions) {
-                    const winningOptionText = results[prediction.questionId];
-                    if (!winningOptionText || prediction.predictedOption.toLowerCase().trim() !== winningOptionText.toLowerCase().trim()) {
+                    const winningResult = results[prediction.questionId];
+                    // Compare user's free-form answers with the official results
+                    if (!winningResult || 
+                        prediction.predictedAnswer.teamA.trim().toLowerCase() !== winningResult.teamA.trim().toLowerCase() ||
+                        prediction.predictedAnswer.teamB.trim().toLowerCase() !== winningResult.teamB.trim().toLowerCase()
+                    ) {
                         isWinner = false;
                         break;
                     }
@@ -234,7 +202,7 @@ export async function settleMatchAndPayouts(matchId: string, results: Record<str
             for (const questionId in results) {
                 const questionRef = doc(questionsRef, questionId);
                 transaction.update(questionRef, {
-                    result: results[questionId], // Store the winning option text
+                    result: results[questionId], // Store the result object
                     status: 'settled',
                 });
             }

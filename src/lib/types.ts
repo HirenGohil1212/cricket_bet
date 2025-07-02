@@ -25,7 +25,10 @@ export type Match = {
 export type Prediction = {
   questionId: string;
   questionText: string;
-  predictedOption: string;
+  predictedAnswer: {
+      teamA: string;
+      teamB: string;
+  };
 };
 
 export type Bet = {
@@ -88,11 +91,6 @@ export type WithdrawalRequest = {
   userBankAccount: UserBankAccount;
 };
 
-export type QnaOption = {
-  text: string;
-  odds: number;
-};
-
 // Represents a question item in the template creation form
 export type QnaFormItem = {
   question: string;
@@ -106,8 +104,10 @@ export type QnaFormValues = {
 export type Question = {
   id: string;
   question: string;
-  options: QnaOption[];
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
-  result: string | null; // Changed to store the winning option's text
+  result: {
+      teamA: string;
+      teamB: string;
+  } | null;
 };

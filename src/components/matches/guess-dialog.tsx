@@ -13,22 +13,43 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Match, Question, Prediction, Bet } from "@/lib/types";
-import { createBet, getUserBets } from "@/app/actions/bet.actions";
+import type { Match, Question, Prediction } from "@/lib/types";
+import { createBet } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, FormProvider, useFormContext } from "react-hook-form";
+import { z } from "zod";
+import { FormControl, FormField, FormItem, FormMessage } from "../ui/form";
+
 
 interface GuessDialogProps {
   match: Match | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+// Dynamically create a Zod schema for the user's prediction form
+const createPredictionSchema = (questions: Question[]) => {
+    const schemaObject = questions.reduce((acc, q) => {
+        acc[q.id] = z.object({
+            teamA: z.string().min(1, 'Prediction is required'),
+            teamB: z.string().min(1, 'Prediction is required'),
+        });
+        return acc;
+    }, {} as Record<string, z.ZodObject<{ teamA: z.ZodString, teamB: z.ZodString }>>);
+    
+    return z.object({
+        predictions: z.object(schemaObject),
+        amount: z.coerce.number().min(9, "Minimum bet is INR 9."),
+    });
+};
+
 
 export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
@@ -38,79 +59,47 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [predictions, setPredictions] = useState<Record<string, string>>({});
-  const [amount, setAmount] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const predictionSchema = React.useMemo(() => createPredictionSchema(questions), [questions]);
+  type PredictionFormValues = z.infer<typeof predictionSchema>;
+
+  const form = useForm<PredictionFormValues>({
+    resolver: zodResolver(predictionSchema),
+    defaultValues: {
+        amount: 9,
+        predictions: {},
+    }
+  });
 
   const resetState = () => {
     setIsSubmitting(false);
     setQuestions([]);
     setIsLoading(true);
-    setPredictions({});
-    setAmount(null);
-    setErrors({});
+    form.reset({ amount: 9, predictions: {} });
   };
 
   useEffect(() => {
-    async function fetchAllData() {
-      if (open && match && user) {
+    async function fetchQuestions() {
+      if (open && match) {
         resetState();
-        setIsLoading(true);
-
         const fetchedQuestions = await getQuestionsForMatch(match.id);
-        const validQuestions = fetchedQuestions.filter(q => q.options && q.options.length === 2 && q.options.every(opt => opt.text));
+        const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
         setQuestions(validQuestions);
-        
-        const userBets = await getUserBets(user.uid);
-        const matchBets = userBets.filter(b => b.matchId === match.id);
-
-        const initialPredictions: Record<string, string> = {};
-        
-        if (matchBets.length > 0) {
-            const latestBet = matchBets[0]; // Already sorted by date desc
-            latestBet.predictions.forEach(p => {
-                initialPredictions[p.questionId] = p.predictedOption;
-            });
-        }
-        
-        setPredictions(initialPredictions);
         setIsLoading(false);
       }
     }
-    fetchAllData();
-  }, [match, open, user]);
+    fetchQuestions();
+  }, [match, open, form]);
 
-  const handlePredictionChange = (questionId: string, value: string) => {
-    setPredictions(prev => ({
-      ...prev,
-      [questionId]: value,
-    }));
-  };
-  
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (questions.length > 0) {
-      if (Object.keys(predictions).length !== questions.length) {
-         newErrors.predictions = 'Please provide predictions for all questions.';
-      }
-    }
-    if (!amount) {
-      newErrors.amount = "Please select a bet amount.";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user || !match || !validateForm()) {
-      return;
-    }
+  async function handleSubmit(data: PredictionFormValues) {
+    if (!user || !match) return;
     
     const predictionsPayload: Prediction[] = questions.map(q => ({
         questionId: q.id,
         questionText: q.question,
-        predictedOption: predictions[q.id],
+        predictedAnswer: {
+            teamA: data.predictions[q.id].teamA,
+            teamB: data.predictions[q.id].teamB,
+        }
     }));
 
     setIsSubmitting(true);
@@ -118,7 +107,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
       userId: user.uid,
       matchId: match.id,
       predictions: predictionsPayload,
-      amount: Number(amount)
+      amount: data.amount,
     });
 
     if (result.error) {
@@ -131,84 +120,124 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     setIsSubmitting(false);
   }
 
+  const amount = form.watch('amount');
   const potentialWin = amount ? Number(amount) * 2 : 0;
   if (!match) return null;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
           <DialogDescription>
-             Predict the outcome for all questions for {match.teamA.name} vs {match.teamB.name}.
+             Predict the outcome for {match.teamA.name} vs {match.teamB.name}.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label className="font-headline text-lg">Available Questions</Label>
-              <ScrollArea className="h-64 pr-4 mt-3">
-                <div className="space-y-4">
-                  {isLoading ? (
-                    Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 w-full" />)
-                  ) : questions.length > 0 ? (
-                    questions.map((q) => (
-                      <div key={q.id} className="p-4 border rounded-lg">
-                        <p className="text-center text-sm font-medium text-muted-foreground mb-4">{q.question}</p>
-                        <RadioGroup
-                          onValueChange={(value) => handlePredictionChange(q.id, value)}
-                          defaultValue={predictions[q.id]}
-                          className="grid grid-cols-2 gap-4"
-                        >
-                            {q.options.map((option, index) => (
-                                 <Label key={index} htmlFor={`${q.id}-${index}`} className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-center">
-                                    <RadioGroupItem value={option.text} id={`${q.id}-${index}`} className="sr-only peer" />
-                                    <span className="font-semibold text-sm leading-tight">{option.text}</span>
-                                 </Label>
-                            ))}
-                        </RadioGroup>
+        <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <ScrollArea className="h-72 pr-4">
+                  <div className="space-y-4">
+                    {isLoading ? (
+                      Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)
+                    ) : questions.length > 0 ? (
+                       <FormField
+                         control={form.control}
+                         name="predictions"
+                         render={() => (
+                           <FormItem className="space-y-4">
+                             {questions.map((q) => (
+                               <PredictionField key={q.id} question={q} match={match} />
+                             ))}
+                           </FormItem>
+                         )}
+                       />
+                    ) : (
+                      <div className="text-center text-muted-foreground py-12">
+                        <p>No questions available for this match yet.</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-muted-foreground py-12">
-                      <p>No questions available for this match yet.</p>
-                      <p className="text-sm">Betting options will appear once the admin sets them.</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                </ScrollArea>
+
+                <div className="space-y-3 pt-4">
+                    <FormField
+                      control={form.control}
+                      name="amount"
+                      render={({ field }) => (
+                         <FormItem>
+                            <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
+                             <FormControl>
+                                <Input type="number" placeholder="Enter amount" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                         </FormItem>
+                      )}
+                    />
                 </div>
-              </ScrollArea>
-              {errors.predictions && <p className="text-sm font-medium text-destructive mt-2">{errors.predictions}</p>}
-            </div>
 
-            <div className="space-y-3 pt-4">
-              <Label className="font-headline text-lg">Select Bet Amount</Label>
-              <RadioGroup
-                onValueChange={(value) => setAmount(value)}
-                defaultValue={amount || undefined}
-                className="grid grid-cols-3 gap-4"
-              >
-                {['9', '19', '29'].map((val) => (
-                  <Label key={val} htmlFor={`amount-${val}`} className="flex h-full flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                    <RadioGroupItem value={val} id={`amount-${val}`} className="sr-only peer" />
-                    <span className="font-bold text-lg">INR {val}</span>
-                  </Label>
-                ))}
-              </RadioGroup>
-              {errors.amount && <p className="text-sm font-medium text-destructive">{errors.amount}</p>}
-            </div>
+                <div className="p-4 bg-accent/10 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">Potential Win</p>
+                  <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
+                </div>
 
-            <div className="p-4 bg-accent/10 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground">Potential Win</p>
-              <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
-                {isSubmitting ? "Placing Bet..." : "Place Bet"}
-              </Button>
-            </DialogFooter>
-        </form>
+                <DialogFooter>
+                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+                  <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
+                    {isSubmitting ? "Placing Bet..." : "Place Bet"}
+                  </Button>
+                </DialogFooter>
+            </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );
+}
+
+
+function PredictionField({ question, match }: { question: Question, match: Match }) {
+    const { control } = useFormContext();
+    return (
+        <div className="p-4 border rounded-lg space-y-3">
+            <p className="text-center text-sm font-medium text-muted-foreground">{question.question}</p>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                {/* Team A */}
+                <div className="flex flex-col items-center gap-2">
+                    <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
+                    <Label className="text-xs font-semibold">{match.teamA.name}</Label>
+                    <FormField
+                        control={control}
+                        name={`predictions.${question.id}.teamA`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <Input placeholder="Your prediction" {...field} className="text-center"/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <p className="text-sm font-bold text-muted-foreground">vs</p>
+                
+                {/* Team B */}
+                <div className="flex flex-col items-center gap-2">
+                     <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="rounded-full" data-ai-hint="logo" />
+                    <Label className="text-xs font-semibold">{match.teamB.name}</Label>
+                    <FormField
+                        control={control}
+                        name={`predictions.${question.id}.teamB`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <Input placeholder="Your prediction" {...field} className="text-center"/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+            </div>
+        </div>
+    );
 }
