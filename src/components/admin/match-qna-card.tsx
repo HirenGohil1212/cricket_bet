@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import type { Match, Question } from '@/lib/types';
-import { getQuestionsForMatch } from '@/app/actions/qna.actions';
+import type { Match, Question, Winner } from '@/lib/types';
+import { getQuestionsForMatch, getWinnersForMatch } from '@/app/actions/qna.actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ManageQnaDialog } from './manage-qna-dialog';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { SettlementResultsDialog } from './settlement-results-dialog';
 
 interface MatchQnaCardProps {
     match: Match;
@@ -18,6 +19,11 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
     const [questions, setQuestions] = React.useState<Question[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
+
+    // New state for winners
+    const [isFetchingWinners, setIsFetchingWinners] = React.useState(false);
+    const [winnersData, setWinnersData] = React.useState<{ winners: Winner[] } | null>(null);
+    const [isWinnersDialogOpen, setIsWinnersDialogOpen] = React.useState(false);
 
     const fetchAndSetQuestions = React.useCallback(() => {
         setIsLoading(true);
@@ -37,6 +43,14 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
             fetchAndSetQuestions();
         }
     }
+
+    const handleViewWinners = async () => {
+        setIsFetchingWinners(true);
+        const winners = await getWinnersForMatch(match.id);
+        setWinnersData({ winners });
+        setIsWinnersDialogOpen(true);
+        setIsFetchingWinners(false);
+    };
 
     return (
         <>
@@ -70,6 +84,12 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                     )}
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
+                    {match.status === 'Finished' && (
+                        <Button variant="outline" onClick={handleViewWinners} disabled={isFetchingWinners}>
+                            {isFetchingWinners && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            View Winners
+                        </Button>
+                    )}
                     <Button 
                         onClick={() => setIsManageDialogOpen(true)}
                     >
@@ -84,6 +104,14 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                     questions={questions}
                     isOpen={isManageDialogOpen}
                     onClose={onDialogClose}
+                />
+            )}
+            
+            {winnersData && (
+                <SettlementResultsDialog
+                    isOpen={isWinnersDialogOpen}
+                    onClose={() => setIsWinnersDialogOpen(false)}
+                    results={winnersData}
                 />
             )}
         </>

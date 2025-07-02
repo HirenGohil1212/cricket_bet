@@ -193,7 +193,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         if (questionsSnapshot.empty) {
             // No active questions, just finish the match
             await updateDoc(matchRef, { status: 'Finished' });
-            revalidatePath(`/admin/q-and-a`);
+            revalidatePath('/admin/q-and-a');
             return { success: 'Match marked as Finished as there were no active questions.', winners: [] };
         }
 
@@ -224,7 +224,7 @@ export async function settleMatchAndPayouts(matchId: string) {
                 batch.update(qRef, { status: 'settled' });
             });
             await batch.commit();
-            revalidatePath(`/admin/q-and-a`);
+            revalidatePath('/admin/q-and-a');
             return { success: 'No pending bets found. Match has been marked as Finished.', winners: [] };
         }
         
@@ -345,9 +345,15 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
         }
         
-        revalidatePath(`/admin/q-and-a`);
-        revalidatePath(`/`);
-        revalidatePath(`/wallet`);
+        try {
+            if (typeof revalidatePath === 'function') {
+                revalidatePath('/admin/q-and-a');
+                revalidatePath('/');
+                revalidatePath('/wallet');
+            }
+        } catch (e) {
+            console.error('Failed to revalidate paths:', e);
+        }
         
         return { 
             success: 'Match settled and payouts processed successfully!',
@@ -358,5 +364,61 @@ export async function settleMatchAndPayouts(matchId: string) {
     } catch (error: any) {
         console.error("Error settling match:", error);
         return { error: error.message || 'Failed to settle match. An unknown error occurred.' };
+    }
+}
+
+
+// New function to get winners for a finished match
+export async function getWinnersForMatch(matchId: string): Promise<Winner[]> {
+    if (!matchId) return [];
+
+    try {
+        const betsRef = collection(db, 'bets');
+        const winningBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Won'));
+        const winningBetsSnapshot = await getDocs(winningBetsQuery);
+
+        if (winningBetsSnapshot.empty) {
+            return [];
+        }
+
+        const userIdsToFetch = new Set<string>();
+        const betsData = winningBetsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            if (data.userId) {
+                userIdsToFetch.add(data.userId);
+            }
+            return { id: doc.id, ...data };
+        });
+
+        const usersMap = new Map<string, string>();
+        if (userIdsToFetch.size > 0) {
+            const userIds = Array.from(userIdsToFetch);
+            const userBatches = [];
+            for (let i = 0; i < userIds.length; i += 30) {
+                userBatches.push(userIds.slice(i, i + 30));
+            }
+
+            for (const idBatch of userBatches) {
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', idBatch));
+                const usersSnapshot = await getDocs(usersQuery);
+                usersSnapshot.forEach(userDoc => {
+                    usersMap.set(userDoc.id, userDoc.data().name || 'Unknown User');
+                });
+            }
+        }
+
+        const winners: Winner[] = betsData
+            .filter(betData => betData.userId)
+            .map(betData => ({
+                userId: betData.userId,
+                name: usersMap.get(betData.userId) || `User ID: ${betData.userId}`,
+                payoutAmount: betData.potentialWin || 0,
+            }));
+
+        return winners;
+
+    } catch (error) {
+        console.error("Error fetching winners for match:", error);
+        return [];
     }
 }

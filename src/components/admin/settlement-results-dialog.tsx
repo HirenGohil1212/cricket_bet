@@ -13,7 +13,7 @@ interface SettlementResultsDialogProps {
     onClose: () => void;
     results: {
         winners: Winner[];
-        totalBetsProcessed: number;
+        totalBetsProcessed?: number;
     } | null;
 }
 
@@ -27,9 +27,15 @@ export function SettlementResultsDialog({ isOpen, onClose, results }: Settlement
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><Trophy className="text-primary"/> Settlement Complete</DialogTitle>
-                    <DialogDescription>
-                        Processed {totalBetsProcessed} bets. {winners.length} unique users won a total of INR {totalPayout.toFixed(2)}.
+                    <DialogTitle className="flex items-center gap-2">
+                        <Trophy className="text-primary"/> 
+                        {totalBetsProcessed !== undefined ? 'Settlement Complete' : 'Match Winners'}
+                    </DialogTitle>
+                     <DialogDescription>
+                        {totalBetsProcessed !== undefined 
+                            ? `Processed ${totalBetsProcessed} bets. Found ${winners.length} winner(s) with a total payout of INR ${totalPayout.toFixed(2)}.`
+                            : `This match had ${winners.length} winner(s), with a total payout of INR ${totalPayout.toFixed(2)}.`
+                        }
                     </DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">
@@ -44,8 +50,8 @@ export function SettlementResultsDialog({ isOpen, onClose, results }: Settlement
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {winners.map(winner => (
-                                        <TableRow key={winner.userId}>
+                                    {winners.map((winner, index) => (
+                                        <TableRow key={`${winner.userId}-${index}`}>
                                             <TableCell className="font-medium">{winner.name}</TableCell>
                                             <TableCell className="text-right font-semibold">INR {winner.payoutAmount.toFixed(2)}</TableCell>
                                         </TableRow>
