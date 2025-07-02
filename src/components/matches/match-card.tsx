@@ -53,7 +53,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
       "overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col",
       currentUserWon && "border-accent ring-2 ring-accent"
     )}>
-      <CardHeader className="p-4 bg-muted/30 border-b flex flex-row items-center justify-between">
+      <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
          <div className="flex items-center gap-2">
             <SportIcon sport={sport} className="w-5 h-5 text-primary" />
             <p className="text-sm font-semibold">{sport}</p>
@@ -104,10 +104,10 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
       )}
 
       {status === 'Finished' && (
-        <CardFooter className="p-4 pt-2 pb-2 border-t">
+        <CardFooter className="p-2 pt-0 border-t">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="winners" className="border-b-0">
-              <AccordionTrigger className="py-1 text-sm hover:no-underline [&[data-state=open]]:bg-transparent">
+              <AccordionTrigger className="py-2 text-sm hover:no-underline [&[data-state=open]]:bg-transparent">
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-amber-500" />
                   <span>
@@ -115,7 +115,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
                   </span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="pt-2 pb-0">
+              <AccordionContent className="pt-0 pb-2">
                 {winners && winners.length > 0 ? (
                   <ScrollArea className="h-32">
                     <div className="space-y-2 pr-4">
