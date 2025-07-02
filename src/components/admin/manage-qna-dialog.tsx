@@ -45,17 +45,19 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     const resultsSchema = React.useMemo(() => createResultsSchema(questions), [questions]);
     type ResultsFormValues = z.infer<typeof resultsSchema>;
 
-    const defaultValues = React.useMemo(() => questions.reduce((acc, q) => {
-        if(q.result) {
-            acc[q.id] = {
-                teamA: q.result.teamA || '',
-                teamB: q.result.teamB || '',
-            };
-        } else {
-            acc[q.id] = { teamA: '', teamB: '' };
-        }
-        return acc;
-    }, {} as ResultsFormValues), [questions]);
+    const defaultValues = React.useMemo(() => {
+        const acc: Record<string, { teamA: string; teamB: string; }> = {};
+        questions.forEach(q => {
+            if (q.status !== 'settled') {
+                // For unsettled questions, result is null, but we can default to empty strings.
+                acc[q.id] = {
+                    teamA: q.result?.teamA || '',
+                    teamB: q.result?.teamB || '',
+                };
+            }
+        });
+        return acc as ResultsFormValues;
+    }, [questions]);
 
     const form = useForm<ResultsFormValues>({
         resolver: zodResolver(resultsSchema),
