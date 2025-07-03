@@ -7,17 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import { SportIcon } from '@/components/icons';
-import type { Match } from '@/lib/types';
+import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star } from 'lucide-react';
+import { Flame, CheckCircle, Clock, Trophy, Star, Users } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-interface MatchCardProps {
-  match: Match;
-  onBetNow: (match: Match) => void;
-}
 
 const StatusIndicator = ({ status }: { status: Match['status'] }) => {
   const statusConfig = {
@@ -36,9 +33,38 @@ const StatusIndicator = ({ status }: { status: Match['status'] }) => {
   );
 };
 
+const PlayerList = ({ team }: { team: Team }) => {
+    if (!team.players || team.players.length === 0) {
+        return (
+            <div>
+                <h4 className="font-semibold text-sm mb-2 text-center">{team.name}</h4>
+                <p className="text-xs text-muted-foreground text-center">No players listed.</p>
+            </div>
+        );
+    }
+    return (
+        <div>
+            <h4 className="font-semibold text-sm mb-2 text-center">{team.name}</h4>
+            <ScrollArea className="h-32">
+                <div className="space-y-2 pr-4">
+                    {team.players.map((player, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={player.imageUrl} alt={player.name} />
+                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-medium truncate">{player.name}</span>
+                        </div>
+                    ))}
+                </div>
+            </ScrollArea>
+        </div>
+    );
+};
+
 
 export function MatchCard({ match, onBetNow }: MatchCardProps) {
-  const { teamA, teamB, status, score, winner, sport, startTime, winners } = match;
+  const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch } = match;
   const { user } = useAuth();
 
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
@@ -61,9 +87,9 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
             {/* Team A Display */}
             <div className="flex-1 flex flex-col items-center gap-2">
                 <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="rounded-full object-contain" data-ai-hint="logo" />
-                 <div className={cn("flex items-center gap-1.5", status === 'Finished' && winner === teamA.name && "text-primary")}>
-                    {status === 'Finished' && winner === teamA.name && <Trophy className="h-4 w-4" />}
-                    <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamA.name && "font-bold")}>{teamA.name}</p>
+                 <div className="flex items-center gap-1.5">
+                    {status === 'Finished' && winner === teamA.name && <Trophy className="h-4 w-4 text-primary" />}
+                    <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamA.name && "font-bold text-primary")}>{teamA.name}</p>
                 </div>
             </div>
             
@@ -77,12 +103,31 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
             {/* Team B Display */}
             <div className="flex-1 flex flex-col items-center gap-2">
                 <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="rounded-full object-contain" data-ai-hint="logo" />
-                 <div className={cn("flex items-center gap-1.5", status === 'Finished' && winner === teamB.name && "text-primary")}>
-                    {status === 'Finished' && winner === teamB.name && <Trophy className="h-4 w-4" />}
-                    <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamB.name && "font-bold")}>{teamB.name}</p>
+                 <div className="flex items-center gap-1.5">
+                    {status === 'Finished' && winner === teamB.name && <Trophy className="h-4 w-4 text-primary" />}
+                    <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamB.name && "font-bold text-primary")}>{teamB.name}</p>
                 </div>
             </div>
         </div>
+
+        {isSpecialMatch && (teamA.players?.length || teamB.players?.length) ? (
+            <Accordion type="single" collapsible className="w-full !mt-6">
+                <AccordionItem value="players" className="border rounded-md">
+                    <AccordionTrigger className="text-xs font-medium hover:no-underline justify-center py-2 px-3">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <span>View Players</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <PlayerList team={teamA} />
+                            <PlayerList team={teamB} />
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        ) : null}
       </CardContent>
 
       {status === 'Upcoming' && (
@@ -104,7 +149,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
         <CardFooter className="p-2 border-t bg-muted/50">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="winners" className="border-b-0">
-              <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
+              <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
                 <div className="flex items-center gap-2 mx-auto">
                   <span>
                     {winners && winners.length > 0 ? `${winners.length} Winner(s) Found` : "No Winners"}
