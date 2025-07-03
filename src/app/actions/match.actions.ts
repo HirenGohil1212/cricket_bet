@@ -1,8 +1,8 @@
 
 'use server';
 
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -204,5 +204,185 @@ export async function getMatches(): Promise<Match[]> {
     } catch (error) {
         console.error("Error fetching matches:", error);
         return [];
+    }
+}
+
+// Function to get a single match by ID
+export async function getMatchById(matchId: string): Promise<Match | null> {
+    try {
+        const matchRef = doc(db, 'matches', matchId);
+        const matchSnap = await getDoc(matchRef);
+
+        if (!matchSnap.exists()) {
+            return null;
+        }
+
+        const data = matchSnap.data();
+
+        if (data.teamA.logoUrl && data.teamA.logoUrl.includes('flagpedia.net')) {
+            data.teamA.logoUrl = data.teamA.logoUrl.replace('/w80/', '/w320/').replace('/w40/', '/w320/');
+        }
+        if (data.teamB.logoUrl && data.teamB.logoUrl.includes('flagpedia.net')) {
+            data.teamB.logoUrl = data.teamB.logoUrl.replace('/w80/', '/w320/').replace('/w40/', '/w320/');
+        }
+
+        return {
+            id: matchSnap.id,
+            sport: data.sport,
+            teamA: data.teamA,
+            teamB: data.teamB,
+            status: data.status,
+            startTime: (data.startTime as Timestamp).toDate().toISOString(),
+            score: data.score || '',
+            winner: data.winner || '',
+            isSpecialMatch: data.isSpecialMatch || false,
+            allowOneSidedBets: data.allowOneSidedBets || false,
+        } as Match;
+    } catch (error) {
+        console.error("Error fetching match by ID:", error);
+        return null;
+    }
+}
+
+
+// Function to update a match
+export async function updateMatch(matchId: string, values: MatchFormValues) {
+    try {
+        const validatedFields = matchSchema.safeParse(values);
+
+        if (!validatedFields.success) {
+            return { error: 'Invalid fields.' };
+        }
+        
+        const matchRef = doc(db, 'matches', matchId);
+        const existingMatchSnap = await getDoc(matchRef);
+        if (!existingMatchSnap.exists()) {
+            return { error: "Match not found." };
+        }
+        const existingMatchData = existingMatchSnap.data() as Match;
+
+        const {
+            sport,
+            teamA,
+            teamB,
+            teamACountry,
+            teamBCountry,
+            startTime,
+            teamALogoDataUri,
+            teamBLogoDataUri,
+            teamAPlayers,
+            teamBPlayers,
+            isSpecialMatch,
+            allowOneSidedBets,
+        } = validatedFields.data;
+        
+        const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
+        const countryB = countries.find(c => c.code.toLowerCase() === teamBCountry.toLowerCase());
+
+        if (!countryA || !countryB) {
+            return { error: 'Invalid country selection.' };
+        }
+        
+        const teamAName = teamA && teamA.trim() ? teamA.trim() : countryA.name;
+        const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
+        
+        let teamALogoUrl = existingMatchData.teamA.logoUrl;
+        let teamBLogoUrl = existingMatchData.teamB.logoUrl;
+
+        // Handle Team A Logo Update
+        if (teamALogoDataUri) {
+            if (teamALogoUrl && !teamALogoUrl.includes('flagpedia.net')) {
+                 try {
+                    const oldFileRef = ref(storage, teamALogoUrl);
+                    await deleteObject(oldFileRef);
+                } catch (e: any) {
+                    if (e.code !== 'storage/object-not-found') console.error("Could not delete old logo for Team A:", e);
+                }
+            }
+            const storageRef = ref(storage, `logos/${uuidv4()}`);
+            const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
+            await uploadString(storageRef, teamALogoDataUri.split(',')[1], 'base64', { contentType: mimeType });
+            teamALogoUrl = await getDownloadURL(storageRef);
+        }
+
+        // Handle Team B Logo Update
+        if (teamBLogoDataUri) {
+             if (teamBLogoUrl && !teamBLogoUrl.includes('flagpedia.net')) {
+                 try {
+                    const oldFileRef = ref(storage, teamBLogoUrl);
+                    await deleteObject(oldFileRef);
+                } catch (e: any) {
+                    if (e.code !== 'storage/object-not-found') console.error("Could not delete old logo for Team B:", e);
+                }
+            }
+            const storageRef = ref(storage, `logos/${uuidv4()}`);
+            const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
+            await uploadString(storageRef, teamBLogoDataUri.split(',')[1], 'base64', { contentType: mimeType });
+            teamBLogoUrl = await getDownloadURL(storageRef);
+        }
+
+        const processPlayerUpdates = async (newPlayers: MatchFormValues['teamAPlayers'], existingPlayers: Player[] = []) => {
+            if (!newPlayers) return [];
+
+            const updatedPlayers: Player[] = [];
+
+            for (const player of newPlayers) {
+                if (player.playerImageDataUri && player.playerImageDataUri.startsWith('data:')) {
+                    const storageRef = ref(storage, `players/${uuidv4()}`);
+                    const mimeType = player.playerImageDataUri.match(/data:(.*);base64,/)?.[1];
+                    await uploadString(storageRef, player.playerImageDataUri.split(',')[1], 'base64', { contentType: mimeType });
+                    const newImageUrl = await getDownloadURL(storageRef);
+                    updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
+                    
+                    const originalPlayer = existingPlayers.find(p => p.name === player.name);
+                    if (originalPlayer?.imageUrl) {
+                         try {
+                            const oldFileRef = ref(storage, originalPlayer.imageUrl);
+                            await deleteObject(oldFileRef);
+                        } catch (e: any) {
+                            if (e.code !== 'storage/object-not-found') console.error(`Could not delete old player image: ${originalPlayer.imageUrl}`, e);
+                        }
+                    }
+                } else {
+                    updatedPlayers.push({ name: player.name, imageUrl: player.playerImageDataUri || '' });
+                }
+            }
+            return updatedPlayers;
+        };
+
+        const processedTeamAPlayers = await processPlayerUpdates(teamAPlayers, existingMatchData.teamA.players);
+        const processedTeamBPlayers = await processPlayerUpdates(teamBPlayers, existingMatchData.teamB.players);
+
+        const now = new Date();
+        const status = startTime > now ? 'Upcoming' : 'Live';
+
+        await updateDoc(matchRef, {
+            sport,
+            teamA: { 
+                name: teamAName, 
+                logoUrl: teamALogoUrl, 
+                countryCode: teamACountry,
+                players: processedTeamAPlayers
+            },
+            teamB: { 
+                name: teamBName, 
+                logoUrl: teamBLogoUrl, 
+                countryCode: teamBCountry,
+                players: processedTeamBPlayers
+            },
+            startTime: Timestamp.fromDate(startTime),
+            ...(existingMatchData.status !== 'Finished' && { status }),
+            isSpecialMatch,
+            allowOneSidedBets,
+        });
+        
+        revalidatePath('/admin/matches');
+        revalidatePath(`/admin/matches/edit/${matchId}`);
+        revalidatePath('/');
+        return { success: 'Match updated successfully!' };
+        
+    } catch (error) {
+        console.error("Error updating match: ", error);
+        return { error: 'Failed to update match.' };
     }
 }

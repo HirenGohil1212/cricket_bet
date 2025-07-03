@@ -63,8 +63,6 @@ export function MatchActions({ matchId }: MatchActionsProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem>Set Results</DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                         <Link href={`/admin/matches/edit/${matchId}`} className="cursor-pointer">
                             <Pencil className="mr-2 h-4 w-4" />
