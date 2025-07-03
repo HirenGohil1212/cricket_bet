@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -8,9 +9,10 @@ import { GuessDialog } from './guess-dialog';
 interface MatchListProps {
   matches: Match[];
   sport: Sport;
+  betMultiplier: number;
 }
 
-export function MatchList({ matches, sport }: MatchListProps) {
+export function MatchList({ matches, sport, betMultiplier }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
 
@@ -69,6 +71,7 @@ export function MatchList({ matches, sport }: MatchListProps) {
         match={selectedMatch} 
         open={isGuessDialogOpen} 
         onOpenChange={handleDialogChange}
+        betMultiplier={betMultiplier}
       />
     </div>
   );

@@ -6,8 +6,8 @@ import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
-import type { BankAccount } from '@/lib/types';
-import { bankDetailsFormSchema, type BankDetailsFormValues } from '@/lib/schemas';
+import type { BankAccount, BettingSettings } from '@/lib/types';
+import { bankDetailsFormSchema, bettingSettingsSchema, type BankDetailsFormValues } from '@/lib/schemas';
 
 
 // Function to get existing bank details
@@ -73,5 +73,44 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
     } catch (error: any) {
         console.error("Error updating bank details: ", error);
         return { error: error.message || 'Failed to update bank details.' };
+    }
+}
+
+
+// Function to get betting settings
+export async function getBettingSettings(): Promise<BettingSettings> {
+    try {
+        const docRef = doc(db, 'adminSettings', 'betting');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return docSnap.data() as BettingSettings;
+        }
+        // Return default settings if not found
+        return { betMultiplier: 2 };
+    } catch (error) {
+        console.error("Error fetching betting settings:", error);
+        return { betMultiplier: 2 }; // Default on error
+    }
+}
+
+// Server action to update betting settings
+export async function updateBettingSettings(data: { betMultiplier: number }) {
+    const validatedFields = bettingSettingsSchema.safeParse(data);
+    if (!validatedFields.success) {
+      return { error: 'Invalid data provided.' };
+    }
+
+    try {
+        const docRef = doc(db, 'adminSettings', 'betting');
+        await setDoc(docRef, validatedFields.data, { merge: true });
+        
+        revalidatePath('/admin/betting-settings');
+        revalidatePath('/');
+        return { success: 'Betting settings updated successfully!' };
+
+    } catch (error: any) {
+        console.error("Error updating betting settings: ", error);
+        return { error: 'Failed to update settings.' };
     }
 }

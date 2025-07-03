@@ -34,6 +34,7 @@ interface GuessDialogProps {
   match: Match | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  betMultiplier: number;
 }
 
 // Dynamically create a Zod schema for the user's prediction form
@@ -67,7 +68,7 @@ const createPredictionSchema = (questions: Question[], allowOneSidedBets: boolea
 };
 
 
-export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
+export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
@@ -149,7 +150,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }
 
   const amount = form.watch('amount');
-  const potentialWin = amount ? Number(amount) * 2 : 0;
+  const potentialWin = amount ? Number(amount) * betMultiplier : 0;
   if (!match) return null;
 
   return (

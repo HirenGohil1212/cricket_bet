@@ -15,6 +15,7 @@ import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Bet, Prediction } from '@/lib/types';
 import { processReferral } from './referral.actions';
+import { getBettingSettings } from './settings.actions';
 
 interface CreateBetParams {
     userId: string;
@@ -35,6 +36,9 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
     try {
         const userRef = doc(db, 'users', userId);
         const matchRef = doc(db, 'matches', matchId);
+        
+        // Get the current bet multiplier
+        const { betMultiplier } = await getBettingSettings();
 
         const result = await runTransaction(db, async (transaction) => {
             // All reads must come before writes in a transaction
@@ -64,7 +68,7 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
             });
             
             const matchData = matchDoc.data();
-            const potentialWin = amount * 2; // Simple 2x win for now
+            const potentialWin = amount * betMultiplier;
             const matchDescription = `${matchData.teamA.name} vs ${matchData.teamB.name}`;
 
             const newBetRef = doc(collection(db, "bets"));

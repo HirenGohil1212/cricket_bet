@@ -147,3 +147,11 @@ export const contentManagementSchema = z.object({
 });
 
 export type ContentManagementFormValues = z.infer<typeof contentManagementSchema>;
+
+
+// Schema for Betting Settings (Admin)
+export const bettingSettingsSchema = z.object({
+  betMultiplier: z.coerce.number().min(1.1, "Multiplier must be at least 1.1x.").max(10, "Multiplier cannot be more than 10x."),
+});
+
+export type BettingSettingsFormValues = z.infer<typeof bettingSettingsSchema>;

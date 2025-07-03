@@ -150,3 +150,7 @@ export type Winner = {
     name: string;
     payoutAmount: number;
 };
+
+export type BettingSettings = {
+    betMultiplier: number;
+};

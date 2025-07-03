@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sports } from "@/lib/types";
 import type { Sport, Winner } from "@/lib/types";
@@ -5,9 +6,14 @@ import { MatchList } from "./match-list";
 import { SportIcon } from "@/components/icons";
 import { getMatches } from "@/app/actions/match.actions";
 import { getWinnersForMatch } from "@/app/actions/qna.actions";
+import { getBettingSettings } from "@/app/actions/settings.actions";
 
 export async function MatchTabs() {
-  const allMatches = await getMatches();
+  const [allMatches, settings] = await Promise.all([
+    getMatches(),
+    getBettingSettings(),
+  ]);
+  const { betMultiplier } = settings;
 
   // Fetch winners for all finished matches concurrently
   const finishedMatches = allMatches.filter(m => m.status === 'Finished');
@@ -43,7 +49,11 @@ export async function MatchTabs() {
       </TabsList>
       {sports.map((sport) => (
         <TabsContent key={sport} value={sport} className="mt-6">
-          <MatchList matches={augmentedMatches.filter(m => m.sport === sport)} sport={sport} />
+          <MatchList
+            matches={augmentedMatches.filter(m => m.sport === sport)}
+            sport={sport}
+            betMultiplier={betMultiplier}
+          />
         </TabsContent>
       ))}
     </Tabs>

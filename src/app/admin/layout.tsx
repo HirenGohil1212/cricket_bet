@@ -19,6 +19,7 @@ import {
   Gift,
   GalleryHorizontal,
   LineChart,
+  Percent,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -56,8 +57,9 @@ export default function AdminLayout({
     { href: "/admin/deposits", label: "Deposits", icon: Wallet },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
     { href: "/admin/financial-reports", label: "Financials", icon: LineChart },
-    { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
     { href: "/admin/referrals", label: "Referrals", icon: Gift },
+    { href: "/admin/betting-settings", label: "Betting Settings", icon: Percent },
+    { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
     { href: "/admin/content", label: "Content", icon: GalleryHorizontal },
   ];
 
