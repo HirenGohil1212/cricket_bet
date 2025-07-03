@@ -62,7 +62,10 @@ const createPredictionSchema = (
              teamBSchema = z.string().min(1, { message: "Prediction is required." });
         }
         
-        questionSchema = z.object({ teamA: teamASchema, teamB: teamBSchema });
+        questionSchema = z.object({ teamA: teamASchema, teamB: teamBSchema }).refine(
+            (data) => betOnSide === 'both' ? data.teamA && data.teamB : (betOnSide === 'teamA' ? data.teamA : data.teamB),
+            { message: "A prediction is required for the selected side.", path: ['root'] }
+        );
     } else {
         questionSchema = z.object({
             teamA: z.string().min(1, 'Prediction is required'),
