@@ -1,14 +1,14 @@
+
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -20,19 +20,21 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { deleteMatch } from "@/app/actions/match.actions";
+import type { Match } from "@/lib/types";
 
 interface MatchActionsProps {
     matchId: string;
+    status: Match['status'];
 }
 
-export function MatchActions({ matchId }: MatchActionsProps) {
+export function MatchActions({ matchId, status }: MatchActionsProps) {
     const { toast } = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
+    const isFinished = status === 'Finished';
 
     const handleDelete = async () => {
         setIsDeleting(true);
@@ -63,14 +65,27 @@ export function MatchActions({ matchId }: MatchActionsProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
-                        <Link href={`/admin/matches/edit/${matchId}`} className="cursor-pointer">
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                        </Link>
-                    </DropdownMenuItem>
+                    {isFinished ? (
+                        <DropdownMenuItem asChild>
+                            <Link href={`/admin/matches/summary/${matchId}`} className="cursor-pointer">
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Summary
+                            </Link>
+                        </DropdownMenuItem>
+                    ) : (
+                        <DropdownMenuItem asChild>
+                            <Link href={`/admin/matches/edit/${matchId}`} className="cursor-pointer">
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </DropdownMenuItem>
+                    )}
                     <AlertDialogTrigger asChild>
-                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={(e) => e.preventDefault()}>
+                         <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10" 
+                            onSelect={(e) => e.preventDefault()}
+                            disabled={isFinished}
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -62,7 +63,7 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                             <Badge variant={getStatusVariant(match.status)}>{match.status}</Badge>
                         </TableCell>
                         <TableCell>
-                            <MatchActions matchId={match.id} />
+                            <MatchActions matchId={match.id} status={match.status} />
                         </TableCell>
                     </TableRow>
                 ))}
