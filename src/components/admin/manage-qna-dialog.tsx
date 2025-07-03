@@ -118,7 +118,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
                 <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>Manage Q&amp;A for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
+                        <DialogTitle>Manage Q&A for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
                         <DialogDescription>
                            Enter and save the results for each question, then finalize to process payouts.
                         </DialogDescription>
@@ -254,7 +254,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                              {isSaving ? 'Saving...' : 'Save Results'}
                          </Button>
                          <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions}>
-                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle &amp; Payout')}
+                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
                          </Button>
                        </div>
                    </DialogFooter>
