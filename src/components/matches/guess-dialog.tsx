@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -251,6 +252,35 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             </div>
                          ))}
                        </div>
+                    ) : match.isSpecialMatch ? (
+                      <div className="p-4 border rounded-lg space-y-3 bg-muted/50">
+                          <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">Example Player Bet</FormLabel>
+                          <div className="grid grid-cols-2 gap-4 opacity-50">
+                            <div>
+                              <FormLabel className="text-xs">{`Player from ${match.teamA.name}`}</FormLabel>
+                              <PlayerSelect
+                                  players={match.teamA.players || []}
+                                  value={undefined}
+                                  onValueChange={() => {}}
+                                  placeholder="Select a player"
+                                  disabled={true}
+                              />
+                            </div>
+                            <div>
+                              <FormLabel className="text-xs">{`Player from ${match.teamB.name}`}</FormLabel>
+                              <PlayerSelect
+                                  players={match.teamB.players || []}
+                                  value={undefined}
+                                  onValueChange={() => {}}
+                                  placeholder="Select a player"
+                                  disabled={true}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-center text-xs text-muted-foreground pt-2">
+                              The admin has not added player-based questions for this match yet. Betting will be available soon.
+                          </p>
+                      </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-12">
                         <p>No questions available for this match yet.</p>
