@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Info } from 'lucide-react';
 import { Label } from '../ui/label';
 import { SettlementResultsDialog } from './settlement-results-dialog';
+import { PlayerSelect } from '../matches/player-select';
 
 interface ManageQnaDialogProps {
     match: Match;
@@ -112,6 +113,29 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                             <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
                                                <span>{match.teamA.name}: {q.result.teamA}</span>
                                                <span>{match.teamB.name}: {q.result.teamB}</span>
+                                            </div>
+                                        ) : match.isSpecialMatch ? (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label htmlFor={`${q.id}-teamA`} className="text-xs">{match.teamA.name}</Label>
+                                                    <PlayerSelect
+                                                        players={match.teamA.players || []}
+                                                        value={results[q.id]?.teamA || ''}
+                                                        onValueChange={(value) => handleResultChange(q.id, 'teamA', value)}
+                                                        placeholder="Select winner"
+                                                        disabled={isSaving || isSettling}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor={`${q.id}-teamB`} className="text-xs">{match.teamB.name}</Label>
+                                                    <PlayerSelect
+                                                        players={match.teamB.players || []}
+                                                        value={results[q.id]?.teamB || ''}
+                                                        onValueChange={(value) => handleResultChange(q.id, 'teamB', value)}
+                                                        placeholder="Select winner"
+                                                        disabled={isSaving || isSettling}
+                                                    />
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-2 gap-4">

@@ -28,6 +28,8 @@ import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "../ui/form";
 import { PlayerSelect } from "./player-select";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { cn } from "@/lib/utils";
 
 
 interface GuessDialogProps {
@@ -38,17 +40,28 @@ interface GuessDialogProps {
 }
 
 // Dynamically create a Zod schema for the user's prediction form
-const createPredictionSchema = (questions: Question[], allowOneSidedBets: boolean, betAmounts: number[]) => {
+const createPredictionSchema = (
+    questions: Question[], 
+    allowOneSidedBets: boolean, 
+    betAmounts: number[],
+    betOnSide: 'teamA' | 'teamB' | 'both'
+) => {
     let questionSchema;
 
     if (allowOneSidedBets) {
-        questionSchema = z.object({
-            teamA: z.string(),
-            teamB: z.string(),
-        }).refine(data => data.teamA.trim() !== '' || data.teamB.trim() !== '', {
-            message: "At least one prediction is required.",
-            path: ["teamA"], // Assign error to one field for display
-        });
+        let teamASchema = z.string().optional();
+        let teamBSchema = z.string().optional();
+
+        if (betOnSide === 'teamA') {
+            teamASchema = z.string().min(1, { message: "Prediction is required." });
+        } else if (betOnSide === 'teamB') {
+            teamBSchema = z.string().min(1, { message: "Prediction is required." });
+        } else { // 'both'
+             teamASchema = z.string().min(1, { message: "Prediction is required." });
+             teamBSchema = z.string().min(1, { message: "Prediction is required." });
+        }
+        
+        questionSchema = z.object({ teamA: teamASchema, teamB: teamBSchema });
     } else {
         questionSchema = z.object({
             teamA: z.string().min(1, 'Prediction is required'),
@@ -77,9 +90,10 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [betOnSide, setBetOnSide] = React.useState<'teamA' | 'teamB' | 'both'>('both');
 
   const validBetAmounts = React.useMemo(() => betOptions.map(opt => opt.amount), [betOptions]);
-  const predictionSchema = React.useMemo(() => createPredictionSchema(questions, match?.allowOneSidedBets || false, validBetAmounts), [questions, match, validBetAmounts]);
+  const predictionSchema = React.useMemo(() => createPredictionSchema(questions, match?.allowOneSidedBets || false, validBetAmounts, betOnSide), [questions, match, validBetAmounts, betOnSide]);
   type PredictionFormValues = z.infer<typeof predictionSchema>;
 
   const form = useForm<PredictionFormValues>({
@@ -89,11 +103,29 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
         predictions: {},
     }
   });
+  
+  // Effect to clear form values when user changes bet side preference
+  useEffect(() => {
+    if (match?.allowOneSidedBets && open) {
+        questions.forEach(q => {
+            const currentPrediction = form.getValues(`predictions.${q.id}`);
+            if (betOnSide === 'teamA' && currentPrediction?.teamB) {
+                form.setValue(`predictions.${q.id}.teamB`, '');
+            } else if (betOnSide === 'teamB' && currentPrediction?.teamA) {
+                form.setValue(`predictions.${q.id}.teamA`, '');
+            }
+        });
+        // Trigger validation after clearing
+        form.trigger('predictions');
+    }
+  }, [betOnSide, questions, form, match?.allowOneSidedBets, open]);
+
 
   useEffect(() => {
     async function fetchQuestionsAndSetDefaults() {
       if (match) {
         setIsLoading(true);
+        setBetOnSide('both'); // Reset side selection
         setQuestions([]); // Clear old questions to avoid rendering with old state
         const fetchedQuestions = await getQuestionsForMatch(match.id);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
@@ -128,17 +160,24 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
   async function handleSubmit(data: PredictionFormValues) {
     if (!user || !match) return;
     
-    const predictionsPayload: Prediction[] = questions.map(q => ({
-        questionId: q.id,
-        questionText: q.question,
-        predictedAnswer: data.predictions[q.id]
-    }));
+    // Filter out empty predictions for one-sided bets
+    const finalPredictions = Object.entries(data.predictions).map(([questionId, predictedAnswer]) => {
+      const question = questions.find(q => q.id === questionId);
+      return {
+        questionId,
+        questionText: question?.question || '',
+        predictedAnswer: {
+          teamA: predictedAnswer.teamA || '',
+          teamB: predictedAnswer.teamB || '',
+        }
+      };
+    });
 
     setIsSubmitting(true);
     const result = await createBet({
       userId: user.uid,
       matchId: match.id,
-      predictions: predictionsPayload,
+      predictions: finalPredictions,
       amount: data.amount,
     });
 
@@ -183,18 +222,43 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                       Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
                     ) : questions.length > 0 ? (
                        <div className="space-y-4">
+                        {match.allowOneSidedBets && (
+                            <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
+                                <Label className="text-sm font-semibold text-center block">Bet on</Label>
+                                <RadioGroup
+                                    value={betOnSide}
+                                    onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
+                                    className="grid grid-cols-3 gap-2"
+                                >
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="teamA" id="r-teamA" />
+                                        <Label htmlFor="r-teamA" className="text-xs truncate">{match.teamA.name}</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="teamB" id="r-teamB" />
+                                        <Label htmlFor="r-teamB" className="text-xs truncate">{match.teamB.name}</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="both" id="r-both" />
+                                        <Label htmlFor="r-both" className="text-xs">Both</Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+                        )}
+
                          {questions.map((q) => (
                             <div key={q.id} className="p-4 border rounded-lg space-y-3">
                                 <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</FormLabel>
-                                <div className="grid grid-cols-2 gap-4">
-                                  {match.isSpecialMatch ? (
-                                    <>
-                                      <FormField
+                                <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
+                                  
+                                  {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                     match.isSpecialMatch ? (
+                                       <FormField
                                         control={form.control}
                                         name={`predictions.${q.id}.teamA`}
                                         render={({ field }) => (
                                           <FormItem>
-                                            <FormLabel className="text-xs">{`Player from ${match.teamA.name}`}</FormLabel>
+                                            <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
                                             <PlayerSelect
                                                 players={match.teamA.players || []}
                                                 onValueChange={field.onChange}
@@ -205,26 +269,8 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                           </FormItem>
                                         )}
                                       />
-                                      <FormField
-                                        control={form.control}
-                                        name={`predictions.${q.id}.teamB`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel className="text-xs">{`Player from ${match.teamB.name}`}</FormLabel>
-                                            <PlayerSelect
-                                                players={match.teamB.players || []}
-                                                onValueChange={field.onChange}
-                                                value={field.value}
-                                                placeholder="Select a player"
-                                            />
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </>
-                                  ) : (
-                                    <>
-                                      <FormField
+                                     ) : (
+                                       <FormField
                                         control={form.control}
                                         name={`predictions.${q.id}.teamA`}
                                         render={({ field }) => (
@@ -237,57 +283,51 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                           </FormItem>
                                         )}
                                       />
-                                      <FormField
-                                        control={form.control}
-                                        name={`predictions.${q.id}.teamB`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
-                                            <FormControl>
-                                              <Input placeholder="Team B prediction..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </>
+                                     )
                                   )}
+
+                                   {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                      match.isSpecialMatch ? (
+                                        <FormField
+                                          control={form.control}
+                                          name={`predictions.${q.id}.teamB`}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                              <PlayerSelect
+                                                  players={match.teamB.players || []}
+                                                  onValueChange={field.onChange}
+                                                  value={field.value}
+                                                  placeholder="Select a player"
+                                              />
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      ) : (
+                                        <FormField
+                                          control={form.control}
+                                          name={`predictions.${q.id}.teamB`}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                              <FormControl>
+                                                <Input placeholder="Team B prediction..." {...field} />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      )
+                                   )}
                                 </div>
+                                <FormMessage>{form.formState.errors.predictions?.[q.id]?.root?.message}</FormMessage>
                             </div>
                          ))}
                        </div>
-                    ) : match.isSpecialMatch ? (
-                      <div className="p-4 border rounded-lg space-y-3 bg-muted/50">
-                          <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">Example Player Bet</FormLabel>
-                          <div className="grid grid-cols-2 gap-4 opacity-50">
-                            <div>
-                              <FormLabel className="text-xs">{`Player from ${match.teamA.name}`}</FormLabel>
-                              <PlayerSelect
-                                  players={match.teamA.players || []}
-                                  value={undefined}
-                                  onValueChange={() => {}}
-                                  placeholder="Select a player"
-                                  disabled={true}
-                              />
-                            </div>
-                            <div>
-                              <FormLabel className="text-xs">{`Player from ${match.teamB.name}`}</FormLabel>
-                              <PlayerSelect
-                                  players={match.teamB.players || []}
-                                  value={undefined}
-                                  onValueChange={() => {}}
-                                  placeholder="Select a player"
-                                  disabled={true}
-                              />
-                            </div>
-                          </div>
-                          <p className="text-center text-xs text-muted-foreground pt-2">
-                              The admin has not added player-based questions for this match yet. Betting will be available soon.
-                          </p>
-                      </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-12">
-                        <p>No questions available for this match yet.</p>
+                        <p>Betting for this match will be available soon.</p>
                       </div>
                     )}
                   </div>
