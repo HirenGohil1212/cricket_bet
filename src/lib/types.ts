@@ -4,10 +4,16 @@ export type Sport = typeof sports[number];
 
 export type MatchStatus = "Upcoming" | "Live" | "Finished";
 
+export type Player = {
+  name: string;
+  imageUrl: string;
+};
+
 export type Team = {
   name: string;
   logoUrl: string;
   countryCode?: string;
+  players?: Player[];
 };
 
 export type Match = {

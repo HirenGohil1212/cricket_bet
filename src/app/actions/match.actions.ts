@@ -6,7 +6,7 @@ import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
-import type { Match } from '@/lib/types';
+import type { Match, Player } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
 import { countries } from '@/lib/countries';
 
@@ -19,7 +19,18 @@ export async function createMatch(values: MatchFormValues) {
             return { error: 'Invalid fields.' };
         }
 
-        const { sport, teamA, teamB, teamACountry, teamBCountry, startTime, teamALogoDataUri, teamBLogoDataUri } = validatedFields.data;
+        const { 
+            sport, 
+            teamA, 
+            teamB, 
+            teamACountry, 
+            teamBCountry, 
+            startTime, 
+            teamALogoDataUri, 
+            teamBLogoDataUri,
+            teamAPlayers,
+            teamBPlayers,
+        } = validatedFields.data;
 
         const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
         const countryB = countries.find(c => c.code.toLowerCase() === teamBCountry.toLowerCase());
@@ -57,14 +68,45 @@ export async function createMatch(values: MatchFormValues) {
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
+        // Process players
+        const processPlayers = async (players: MatchFormValues['teamAPlayers']) => {
+            if (!players || players.length === 0) return [];
+            
+            const processedPlayers: Player[] = [];
+            for (const player of players) {
+                let playerImageUrl = '';
+                if (player.playerImageDataUri) {
+                    const storageRef = ref(storage, `players/${uuidv4()}`);
+                    const mimeType = player.playerImageDataUri.match(/data:(.*);base64,/)?.[1];
+                    await uploadString(storageRef, player.playerImageDataUri.split(',')[1], 'base64', { contentType: mimeType });
+                    playerImageUrl = await getDownloadURL(storageRef);
+                }
+                processedPlayers.push({ name: player.name, imageUrl: playerImageUrl });
+            }
+            return processedPlayers;
+        };
+        
+        const processedTeamAPlayers = await processPlayers(teamAPlayers);
+        const processedTeamBPlayers = await processPlayers(teamBPlayers);
+
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         // Create the match document
         const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { name: teamAName, logoUrl: teamALogoUrl, countryCode: teamACountry },
-            teamB: { name: teamBName, logoUrl: teamBLogoUrl, countryCode: teamBCountry },
+            teamA: { 
+                name: teamAName, 
+                logoUrl: teamALogoUrl, 
+                countryCode: teamACountry,
+                players: processedTeamAPlayers
+            },
+            teamB: { 
+                name: teamBName, 
+                logoUrl: teamBLogoUrl, 
+                countryCode: teamBCountry,
+                players: processedTeamBPlayers
+            },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',

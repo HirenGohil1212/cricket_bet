@@ -5,6 +5,18 @@ import { sports } from "@/lib/types";
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_LOGO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"];
 
+const MAX_PLAYER_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB
+const ACCEPTED_PLAYER_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+const playerSchema = z.object({
+  name: z.string().min(2, "Player name must be at least 2 characters."),
+  playerImageFile: z.any()
+    .optional()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_PLAYER_IMAGE_SIZE), `Max player image size is 1MB.`)
+    .refine((file) => !file || (file instanceof File && ACCEPTED_PLAYER_IMAGE_TYPES.includes(file.type)), ".jpg, .jpeg, .png, and .webp files are accepted."),
+  playerImageDataUri: z.string().optional(),
+});
+
 // Schema for adding/editing a match
 export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
@@ -14,7 +26,7 @@ export const matchSchema = z.object({
   teamBCountry: z.string({ required_error: "Country for Team B is required." }).min(1, { message: "Country for Team B is required."}),
   startTime: z.date({ required_error: "A start date and time is required." }),
   
-  // New fields for file upload
+  // Team Logos
   teamALogoFile: z.any()
     .optional()
     .refine((file) => !file || (file instanceof File && file.size <= MAX_LOGO_SIZE), `Max logo size is 2MB.`)
@@ -26,6 +38,10 @@ export const matchSchema = z.object({
   
   teamALogoDataUri: z.string().optional(),
   teamBLogoDataUri: z.string().optional(),
+
+  // Players
+  teamAPlayers: z.array(playerSchema).optional(),
+  teamBPlayers: z.array(playerSchema).optional(),
 });
 
 export type MatchFormValues = z.infer<typeof matchSchema>;
