@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -27,6 +26,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "../ui/form";
+import { PlayerSelect } from "./player-select";
 
 
 interface GuessDialogProps {
@@ -182,32 +182,71 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             <div key={q.id} className="p-4 border rounded-lg space-y-3">
                                 <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</FormLabel>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <FormField
+                                  {match.isSpecialMatch ? (
+                                    <>
+                                      <FormField
                                         control={form.control}
                                         name={`predictions.${q.id}.teamA`}
                                         render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs">{match.isSpecialMatch ? `Prediction for ${match.teamA.name}` : match.teamA.name}</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder={match.isSpecialMatch ? "Enter player or score..." : "Team A prediction..."} {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
+                                          <FormItem>
+                                            <FormLabel className="text-xs">{`Player from ${match.teamA.name}`}</FormLabel>
+                                            <PlayerSelect
+                                                players={match.teamA.players || []}
+                                                onValueChange={field.onChange}
+                                                value={field.value}
+                                                placeholder="Select a player"
+                                            />
+                                            <FormMessage />
+                                          </FormItem>
                                         )}
-                                    />
-                                    <FormField
+                                      />
+                                      <FormField
                                         control={form.control}
                                         name={`predictions.${q.id}.teamB`}
                                         render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs">{match.isSpecialMatch ? `Prediction for ${match.teamB.name}` : match.teamB.name}</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder={match.isSpecialMatch ? "Enter player or score..." : "Team B prediction..."} {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
+                                          <FormItem>
+                                            <FormLabel className="text-xs">{`Player from ${match.teamB.name}`}</FormLabel>
+                                            <PlayerSelect
+                                                players={match.teamB.players || []}
+                                                onValueChange={field.onChange}
+                                                value={field.value}
+                                                placeholder="Select a player"
+                                            />
+                                            <FormMessage />
+                                          </FormItem>
                                         )}
-                                    />
+                                      />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FormField
+                                        control={form.control}
+                                        name={`predictions.${q.id}.teamA`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                            <FormControl>
+                                              <Input placeholder="Team A prediction..." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <FormField
+                                        control={form.control}
+                                        name={`predictions.${q.id}.teamB`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                            <FormControl>
+                                              <Input placeholder="Team B prediction..." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </>
+                                  )}
                                 </div>
                             </div>
                          ))}
