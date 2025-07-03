@@ -26,6 +26,8 @@ export type Match = {
   score?: string;
   winner?: string;
   winners?: Winner[];
+  isSpecialMatch?: boolean;
+  allowOneSidedBets?: boolean;
 };
 
 export type Prediction = {

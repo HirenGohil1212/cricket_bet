@@ -17,6 +17,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { sports } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -55,6 +57,8 @@ export function AddMatchForm() {
         teamB: "",
         teamAPlayers: [],
         teamBPlayers: [],
+        isSpecialMatch: false,
+        allowOneSidedBets: false,
     }
   });
 
@@ -217,6 +221,54 @@ export function AddMatchForm() {
               )}
             />
         </div>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Match Options</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="isSpecialMatch"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Special Match (Player Bets)</FormLabel>
+                        <FormDescription>
+                          If enabled, users can place bets on individual player performance questions.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="allowOneSidedBets"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Allow One-Sided Bets</FormLabel>
+                        <FormDescription>
+                          If enabled, users can choose to bet on questions for only one of the two teams.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+            </CardContent>
+        </Card>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card>

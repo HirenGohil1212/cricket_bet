@@ -42,6 +42,10 @@ export const matchSchema = z.object({
   // Players
   teamAPlayers: z.array(playerSchema).optional(),
   teamBPlayers: z.array(playerSchema).optional(),
+
+  // Match options
+  isSpecialMatch: z.boolean().default(false),
+  allowOneSidedBets: z.boolean().default(false),
 });
 
 export type MatchFormValues = z.infer<typeof matchSchema>;

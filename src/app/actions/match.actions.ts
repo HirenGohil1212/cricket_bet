@@ -30,6 +30,8 @@ export async function createMatch(values: MatchFormValues) {
             teamBLogoDataUri,
             teamAPlayers,
             teamBPlayers,
+            isSpecialMatch,
+            allowOneSidedBets,
         } = validatedFields.data;
 
         const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
@@ -111,6 +113,8 @@ export async function createMatch(values: MatchFormValues) {
             status,
             score: '',
             winner: '',
+            isSpecialMatch,
+            allowOneSidedBets,
         });
 
         // Now, check for a question template and apply it
@@ -192,6 +196,8 @@ export async function getMatches(): Promise<Match[]> {
                 // Ensure score and winner are always strings to avoid serialization errors
                 score: data.score || '', 
                 winner: data.winner || '',
+                isSpecialMatch: data.isSpecialMatch || false,
+                allowOneSidedBets: data.allowOneSidedBets || false,
             } as Match;
         });
         return matchList;
