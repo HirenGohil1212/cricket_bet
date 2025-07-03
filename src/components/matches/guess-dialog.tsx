@@ -248,7 +248,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
 
                          {questions.map((q) => (
                             <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                                <FormLabel className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</FormLabel>
+                                <p className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</p>
                                 <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
                                   
                                   {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
