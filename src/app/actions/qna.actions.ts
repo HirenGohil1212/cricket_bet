@@ -236,12 +236,6 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
         }
         
-        const resultsMap = activeQuestions.reduce((acc, q) => {
-             // The winning condition is based on player result for special matches, otherwise it's the text result.
-            acc[q.id] = isSpecialMatch ? q.playerResult! : q.result!;
-            return acc;
-        }, {} as Record<string, { teamA: string, teamB: string }>);
-
         const betsRef = collection(db, 'bets');
         const pendingBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
         const pendingBetsSnapshot = await getDocs(pendingBetsQuery);
@@ -301,7 +295,17 @@ export async function settleMatchAndPayouts(matchId: string) {
                         isWinner = false;
                         break;
                     }
-                    const correctResult = resultsMap[prediction.questionId];
+
+                    const question = activeQuestions.find(q => q.id === prediction.questionId);
+                    if (!question) {
+                        isWinner = false;
+                        break;
+                    }
+
+                    // Use betType to determine which result to check against
+                    const betType = betData.betType || 'qna';
+                    const correctResult = betType === 'player' ? question.playerResult : question.result;
+
                     if (!correctResult) {
                         isWinner = false;
                         break;

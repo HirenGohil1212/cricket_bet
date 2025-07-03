@@ -22,10 +22,11 @@ interface CreateBetParams {
     matchId: string;
     predictions: Prediction[];
     amount: number;
+    betType: 'qna' | 'player';
 }
 
 // Server action to create a new bet and update wallet
-export async function createBet({ userId, matchId, predictions, amount }: CreateBetParams) {
+export async function createBet({ userId, matchId, predictions, amount, betType }: CreateBetParams) {
     if (!userId) {
         return { error: 'You must be logged in to place a bet.' };
     }
@@ -87,6 +88,7 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
                 status: 'Pending',
                 timestamp: Timestamp.now(),
                 potentialWin,
+                betType,
             });
             
             // Return data to be used outside the transaction
@@ -131,6 +133,7 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
                 potentialWin: data.potentialWin,
                 predictions: data.predictions || [],
+                betType: data.betType || 'qna',
             } as Bet;
         });
 

@@ -30,6 +30,7 @@ import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "../ui/
 import { PlayerSelect } from "./player-select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 
 interface GuessDialogProps {
@@ -91,6 +92,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [betOnSide, setBetOnSide] = React.useState<'teamA' | 'teamB' | 'both'>('both');
+  const [bettingMode, setBettingMode] = useState<'qna' | 'player'>('qna');
 
   const validBetAmounts = React.useMemo(() => betOptions.map(opt => opt.amount), [betOptions]);
   const predictionSchema = React.useMemo(() => createPredictionSchema(questions, match?.allowOneSidedBets || false, validBetAmounts, betOnSide), [questions, match, validBetAmounts, betOnSide]);
@@ -125,6 +127,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
     async function fetchQuestionsAndSetDefaults() {
       if (match) {
         setIsLoading(true);
+        setBettingMode('qna'); // Reset betting mode
         setBetOnSide('both'); // Reset side selection
         setQuestions([]); // Clear old questions to avoid rendering with old state
         const fetchedQuestions = await getQuestionsForMatch(match.id);
@@ -179,6 +182,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
       matchId: match.id,
       predictions: finalPredictions,
       amount: data.amount,
+      betType: bettingMode,
     });
 
     if (result.error) {
@@ -222,6 +226,23 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                       Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
                     ) : questions.length > 0 ? (
                        <div className="space-y-4">
+                        {match.isSpecialMatch && (
+                          <div className="flex items-center justify-center space-x-2 rounded-lg border p-3">
+                            <Label htmlFor="betting-mode" className={cn('text-sm', bettingMode === 'qna' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                              Predict Q&A
+                            </Label>
+                            <Switch
+                              id="betting-mode"
+                              checked={bettingMode === 'player'}
+                              onCheckedChange={(checked) => setBettingMode(checked ? 'player' : 'qna')}
+                              aria-label="Toggle between Q&A and Player prediction"
+                            />
+                            <Label htmlFor="betting-mode" className={cn('text-sm', bettingMode === 'player' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                              Predict Players
+                            </Label>
+                          </div>
+                        )}
+
                         {match.allowOneSidedBets && (
                             <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
                                 <Label className="text-sm font-semibold text-center block">Bet on</Label>
@@ -252,7 +273,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                 <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
                                   
                                   {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                     match.isSpecialMatch ? (
+                                     bettingMode === 'player' && match.isSpecialMatch ? (
                                        <FormField
                                         control={form.control}
                                         name={`predictions.${q.id}.teamA`}
@@ -287,7 +308,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                   )}
 
                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                      match.isSpecialMatch ? (
+                                      bettingMode === 'player' && match.isSpecialMatch ? (
                                         <FormField
                                           control={form.control}
                                           name={`predictions.${q.id}.teamB`}

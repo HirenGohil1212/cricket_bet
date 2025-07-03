@@ -46,6 +46,7 @@ export type Bet = {
   status: "Won" | "Lost" | "Pending";
   timestamp: string; // Changed from Date to string
   potentialWin: number;
+  betType?: 'qna' | 'player';
 };
 
 export type UserBankAccount = {
