@@ -36,11 +36,23 @@ interface GuessDialogProps {
 }
 
 // Dynamically create a Zod schema for the user's prediction form
-const createPredictionSchema = (questions: Question[]) => {
-    const questionSchema = z.object({
-        teamA: z.string().min(1, 'Prediction is required'),
-        teamB: z.string().min(1, 'Prediction is required'),
-    });
+const createPredictionSchema = (questions: Question[], allowOneSidedBets: boolean) => {
+    let questionSchema;
+
+    if (allowOneSidedBets) {
+        questionSchema = z.object({
+            teamA: z.string(),
+            teamB: z.string(),
+        }).refine(data => data.teamA.trim() !== '' || data.teamB.trim() !== '', {
+            message: "At least one prediction is required.",
+            path: ["teamA"], // Assign error to one field for display
+        });
+    } else {
+        questionSchema = z.object({
+            teamA: z.string().min(1, 'Prediction is required'),
+            teamB: z.string().min(1, 'Prediction is required'),
+        });
+    }
 
     const schemaObject = questions.reduce((acc, q) => {
         acc[q.id] = questionSchema;
@@ -62,7 +74,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const predictionSchema = React.useMemo(() => createPredictionSchema(questions), [questions]);
+  const predictionSchema = React.useMemo(() => createPredictionSchema(questions, match?.allowOneSidedBets || false), [questions, match]);
   type PredictionFormValues = z.infer<typeof predictionSchema>;
 
   const form = useForm<PredictionFormValues>({
@@ -175,9 +187,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                         name={`predictions.${q.id}.teamA`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                                <FormLabel className="text-xs">{match.isSpecialMatch ? `Prediction for ${match.teamA.name}` : match.teamA.name}</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Team A prediction..." {...field} />
+                                                    <Input placeholder={match.isSpecialMatch ? "Enter player or score..." : "Team A prediction..."} {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -188,9 +200,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                         name={`predictions.${q.id}.teamB`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                                <FormLabel className="text-xs">{match.isSpecialMatch ? `Prediction for ${match.teamB.name}` : match.teamB.name}</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Team B prediction..." {...field} />
+                                                    <Input placeholder={match.isSpecialMatch ? "Enter player or score..." : "Team B prediction..."} {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
