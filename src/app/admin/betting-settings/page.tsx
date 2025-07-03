@@ -11,7 +11,7 @@ export default async function BettingSettingsPage() {
             <CardHeader>
                 <CardTitle>Betting Settings</CardTitle>
                 <CardDescription>
-                    Manage the multiplier for calculating potential wins on bets.
+                    Manage the available bet amounts and their corresponding payouts.
                 </CardDescription>
             </CardHeader>
             <CardContent>

@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Match, Question, Prediction } from "@/lib/types";
+import type { Match, Question, Prediction, BetOption } from "@/lib/types";
 import { createBet } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
@@ -34,11 +34,11 @@ interface GuessDialogProps {
   match: Match | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  betMultiplier: number;
+  betOptions: BetOption[];
 }
 
 // Dynamically create a Zod schema for the user's prediction form
-const createPredictionSchema = (questions: Question[], allowOneSidedBets: boolean) => {
+const createPredictionSchema = (questions: Question[], allowOneSidedBets: boolean, betAmounts: number[]) => {
     let questionSchema;
 
     if (allowOneSidedBets) {
@@ -63,12 +63,14 @@ const createPredictionSchema = (questions: Question[], allowOneSidedBets: boolea
     
     return z.object({
         predictions: z.object(schemaObject),
-        amount: z.coerce.number().min(9, "Minimum bet is INR 9."),
+        amount: z.coerce.number().refine(val => betAmounts.includes(val), {
+            message: "Please select a valid bet amount.",
+        }),
     });
 };
 
 
-export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessDialogProps) {
+export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
@@ -76,13 +78,14 @@ export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessD
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const predictionSchema = React.useMemo(() => createPredictionSchema(questions, match?.allowOneSidedBets || false), [questions, match]);
+  const validBetAmounts = React.useMemo(() => betOptions.map(opt => opt.amount), [betOptions]);
+  const predictionSchema = React.useMemo(() => createPredictionSchema(questions, match?.allowOneSidedBets || false, validBetAmounts), [questions, match, validBetAmounts]);
   type PredictionFormValues = z.infer<typeof predictionSchema>;
 
   const form = useForm<PredictionFormValues>({
     resolver: zodResolver(predictionSchema),
     defaultValues: {
-        amount: 9,
+        amount: betOptions[0]?.amount || 0,
         predictions: {},
     }
   });
@@ -103,7 +106,7 @@ export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessD
 
         // Reset the form with the new default values to make inputs controlled
         form.reset({
-          amount: 9,
+          amount: betOptions[0]?.amount || 0,
           predictions: defaultPredictions,
         });
         
@@ -117,9 +120,9 @@ export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessD
     } else {
       // Clear form state when dialog is closed
       setIsSubmitting(false);
-      form.reset({ amount: 9, predictions: {} });
+      form.reset({ amount: betOptions[0]?.amount || 0, predictions: {} });
     }
-  }, [match, open, form]);
+  }, [match, open, form, betOptions]);
 
 
   async function handleSubmit(data: PredictionFormValues) {
@@ -150,7 +153,7 @@ export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessD
   }
 
   const amount = form.watch('amount');
-  const potentialWin = amount ? Number(amount) * betMultiplier : 0;
+  const potentialWin = betOptions.find(opt => opt.amount === amount)?.payout || 0;
   if (!match) return null;
 
   return (
@@ -299,15 +302,15 @@ export function GuessDialog({ match, open, onOpenChange, betMultiplier }: GuessD
                             <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
                              <FormControl>
                                <div className="grid grid-cols-3 gap-4">
-                                  {[9, 19, 29].map((val) => (
+                                  {betOptions.map((opt) => (
                                     <Button
-                                      key={val}
+                                      key={opt.amount}
                                       type="button"
-                                      variant={amount === val ? "default" : "secondary"}
-                                      onClick={() => field.onChange(val)}
+                                      variant={amount === opt.amount ? "default" : "secondary"}
+                                      onClick={() => field.onChange(opt.amount)}
                                       className="font-bold"
                                     >
-                                      INR {val}
+                                      INR {opt.amount}
                                     </Button>
                                   ))}
                                 </div>

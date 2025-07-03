@@ -150,8 +150,13 @@ export type ContentManagementFormValues = z.infer<typeof contentManagementSchema
 
 
 // Schema for Betting Settings (Admin)
+export const betOptionSchema = z.object({
+  amount: z.coerce.number().min(1, "Bet amount must be at least 1 INR."),
+  payout: z.coerce.number().min(1, "Payout amount must be at least 1 INR."),
+});
+
 export const bettingSettingsSchema = z.object({
-  betMultiplier: z.coerce.number().min(1.1, "Multiplier must be at least 1.1x.").max(10, "Multiplier cannot be more than 10x."),
+  betOptions: z.array(betOptionSchema).min(1, "At least one bet option is required.").max(5, "You can add a maximum of 5 bet options."),
 });
 
 export type BettingSettingsFormValues = z.infer<typeof bettingSettingsSchema>;

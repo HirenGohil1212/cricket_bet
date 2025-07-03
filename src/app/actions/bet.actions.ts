@@ -37,9 +37,16 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
         const userRef = doc(db, 'users', userId);
         const matchRef = doc(db, 'matches', matchId);
         
-        // Get the current bet multiplier
-        const { betMultiplier } = await getBettingSettings();
+        // Get the current betting options
+        const bettingSettings = await getBettingSettings();
+        const selectedOption = bettingSettings.betOptions.find(opt => opt.amount === amount);
 
+        if (!selectedOption) {
+            return { error: 'The selected bet amount is not valid. Please refresh and try again.' };
+        }
+        
+        const potentialWin = selectedOption.payout;
+        
         const result = await runTransaction(db, async (transaction) => {
             // All reads must come before writes in a transaction
             const userDoc = await transaction.get(userRef);
@@ -68,7 +75,6 @@ export async function createBet({ userId, matchId, predictions, amount }: Create
             });
             
             const matchData = matchDoc.data();
-            const potentialWin = amount * betMultiplier;
             const matchDescription = `${matchData.teamA.name} vs ${matchData.teamB.name}`;
 
             const newBetRef = doc(collection(db, "bets"));

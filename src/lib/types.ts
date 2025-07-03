@@ -151,6 +151,11 @@ export type Winner = {
     payoutAmount: number;
 };
 
+export type BetOption = {
+    amount: number;
+    payout: number;
+};
+
 export type BettingSettings = {
-    betMultiplier: number;
+    betOptions: BetOption[];
 };

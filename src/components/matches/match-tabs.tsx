@@ -13,7 +13,7 @@ export async function MatchTabs() {
     getMatches(),
     getBettingSettings(),
   ]);
-  const { betMultiplier } = settings;
+  const { betOptions } = settings;
 
   // Fetch winners for all finished matches concurrently
   const finishedMatches = allMatches.filter(m => m.status === 'Finished');
@@ -52,7 +52,7 @@ export async function MatchTabs() {
           <MatchList
             matches={augmentedMatches.filter(m => m.sport === sport)}
             sport={sport}
-            betMultiplier={betMultiplier}
+            betOptions={betOptions}
           />
         </TabsContent>
       ))}
