@@ -2,6 +2,9 @@
 import { z } from "zod";
 import { sports } from "@/lib/types";
 
+const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_LOGO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"];
+
 // Schema for adding/editing a match
 export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
@@ -9,9 +12,20 @@ export const matchSchema = z.object({
   teamB: z.string().optional(),
   teamACountry: z.string({ required_error: "Country for Team A is required." }).min(1, { message: "Country for Team A is required."}),
   teamBCountry: z.string({ required_error: "Country for Team B is required." }).min(1, { message: "Country for Team B is required."}),
-  teamALogo: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
-  teamBLogo: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   startTime: z.date({ required_error: "A start date and time is required." }),
+  
+  // New fields for file upload
+  teamALogoFile: z.any()
+    .optional()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_LOGO_SIZE), `Max logo size is 2MB.`)
+    .refine((file) => !file || (file instanceof File && ACCEPTED_LOGO_TYPES.includes(file.type)), ".jpg, .jpeg, .png, .webp, and .svg files are accepted."),
+  teamBLogoFile: z.any()
+    .optional()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_LOGO_SIZE), `Max logo size is 2MB.`)
+    .refine((file) => !file || (file instanceof File && ACCEPTED_LOGO_TYPES.includes(file.type)), ".jpg, .jpeg, .png, .webp, and .svg files are accepted."),
+  
+  teamALogoDataUri: z.string().optional(),
+  teamBLogoDataUri: z.string().optional(),
 });
 
 export type MatchFormValues = z.infer<typeof matchSchema>;

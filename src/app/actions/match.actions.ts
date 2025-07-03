@@ -2,7 +2,9 @@
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
+import { db, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Match } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
@@ -17,7 +19,7 @@ export async function createMatch(values: MatchFormValues) {
             return { error: 'Invalid fields.' };
         }
 
-        const { sport, teamA, teamB, teamALogo, teamBLogo, startTime, teamACountry, teamBCountry } = validatedFields.data;
+        const { sport, teamA, teamB, teamACountry, teamBCountry, startTime, teamALogoDataUri, teamBLogoDataUri } = validatedFields.data;
 
         const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
         const countryB = countries.find(c => c.code.toLowerCase() === teamBCountry.toLowerCase());
@@ -30,8 +32,30 @@ export async function createMatch(values: MatchFormValues) {
         const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
 
         // Use country flag as default logo if no custom logo is provided
-        const teamAFlagUrl = `https://flagpedia.net/data/flags/w320/${teamACountry.toLowerCase()}.webp`;
-        const teamBFlagUrl = `https://flagpedia.net/data/flags/w320/${teamBCountry.toLowerCase()}.webp`;
+        let teamALogoUrl = `https://flagpedia.net/data/flags/w320/${teamACountry.toLowerCase()}.webp`;
+        let teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${teamBCountry.toLowerCase()}.webp`;
+
+        if (teamALogoDataUri) {
+            const storageRef = ref(storage, `logos/${uuidv4()}`);
+            const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
+            
+            await uploadString(storageRef, teamALogoDataUri.split(',')[1], 'base64', {
+                contentType: mimeType
+            });
+
+            teamALogoUrl = await getDownloadURL(storageRef);
+        }
+
+        if (teamBLogoDataUri) {
+            const storageRef = ref(storage, `logos/${uuidv4()}`);
+            const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
+            
+            await uploadString(storageRef, teamBLogoDataUri.split(',')[1], 'base64', {
+                contentType: mimeType
+            });
+
+            teamBLogoUrl = await getDownloadURL(storageRef);
+        }
 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
@@ -39,8 +63,8 @@ export async function createMatch(values: MatchFormValues) {
         // Create the match document
         const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { name: teamAName, logoUrl: teamALogo || teamAFlagUrl, countryCode: teamACountry },
-            teamB: { name: teamBName, logoUrl: teamBLogo || teamBFlagUrl, countryCode: teamBCountry },
+            teamA: { name: teamAName, logoUrl: teamALogoUrl, countryCode: teamACountry },
+            teamB: { name: teamBName, logoUrl: teamBLogoUrl, countryCode: teamBCountry },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',
