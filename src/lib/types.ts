@@ -115,6 +115,7 @@ export type Question = {
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
   result: { teamA: string, teamB: string } | null;
+  playerResult?: { teamA: string, teamB: string } | null;
 };
 
 export type Transaction = {

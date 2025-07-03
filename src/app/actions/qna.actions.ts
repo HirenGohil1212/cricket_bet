@@ -36,6 +36,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
                 result: data.result || null,
+                playerResult: data.playerResult || null,
             } as Question;
         });
     } catch (error) {
@@ -133,6 +134,7 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,
+                    playerResult: null,
                 });
             });
         }
@@ -148,20 +150,38 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
 }
 
 // New Function to just save the results for questions
-export async function saveQuestionResults(matchId: string, results: Record<string, { teamA: string, teamB: string }>) {
+export async function saveQuestionResults(
+    matchId: string, 
+    results: Record<string, { teamA: string, teamB: string }>,
+    playerResults?: Record<string, { teamA: string, teamB: string }>
+) {
     if (!matchId) return { error: 'Match ID is required.' };
 
     const batch = writeBatch(db);
     const questionsRef = collection(db, `matches/${matchId}/questions`);
+    
+    const allQuestionIds = new Set([...Object.keys(results), ...Object.keys(playerResults || {})]);
 
-    for (const questionId in results) {
+    for (const questionId of allQuestionIds) {
         const resultValue = results[questionId];
-        // Only save if there is some data
+        const playerResultValue = playerResults?.[questionId];
+        
+        const updateData: { result?: any; playerResult?: any } = {};
+
         if (resultValue && (resultValue.teamA?.trim() || resultValue.teamB?.trim())) {
-             const questionRef = doc(questionsRef, questionId);
-             batch.update(questionRef, { result: resultValue });
+            updateData.result = resultValue;
+        }
+
+        if (playerResultValue && (playerResultValue.teamA?.trim() || playerResultValue.teamB?.trim())) {
+            updateData.playerResult = playerResultValue;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            const questionRef = doc(questionsRef, questionId);
+            batch.update(questionRef, updateData);
         }
     }
+
 
     try {
         await batch.commit();
@@ -188,6 +208,9 @@ export async function settleMatchAndPayouts(matchId: string) {
         if (!matchDoc.exists() || matchDoc.data().status === 'Finished') {
             return { success: 'Match is already finished or does not exist.', winners: [] };
         }
+        
+        const matchData = matchDoc.data();
+        const isSpecialMatch = matchData.isSpecialMatch || false;
 
         const questionsSnapshot = await getDocs(query(questionsRef, where('status', '==', 'active')));
         if (questionsSnapshot.empty) {
@@ -201,13 +224,21 @@ export async function settleMatchAndPayouts(matchId: string) {
 
         // Validate that all active questions have results
         for (const q of activeQuestions) {
+             // Standard text result is always required for display purposes.
             if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
-                return { error: `Question "${q.question}" is missing a valid result. Please save all results before settling.` };
+                return { error: `Question "${q.question}" is missing a valid text result. Please save all results before settling.` };
+            }
+             // For special matches, player results are also required for settlement.
+            if (isSpecialMatch) {
+                if (!q.playerResult || typeof q.playerResult.teamA !== 'string' || typeof q.playerResult.teamB !== 'string' || !q.playerResult.teamA || !q.playerResult.teamB) {
+                     return { error: `Player result for question "${q.question}" is missing. Please select winning players before settling a special match.` };
+                }
             }
         }
         
         const resultsMap = activeQuestions.reduce((acc, q) => {
-            acc[q.id] = q.result!;
+             // The winning condition is based on player result for special matches, otherwise it's the text result.
+            acc[q.id] = isSpecialMatch ? q.playerResult! : q.result!;
             return acc;
         }, {} as Record<string, { teamA: string, teamB: string }>);
 
@@ -260,34 +291,50 @@ export async function settleMatchAndPayouts(matchId: string) {
                 betUpdates.push({ ref: betRef, data: { status: 'Lost', reason: 'Invalid bet data.' }});
                 continue;
             }
-
-            // A bet can only win if the number of predictions matches the number of active questions.
-            if (betData.predictions.length !== activeQuestions.length) {
-                betUpdates.push({ ref: betRef, data: { status: 'Lost', reason: 'Prediction count mismatch.' }});
-                continue;
-            }
-
+            
             let isWinner = true;
-            for (const prediction of betData.predictions) {
-                // Validate each prediction.
-                if (!prediction || typeof prediction.questionId !== 'string' || !prediction.predictedAnswer || typeof prediction.predictedAnswer.teamA !== 'string' || typeof prediction.predictedAnswer.teamB !== 'string') {
-                    isWinner = false;
-                    break;
-                }
-                const correctResult = resultsMap[prediction.questionId];
-                if (!correctResult) { // Prediction for a non-active or non-existent question
-                    isWinner = false;
-                    break;
-                }
+            if (betData.predictions.length !== activeQuestions.length) {
+                isWinner = false;
+            } else {
+                for (const prediction of betData.predictions) {
+                    if (!prediction || typeof prediction.questionId !== 'string' || !prediction.predictedAnswer || typeof prediction.predictedAnswer.teamA !== 'string' || typeof prediction.predictedAnswer.teamB !== 'string') {
+                        isWinner = false;
+                        break;
+                    }
+                    const correctResult = resultsMap[prediction.questionId];
+                    if (!correctResult) {
+                        isWinner = false;
+                        break;
+                    }
 
-                const teamA_match = prediction.predictedAnswer.teamA.trim().toLowerCase() === correctResult.teamA.trim().toLowerCase();
-                const teamB_match = prediction.predictedAnswer.teamB.trim().toLowerCase() === correctResult.teamB.trim().toLowerCase();
-                
-                if (!teamA_match || !teamB_match) {
-                    isWinner = false;
-                    break;
+                    const predictedA = prediction.predictedAnswer.teamA?.trim().toLowerCase();
+                    const predictedB = prediction.predictedAnswer.teamB?.trim().toLowerCase();
+
+                    if (!predictedA && !predictedB) {
+                        isWinner = false;
+                        break;
+                    }
+
+                    const correctA = correctResult.teamA?.trim().toLowerCase();
+                    const correctB = correctResult.teamB?.trim().toLowerCase();
+
+                    let teamA_match = true;
+                    if (predictedA) {
+                        teamA_match = (predictedA === correctA);
+                    }
+
+                    let teamB_match = true;
+                    if (predictedB) {
+                        teamB_match = (predictedB === correctB);
+                    }
+                    
+                    if (!teamA_match || !teamB_match) {
+                        isWinner = false;
+                        break;
+                    }
                 }
             }
+
 
             if (isWinner) {
                 betUpdates.push({ ref: betRef, data: { status: 'Won' }});
