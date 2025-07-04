@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { approveDeposit, rejectDeposit } from '@/app/actions/wallet.actions';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/auth-context';
 
 interface DepositsTableProps {
     deposits: DepositRequest[];
@@ -107,10 +108,17 @@ interface ReviewDialogProps {
 function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const { userProfile } = useAuth();
     const [amount, setAmount] = useState(deposit.amount);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const isAdmin = userProfile?.role === 'admin';
+
     const handleApprove = async () => {
+        if (!isAdmin) {
+            toast({ variant: 'destructive', title: 'Permission Denied' });
+            return;
+        }
         setIsSubmitting(true);
         const result = await approveDeposit(deposit.id, deposit.userId, Number(amount));
         if (result.error) {
@@ -124,6 +132,10 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
     };
 
     const handleReject = async () => {
+        if (!isAdmin) {
+            toast({ variant: 'destructive', title: 'Permission Denied' });
+            return;
+        }
         setIsSubmitting(true);
         const result = await rejectDeposit(deposit.id);
         if (result.error) {
@@ -173,10 +185,10 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                     </div>
                 </div>
                 <DialogFooter className="grid grid-cols-2 gap-2">
-                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting}>
+                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !isAdmin}>
                         {isSubmitting ? 'Rejecting...' : 'Reject'}
                     </Button>
-                    <Button onClick={handleApprove} disabled={isSubmitting}>
+                    <Button onClick={handleApprove} disabled={isSubmitting || !isAdmin}>
                         {isSubmitting ? 'Approving...' : 'Approve'}
                     </Button>
                 </DialogFooter>

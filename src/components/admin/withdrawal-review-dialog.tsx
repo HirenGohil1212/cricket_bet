@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { approveWithdrawal, rejectWithdrawal } from '@/app/actions/withdrawal.actions';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
+import { useAuth } from '@/context/auth-context';
 
 interface ReviewDialogProps {
     isOpen: boolean;
@@ -23,9 +24,12 @@ interface ReviewDialogProps {
 export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDialogProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const { userProfile } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userBalance, setUserBalance] = useState<number | null>(null);
     const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+
+    const isAdmin = userProfile?.role === 'admin';
 
     useEffect(() => {
         if (isOpen && withdrawal.userId) {
@@ -48,6 +52,10 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
 
 
     const handleApprove = async () => {
+        if (!isAdmin) {
+            toast({ variant: 'destructive', title: 'Permission Denied' });
+            return;
+        }
         setIsSubmitting(true);
         const result = await approveWithdrawal(withdrawal.id, withdrawal.userId, withdrawal.amount);
         if (result.error) {
@@ -61,6 +69,10 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
     };
 
     const handleReject = async () => {
+        if (!isAdmin) {
+            toast({ variant: 'destructive', title: 'Permission Denied' });
+            return;
+        }
         setIsSubmitting(true);
         const result = await rejectWithdrawal(withdrawal.id);
         if (result.error) {
@@ -108,10 +120,10 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
                      </Card>
                 </div>
                 <DialogFooter className="grid grid-cols-2 gap-2">
-                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting}>
+                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !isAdmin}>
                         {isSubmitting ? 'Rejecting...' : 'Reject'}
                     </Button>
-                    <Button onClick={handleApprove} disabled={isSubmitting}>
+                    <Button onClick={handleApprove} disabled={isSubmitting || !isAdmin}>
                         {isSubmitting ? 'Approving...' : 'Approve & Pay'}
                     </Button>
                 </DialogFooter>

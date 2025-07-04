@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { useAuth } from '@/context/auth-context';
 
 
 interface ManageQnaDialogProps {
@@ -28,6 +29,7 @@ interface ManageQnaDialogProps {
 export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQnaDialogProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const { userProfile } = useAuth();
     const [isSaving, setIsSaving] = React.useState(false);
     const [isSettling, setIsSettling] = React.useState(false);
     
@@ -39,6 +41,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     // New state for the settlement results
     const [settlementResults, setSettlementResults] = React.useState<{ winners: Winner[]; totalBetsProcessed: number; } | null>(null);
     const [isResultsDialogOpen, setIsResultsDialogOpen] = React.useState(false);
+
+    const isAdmin = userProfile?.role === 'admin';
 
     // Initialize or update results state when questions change
     React.useEffect(() => {
@@ -74,6 +78,10 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     };
 
     const handleSave = async () => {
+        if (!isAdmin) {
+            toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
+            return;
+        }
         setIsSaving(true);
         
         // Construct the per-question playerResults object expected by the backend action
@@ -94,6 +102,10 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     };
 
     const handleSettle = async () => {
+        if (!isAdmin) {
+            toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
+            return;
+        }
         setIsSettling(true);
         const actionResult = await settleMatchAndPayouts(match.id);
         setIsSettling(false);
@@ -268,10 +280,10 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                        </Alert>
                        <div className="flex justify-end gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                          <Button type="button" variant="ghost" onClick={() => onClose(false)} disabled={isSaving || isSettling}>Cancel</Button>
-                         <Button type="button" variant="outline" onClick={handleSave} disabled={isSaving || isSettling || match.status === 'Finished'}>
+                         <Button type="button" variant="outline" onClick={handleSave} disabled={isSaving || isSettling || match.status === 'Finished' || !isAdmin}>
                              {isSaving ? 'Saving...' : 'Save Results'}
                          </Button>
-                         <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions}>
+                         <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
                              {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
                          </Button>
                        </div>
