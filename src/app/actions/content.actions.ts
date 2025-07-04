@@ -1,7 +1,8 @@
+
 'use server';
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
@@ -52,9 +53,10 @@ export async function updateContent(data: ContentManagementFormValues) {
                 }
             }
             const storageRef = ref(storage, `content/banner-${uuidv4()}`);
-            await uploadString(storageRef, bannerImageDataUri.split(',')[1], 'base64', {
-                contentType: bannerImageDataUri.match(/data:(.*);base64,/)?.[1]
-            });
+            const mimeType = bannerImageDataUri.match(/data:(.*);base64,/)?.[1];
+            const base64Data = bannerImageDataUri.split(',')[1];
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
             bannerImageUrl = await getDownloadURL(storageRef);
         }
 
@@ -69,9 +71,10 @@ export async function updateContent(data: ContentManagementFormValues) {
                 }
             }
             const storageRef = ref(storage, `content/video-${uuidv4()}`);
-             await uploadString(storageRef, smallVideoDataUri.split(',')[1], 'base64', {
-                contentType: smallVideoDataUri.match(/data:(.*);base64,/)?.[1]
-            });
+            const mimeType = smallVideoDataUri.match(/data:(.*);base64,/)?.[1];
+            const base64Data = smallVideoDataUri.split(',')[1];
+            const videoBuffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, videoBuffer, { contentType: mimeType });
             smallVideoUrl = await getDownloadURL(storageRef);
         }
 

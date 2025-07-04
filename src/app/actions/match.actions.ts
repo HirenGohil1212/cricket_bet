@@ -2,7 +2,7 @@
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -51,22 +51,18 @@ export async function createMatch(values: MatchFormValues) {
         if (teamALogoDataUri) {
             const storageRef = ref(storage, `logos/${uuidv4()}`);
             const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
-            
-            await uploadString(storageRef, teamALogoDataUri.split(',')[1], 'base64', {
-                contentType: mimeType
-            });
-
+            const base64Data = teamALogoDataUri.split(',')[1];
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
             teamALogoUrl = await getDownloadURL(storageRef);
         }
 
         if (teamBLogoDataUri) {
             const storageRef = ref(storage, `logos/${uuidv4()}`);
             const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
-            
-            await uploadString(storageRef, teamBLogoDataUri.split(',')[1], 'base64', {
-                contentType: mimeType
-            });
-
+            const base64Data = teamBLogoDataUri.split(',')[1];
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -80,7 +76,9 @@ export async function createMatch(values: MatchFormValues) {
                 if (player.playerImageDataUri) {
                     const storageRef = ref(storage, `players/${uuidv4()}`);
                     const mimeType = player.playerImageDataUri.match(/data:(.*);base64,/)?.[1];
-                    await uploadString(storageRef, player.playerImageDataUri.split(',')[1], 'base64', { contentType: mimeType });
+                    const base64Data = player.playerImageDataUri.split(',')[1];
+                    const imageBuffer = Buffer.from(base64Data, 'base64');
+                    await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
                     playerImageUrl = await getDownloadURL(storageRef);
                 }
                 processedPlayers.push({ name: player.name, imageUrl: playerImageUrl });
@@ -301,7 +299,9 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             }
             const storageRef = ref(storage, `logos/${uuidv4()}`);
             const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
-            await uploadString(storageRef, teamALogoDataUri.split(',')[1], 'base64', { contentType: mimeType });
+            const base64Data = teamALogoDataUri.split(',')[1];
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
             teamALogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -317,7 +317,9 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             }
             const storageRef = ref(storage, `logos/${uuidv4()}`);
             const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
-            await uploadString(storageRef, teamBLogoDataUri.split(',')[1], 'base64', { contentType: mimeType });
+            const base64Data = teamBLogoDataUri.split(',')[1];
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -330,7 +332,9 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
                 if (player.playerImageDataUri && player.playerImageDataUri.startsWith('data:')) {
                     const storageRef = ref(storage, `players/${uuidv4()}`);
                     const mimeType = player.playerImageDataUri.match(/data:(.*);base64,/)?.[1];
-                    await uploadString(storageRef, player.playerImageDataUri.split(',')[1], 'base64', { contentType: mimeType });
+                    const base64Data = player.playerImageDataUri.split(',')[1];
+                    const imageBuffer = Buffer.from(base64Data, 'base64');
+                    await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
                     const newImageUrl = await getDownloadURL(storageRef);
                     updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
                     
