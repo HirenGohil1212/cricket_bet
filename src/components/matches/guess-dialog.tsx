@@ -259,14 +259,14 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
           <DialogDescription asChild>
             <div className="flex items-center justify-center gap-4 mt-2">
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
                       <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="object-cover" data-ai-hint="logo" />
                     </div>
                     <span className="font-semibold">{match.teamA.name}</span>
                 </div>
                 <span className="text-muted-foreground">vs</span>
                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
                       <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="object-cover" data-ai-hint="logo" />
                     </div>
                     <span className="font-semibold">{match.teamB.name}</span>

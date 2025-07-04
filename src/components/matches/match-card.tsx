@@ -95,7 +95,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
           <div className="flex justify-between items-center text-center">
               {/* Team A Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-md overflow-hidden flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center">
                     <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="object-cover" data-ai-hint="logo" />
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -113,7 +113,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
 
               {/* Team B Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-md overflow-hidden flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center">
                     <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="object-cover" data-ai-hint="logo" />
                   </div>
                   <div className="flex items-center gap-1.5">
