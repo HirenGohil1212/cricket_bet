@@ -173,8 +173,17 @@ export async function getMatches(): Promise<Match[]> {
         const matchesCol = collection(db, 'matches');
         const q = query(matchesCol, orderBy('startTime', 'desc'), limit(50));
         const matchSnapshot = await getDocs(q);
+        const now = new Date(); // Get current time once
+
         const matchList = matchSnapshot.docs.map(doc => {
             const data = doc.data();
+            const startTime = (data.startTime as Timestamp).toDate();
+            
+            let currentStatus: Match['status'] = data.status;
+            // Dynamically update status if it's 'Upcoming' and the start time has passed.
+            if (currentStatus === 'Upcoming' && startTime <= now) {
+                currentStatus = 'Live';
+            }
 
             // Fix blurry flag URLs on the fly by always requesting high-resolution images
             if (data.teamA.logoUrl && data.teamA.logoUrl.includes('flagpedia.net')) {
@@ -189,8 +198,8 @@ export async function getMatches(): Promise<Match[]> {
                 sport: data.sport,
                 teamA: data.teamA,
                 teamB: data.teamB,
-                status: data.status,
-                startTime: (data.startTime as Timestamp).toDate().toISOString(),
+                status: currentStatus, // Use the calculated status
+                startTime: startTime.toISOString(),
                 // Ensure score and winner are always strings to avoid serialization errors
                 score: data.score || '', 
                 winner: data.winner || '',
@@ -216,6 +225,14 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
         }
 
         const data = matchSnap.data();
+        const startTime = (data.startTime as Timestamp).toDate();
+        const now = new Date();
+        
+        let currentStatus: Match['status'] = data.status;
+        // Dynamically update status if it's 'Upcoming' and the start time has passed.
+        if (currentStatus === 'Upcoming' && startTime <= now) {
+            currentStatus = 'Live';
+        }
 
         if (data.teamA.logoUrl && data.teamA.logoUrl.includes('flagpedia.net')) {
             data.teamA.logoUrl = data.teamA.logoUrl.replace('/w80/', '/w320/').replace('/w40/', '/w320/');
@@ -229,8 +246,8 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
             sport: data.sport,
             teamA: data.teamA,
             teamB: data.teamB,
-            status: data.status,
-            startTime: (data.startTime as Timestamp).toDate().toISOString(),
+            status: currentStatus, // Use the calculated status
+            startTime: startTime.toISOString(),
             score: data.score || '',
             winner: data.winner || '',
             isSpecialMatch: data.isSpecialMatch || false,
