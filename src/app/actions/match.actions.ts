@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '@/lib/firebase';
@@ -171,7 +171,7 @@ export async function deleteMatch(matchId: string) {
 export async function getMatches(): Promise<Match[]> {
     try {
         const matchesCol = collection(db, 'matches');
-        const q = query(matchesCol, orderBy('startTime', 'desc'));
+        const q = query(matchesCol, orderBy('startTime', 'desc'), limit(50));
         const matchSnapshot = await getDocs(q);
         const matchList = matchSnapshot.docs.map(doc => {
             const data = doc.data();

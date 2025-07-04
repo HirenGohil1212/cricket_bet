@@ -1,47 +1,55 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Users, Swords, Banknote, LineChart } from "lucide-react";
+import { Users, Swords, Banknote, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { getFinancialSummary } from "@/app/actions/financials.actions";
 
 async function getDashboardData() {
     try {
         const usersCol = collection(db, 'users');
-        const userSnapshot = await getCountFromServer(usersCol);
-        const userCount = userSnapshot.data().count;
-
         const matchesCol = collection(db, 'matches');
-        const activeMatchesQuery = query(matchesCol, where('status', 'in', ['Live', 'Upcoming']));
-        const activeMatchesSnapshot = await getCountFromServer(activeMatchesQuery);
-        const matchCount = activeMatchesSnapshot.data().count;
-        
         const withdrawalsCol = collection(db, 'withdrawals');
-        const pendingWithdrawalsQuery = query(withdrawalsCol, where('status', '==', 'Pending'));
-        const pendingWithdrawalsSnapshot = await getCountFromServer(pendingWithdrawalsQuery);
-        const pendingWithdrawals = pendingWithdrawalsSnapshot.data().count;
+        const depositsCol = collection(db, 'deposits');
 
-        // Placeholder for real data to be implemented later
-        const totalRevenue = 0;
+        const [
+            userSnapshot,
+            activeMatchesSnapshot,
+            pendingWithdrawalsSnapshot,
+            pendingDepositsSnapshot,
+            financialSummary
+        ] = await Promise.all([
+            getCountFromServer(usersCol),
+            getCountFromServer(query(matchesCol, where('status', 'in', ['Live', 'Upcoming']))),
+            getCountFromServer(query(withdrawalsCol, where('status', '==', 'Pending'))),
+            getCountFromServer(query(depositsCol, where('status', '==', 'Pending'))),
+            getFinancialSummary()
+        ]);
         
+        const userCount = userSnapshot.data().count;
+        const matchCount = activeMatchesSnapshot.data().count;
+        const pendingWithdrawals = pendingWithdrawalsSnapshot.data().count;
+        const pendingDeposits = pendingDepositsSnapshot.data().count;
+        const totalRevenue = financialSummary.grossRevenue;
 
-        return { userCount, matchCount, totalRevenue, pendingWithdrawals };
+        return { userCount, matchCount, totalRevenue, pendingWithdrawals, pendingDeposits };
+
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // Return zeros if there's an error (e.g., Firestore rules or collections don't exist)
-        return { userCount: 0, matchCount: 0, totalRevenue: 0, pendingWithdrawals: 0 };
+        return { userCount: 0, matchCount: 0, totalRevenue: 0, pendingWithdrawals: 0, pendingDeposits: 0 };
     }
 }
 
 export default async function AdminDashboardPage() {
-    const { userCount, matchCount, totalRevenue, pendingWithdrawals } = await getDashboardData();
+    const { userCount, matchCount, totalRevenue, pendingWithdrawals, pendingDeposits } = await getDashboardData();
 
     return (
         <>
             <div className="flex items-center">
                 <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -59,23 +67,33 @@ export default async function AdminDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{matchCount}</div>
-                        <p className="text-xs text-muted-foreground">Live and upcoming matches</p>
+                        <p className="text-xs text-muted-foreground">Live and upcoming</p>
                     </CardContent>
                  </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                        <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
                         <Banknote className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">INR {totalRevenue.toFixed(2)}</div>
-                        <p className="text-xs text-muted-foreground">This month</p>
+                        <p className="text-xs text-muted-foreground">All-time revenue</p>
+                    </CardContent>
+                 </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Deposits</CardTitle>
+                        <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pendingDeposits}</div>
+                        <p className="text-xs text-muted-foreground">Awaiting approval</p>
                     </CardContent>
                  </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Pending Withdrawals</CardTitle>
-                        <LineChart className="h-4 w-4 text-muted-foreground" />
+                        <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pendingWithdrawals}</div>
