@@ -12,7 +12,7 @@ export function BannerAd({ imageUrl }: BannerAdProps) {
 
   return (
     <Card className="mb-6 overflow-hidden">
-      <div className="aspect-video relative">
+      <div className="relative h-32">
         <Image
           src={imageUrl}
           alt="Promotional Banner"
