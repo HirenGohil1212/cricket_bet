@@ -41,9 +41,11 @@ export default function LoginPage() {
             router.push("/");
         } catch (error: any) {
             console.error("Error logging in: ", error);
-            let description = "Invalid credentials. Please check your mobile number and password.";
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                 description = "Invalid mobile number or password. Please try again.";
+            // The 'auth/invalid-credential' error is the modern, secure way Firebase
+            // indicates that the user/password combination is incorrect.
+            let description = "An unknown error occurred. Please try again later.";
+            if (error.code === 'auth/invalid-credential') {
+                description = "Invalid mobile number or password. Please try again.";
             }
             toast({ variant: "destructive", title: "Login Failed", description });
         } finally {
