@@ -164,7 +164,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                             )}
 
                                             {match.isSpecialMatch && (
-                                                <div className="mt-4 pt-4 border-t">
+                                                <div>
                                                     <p className="font-semibold text-sm text-center mb-2">Select Winning Players</p>
                                                      {isSettled && q.playerResult ? (
                                                         <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
@@ -268,4 +268,3 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
         </>
     );
 }
-
