@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -52,12 +53,11 @@ export const Countdown = ({ targetDate, onEnd }: CountdownProps) => {
   let displayTime;
   if (days > 0) {
     displayTime = `${days}d ${hours}h`;
-  } else if (hours > 0) {
-    displayTime = `${hours}h ${minutes}m`;
-  } else if (minutes > 0 || seconds > 0) {
-    displayTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   } else {
-    displayTime = 'Bets Closed';
+    const paddedHours = String(hours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0');
+    const paddedSeconds = String(seconds).padStart(2, '0');
+    displayTime = `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
   }
 
   return <div className="font-mono text-sm tabular-nums">{displayTime}</div>;
