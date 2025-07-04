@@ -89,9 +89,9 @@ export function WithdrawFundsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-4">
+        <div className="flex flex-col space-y-4">
             <h3 className="font-semibold">Available Balance</h3>
-            <div className="p-4 bg-muted rounded-lg text-center h-full flex flex-col justify-center min-h-[150px]">
+            <div className="p-4 bg-muted rounded-lg text-center flex-grow flex flex-col justify-center min-h-[150px]">
                 <p className="text-sm text-muted-foreground">Currently in Wallet</p>
                 <p className="text-2xl font-bold font-headline text-primary">INR {walletBalance.toFixed(2)}</p>
             </div>
