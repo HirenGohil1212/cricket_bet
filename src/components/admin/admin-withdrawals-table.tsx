@@ -46,12 +46,40 @@ export function AdminWithdrawalsTable({ withdrawals }: AdminWithdrawalsTableProp
 
     return (
         <>
-            <Table>
+            {/* Mobile View: List of Cards */}
+            <div className="md:hidden space-y-4">
+                {withdrawals.map((withdrawal) => (
+                    <div key={withdrawal.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <div className="font-medium">{withdrawal.userName}</div>
+                            <Badge className={cn("text-xs font-semibold", getStatusClass(withdrawal.status))}>
+                                {withdrawal.status}
+                            </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            Amount: <span className="font-semibold text-foreground">INR {withdrawal.amount.toFixed(2)}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {new Date(withdrawal.createdAt).toLocaleString()}
+                        </div>
+                        <div className="pt-3 mt-3 border-t">
+                             {withdrawal.status === 'Pending' ? (
+                                <Button size="sm" onClick={() => handleReview(withdrawal)} className="w-full">Review</Button>
+                            ) : (
+                                 <Button size="sm" variant="outline" disabled className="w-full">Reviewed</Button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Desktop View: Table */}
+            <Table className="hidden md:table">
                 <TableHeader>
                     <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="hidden md:table-cell">Date</TableHead>
+                        <TableHead>Date</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -61,7 +89,7 @@ export function AdminWithdrawalsTable({ withdrawals }: AdminWithdrawalsTableProp
                         <TableRow key={withdrawal.id}>
                             <TableCell className="font-medium">{withdrawal.userName}</TableCell>
                             <TableCell className="text-right">INR {withdrawal.amount.toFixed(2)}</TableCell>
-                            <TableCell className="hidden md:table-cell">{new Date(withdrawal.createdAt).toLocaleDateString()}</TableCell>
+                            <TableCell>{new Date(withdrawal.createdAt).toLocaleDateString()}</TableCell>
                             <TableCell>
                                 <Badge className={cn("text-xs font-semibold", getStatusClass(withdrawal.status))}>
                                     {withdrawal.status}

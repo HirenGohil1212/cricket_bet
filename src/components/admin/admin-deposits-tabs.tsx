@@ -16,7 +16,7 @@ export function AdminDepositsTabs({ deposits }: AdminDepositsTabsProps) {
 
   return (
     <Tabs defaultValue="pending" className="w-full">
-      <TabsList className="grid w-full grid-cols-4 h-auto">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
         <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
         <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
         <TabsTrigger value="failed">Failed ({failed.length})</TabsTrigger>
