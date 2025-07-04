@@ -1,3 +1,4 @@
+
 "use client"
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,11 +17,11 @@ export function Header() {
       <div className="hidden md:block">
         <h1 className="font-headline text-2xl font-bold">Matches</h1>
       </div>
-      <div className="flex flex-1 items-center justify-end gap-4">
+      <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
         {user && userProfile && (
             <div className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold">
               <Wallet className="h-5 w-5 text-primary" />
-              <span>INR {userProfile.walletBalance.toFixed(2)}</span>
+              <span><span className="hidden sm:inline">INR </span>{userProfile.walletBalance.toFixed(2)}</span>
             </div>
         )}
         <Button variant="ghost" size="icon">

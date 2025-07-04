@@ -323,7 +323,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                             questions.map((q) => (
                                 <div key={q.id} className="p-4 border rounded-lg space-y-3">
                                     <p className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</p>
-                                    <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
+                                    <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
                                       {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                            <FormField
                                             control={form.control}
@@ -360,7 +360,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                              ))
                         ) : (
                              <div className="p-4 border rounded-lg space-y-3">
-                                <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
+                                <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
                                     {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                         <FormField
                                             control={form.control}
@@ -467,7 +467,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                          <FormItem>
                             <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
                              <FormControl>
-                               <div className="grid grid-cols-3 gap-4">
+                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                   {betOptions.map((opt) => (
                                     <Button
                                       key={opt.amount}

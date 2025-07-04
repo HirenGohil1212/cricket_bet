@@ -95,7 +95,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
             
             <div className="flex flex-col items-center">
               {status === 'Live' && <Badge variant="destructive" className="animate-pulse mb-1">LIVE</Badge>}
-              <p className="text-lg font-bold text-muted-foreground font-headline">
+              <p className="text-xl sm:text-2xl font-bold text-muted-foreground font-headline">
                 {score ? score : 'vs'}
               </p>
             </div>
@@ -120,7 +120,7 @@ export function MatchCard({ match, onBetNow }: MatchCardProps) {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="p-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <PlayerList team={teamA} />
                             <PlayerList team={teamB} />
                         </div>

@@ -89,7 +89,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                   <AccordionContent className="space-y-4">
                     {account.qrCodeUrl && (
                         <div className="flex flex-col items-center">
-                            <Image src={account.qrCodeUrl} alt="UPI QR Code" width={200} height={200} className="rounded-md border p-1" />
+                            <Image src={account.qrCodeUrl} alt="UPI QR Code" width={200} height={200} className="rounded-md border p-1 h-40 w-40 sm:h-48 sm:w-48 object-contain" />
                             <p className="text-muted-foreground text-sm mt-2">Scan the QR code to pay</p>
                         </div>
                     )}
