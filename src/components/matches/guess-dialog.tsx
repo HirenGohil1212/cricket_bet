@@ -272,7 +272,9 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
 
                          {questions.map((q) => (
                             <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                                <p className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</p>
+                                {bettingMode === 'qna' && (
+                                    <p className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</p>
+                                )}
                                 <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
                                   
                                   {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
@@ -282,7 +284,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                         name={`predictions.${q.id}.teamA`}
                                         render={({ field }) => (
                                           <FormItem>
-                                            <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                            <p className="text-sm font-semibold text-center">{match.teamA.name}</p>
                                             <PlayerSelect
                                                 players={match.teamA.players || []}
                                                 onValueChange={field.onChange}
@@ -317,7 +319,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                           name={`predictions.${q.id}.teamB`}
                                           render={({ field }) => (
                                             <FormItem>
-                                              <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                              <p className="text-sm font-semibold text-center">{match.teamB.name}</p>
                                               <PlayerSelect
                                                   players={match.teamB.players || []}
                                                   onValueChange={field.onChange}
