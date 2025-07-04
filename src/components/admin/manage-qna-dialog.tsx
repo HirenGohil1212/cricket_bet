@@ -282,7 +282,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                              {isSaving ? 'Saving...' : 'Save Results'}
                          </Button>
                          <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions}>
-                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle &amp; Payout')}
+                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
                          </Button>
                        </div>
                    </DialogFooter>
