@@ -2,7 +2,6 @@
 "use client";
 
 import Image from 'next/image';
-import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,12 +14,12 @@ import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BettingHistoryDialog } from '@/components/dashboard/betting-history-dialog';
 
 
 interface MatchCardProps {
   match: Match;
   onBetNow: (match: Match) => void;
+  onViewMyBets: (match: Match) => void;
   onCountdownEnd: (matchId: string) => void;
 }
 
@@ -72,10 +71,9 @@ const PlayerList = ({ team }: { team: Team }) => {
 };
 
 
-export function MatchCard({ match, onBetNow, onCountdownEnd }: MatchCardProps) {
+export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: MatchCardProps) {
   const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch } = match;
   const { user } = useAuth();
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
 
@@ -160,7 +158,7 @@ export function MatchCard({ match, onBetNow, onCountdownEnd }: MatchCardProps) {
           <CardFooter className="p-4 pt-0 flex-col items-stretch gap-2">
             <Button
               className="w-full font-bold"
-              onClick={() => setIsHistoryOpen(true)}
+              onClick={() => onViewMyBets(match)}
             >
               View My Bets
             </Button>
@@ -225,7 +223,6 @@ export function MatchCard({ match, onBetNow, onCountdownEnd }: MatchCardProps) {
           </CardFooter>
         )}
       </Card>
-      <BettingHistoryDialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen} />
     </>
   );
 }

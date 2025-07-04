@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge";
-import type { Bet } from "@/lib/types";
+import type { Bet, Match } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -28,9 +28,10 @@ import { Skeleton } from "../ui/skeleton";
 interface BettingHistoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  match?: Match | null;
 }
 
-export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialogProps) {
+export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHistoryDialogProps) {
   const { user } = useAuth();
   const [bets, setBets] = useState<Bet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,13 +40,17 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
     async function fetchBets() {
         if (open && user) {
             setIsLoading(true);
-            const userBets = await getUserBets(user.uid);
+            let userBets = await getUserBets(user.uid);
+            // Filter bets if a specific match is provided
+            if (match) {
+              userBets = userBets.filter(bet => bet.matchId === match.id);
+            }
             setBets(userBets);
             setIsLoading(false);
         }
     }
     fetchBets();
-  }, [open, user]);
+  }, [open, user, match]);
 
 
   const getStatusClass = (status: Bet["status"]) => {
@@ -61,6 +66,9 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
     }
   };
   
+  const dialogTitle = match ? `My Bets for ${match.teamA.name} vs ${match.teamB.name}` : "My Betting History";
+  const dialogDescription = match ? "Review your bets and their outcomes for this specific match." : "Review all your past bets and their outcomes.";
+
   const renderContent = () => {
     if (isLoading) {
         return (
@@ -75,8 +83,8 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
     if (bets.length === 0) {
         return (
             <div className="text-center text-muted-foreground py-12">
-                <p>You haven't placed any bets yet.</p>
-                <p className="text-sm">Go to the matches page to make your first prediction!</p>
+                <p>{match ? "You haven't placed any bets on this match." : "You haven't placed any bets yet."}</p>
+                {!match && <p className="text-sm">Go to the matches page to make your first prediction!</p>}
             </div>
         );
     }
@@ -85,7 +93,7 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
         <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Match &amp; Date</TableHead>
+                <TableHead>{match ? 'Date Placed' : 'Match & Date'}</TableHead>
                 <TableHead>Predictions</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Status</TableHead>
@@ -97,8 +105,8 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                  return (
                     <TableRow key={bet.id}>
                       <TableCell>
-                        <div className="font-semibold">{bet.matchDescription}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        {!match && <div className="font-semibold">{bet.matchDescription}</div>}
+                        <div className={cn("text-xs", !match && "text-muted-foreground mt-1")}>
                             {new Date(bet.timestamp).toLocaleString()}
                         </div>
                       </TableCell>
@@ -162,9 +170,9 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">My Betting History</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Review your past bets and their outcomes.
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto">
