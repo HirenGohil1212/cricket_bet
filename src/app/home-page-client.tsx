@@ -10,6 +10,7 @@ import { useRequireAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
+import { BannerAd } from "@/components/banner-ad";
 
 interface HomePageClientProps {
   children: React.ReactNode;
@@ -100,6 +101,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
       <SidebarInset className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 p-4 sm:p-6 md:p-8">
+          <BannerAd imageUrl={content?.bannerImageUrl} />
           {children}
         </main>
         <WhatsAppSupportButton />
