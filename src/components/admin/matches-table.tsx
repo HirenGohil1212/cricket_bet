@@ -47,14 +47,14 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                         <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
+                                    <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
                                       <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="object-cover" />
                                     </div>
                                     <span className="truncate">{match.teamA.name}</span>
                                 </div>
                                 <span className="text-xs text-muted-foreground">vs</span>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
+                                    <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
                                       <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="object-cover" />
                                     </div>
                                     <span className="truncate">{match.teamB.name}</span>

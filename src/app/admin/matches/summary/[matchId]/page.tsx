@@ -1,4 +1,5 @@
 
+
 import { getMatchById } from "@/app/actions/match.actions";
 import { getQuestionsForMatch, getWinnersForMatch } from "@/app/actions/qna.actions";
 import { getTotalBetAmountForMatch } from "@/app/actions/bet.actions";
@@ -86,14 +87,18 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                 </CardHeader>
                 <CardContent className="flex justify-around items-center text-center">
                     <div className="flex flex-col items-center gap-2">
-                        <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={64} height={64} className="rounded-full" />
+                        <div className="w-16 h-16 rounded-md overflow-hidden flex items-center justify-center">
+                            <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={64} height={64} className="object-cover" />
+                        </div>
                         <h3 className="font-semibold text-base sm:text-lg">{match.teamA.name}</h3>
                     </div>
                     <div className="text-2xl sm:text-3xl font-bold text-muted-foreground">
                         {match.score || "vs"}
                     </div>
                      <div className="flex flex-col items-center gap-2">
-                        <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={64} height={64} className="rounded-full" />
+                        <div className="w-16 h-16 rounded-md overflow-hidden flex items-center justify-center">
+                            <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={64} height={64} className="object-cover" />
+                        </div>
                         <h3 className="font-semibold text-base sm:text-lg">{match.teamB.name}</h3>
                     </div>
                 </CardContent>

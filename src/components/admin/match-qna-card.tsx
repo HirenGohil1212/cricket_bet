@@ -58,11 +58,11 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-md overflow-hidden flex items-center justify-center">
                             <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="object-cover" />
                         </div>
                         <CardTitle>{match.teamA.name} vs {match.teamB.name}</CardTitle>
-                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-md overflow-hidden flex items-center justify-center">
                             <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="object-cover" />
                         </div>
                     </div>
