@@ -95,7 +95,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
           <div className="flex justify-between items-center text-center">
               {/* Team A Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="rounded-full object-contain" data-ai-hint="logo" />
+                  <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="rounded-full object-cover" data-ai-hint="logo" />
                   <div className="flex items-center gap-1.5">
                       {status === 'Finished' && winner === teamA.name && <Trophy className="h-4 w-4 text-primary" />}
                       <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamA.name && "font-bold text-primary")}>{teamA.name}</p>
@@ -111,7 +111,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
 
               {/* Team B Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="rounded-full object-contain" data-ai-hint="logo" />
+                  <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="rounded-full object-cover" data-ai-hint="logo" />
                   <div className="flex items-center gap-1.5">
                       {status === 'Finished' && winner === teamB.name && <Trophy className="h-4 w-4 text-primary" />}
                       <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamB.name && "font-bold text-primary")}>{teamB.name}</p>
