@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import {
@@ -230,8 +231,12 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
              // For special matches, player results are also required for settlement.
             if (isSpecialMatch) {
-                if (!q.playerResult || typeof q.playerResult.teamA !== 'string' || typeof q.playerResult.teamB !== 'string' || !q.playerResult.teamA || !q.playerResult.teamB) {
-                     return { error: `Player result for question "${q.question}" is missing. Please select winning players before settling a special match.` };
+                if (!q.playerResult || typeof q.playerResult.teamA !== 'string' || typeof q.playerResult.teamB !== 'string') {
+                    return { error: `Player result for question "${q.question}" is malformed. Please save results again.` };
+                }
+                // Only throw an error if BOTH are empty. Allows for one-sided results.
+                if (!q.playerResult.teamA && !q.playerResult.teamB) {
+                    return { error: `Player result for question "${q.question}" is missing. Please select at least one winning player before settling.` };
                 }
             }
         }
@@ -340,44 +345,30 @@ export async function settleMatchAndPayouts(matchId: string) {
                     }
                 }
             } else if (betType === 'player') {
-                if (betData.predictions.length !== 1 || !betData.predictions[0].predictedAnswer) {
+                 if (betData.predictions.length !== 1 || !betData.predictions[0].predictedAnswer) {
                     isWinner = false;
                 } else {
-                    const playerPrediction = betData.predictions[0];
-                    
-                    // A player bet must be correct for ALL active questions
-                    for (const question of activeQuestions) {
-                        const correctPlayerResult = question.playerResult;
-                        if (!correctPlayerResult) {
-                            // If any question doesn't have a player result, the bet cannot be a winner.
+                    // For player bets, there's only one prediction object and one true result for the match.
+                    // We can check against the playerResult of the first active question.
+                    const playerPrediction = betData.predictions[0].predictedAnswer;
+                    const correctPlayerResult = activeQuestions[0].playerResult;
+
+                    if (!correctPlayerResult) {
+                        isWinner = false;
+                    } else {
+                        const predictedA = playerPrediction.teamA?.trim().toLowerCase() || '';
+                        const predictedB = playerPrediction.teamB?.trim().toLowerCase() || '';
+
+                        const correctA = correctPlayerResult.teamA?.trim().toLowerCase() || '';
+                        const correctB = correctPlayerResult.teamB?.trim().toLowerCase() || '';
+
+                        // A bet on a side is only considered if a prediction was made for it.
+                        // If a prediction was made, it must match the correct result.
+                        const teamAMatches = predictedA ? predictedA === correctA : true;
+                        const teamBMatches = predictedB ? predictedB === correctB : true;
+
+                        if (!teamAMatches || !teamBMatches) {
                             isWinner = false;
-                            break;
-                        }
-
-                        const predictedA = playerPrediction.predictedAnswer.teamA?.trim().toLowerCase();
-                        const predictedB = playerPrediction.predictedAnswer.teamB?.trim().toLowerCase();
-
-                        if (!predictedA && !predictedB) { // User must have made at least one prediction
-                            isWinner = false;
-                            break;
-                        }
-
-                        const correctA = correctPlayerResult.teamA?.trim().toLowerCase();
-                        const correctB = correctPlayerResult.teamB?.trim().toLowerCase();
-                        
-                        let teamA_match = true;
-                        if (predictedA) { // If user bet on Team A
-                            teamA_match = (predictedA === correctA);
-                        }
-
-                        let teamB_match = true;
-                        if (predictedB) { // If user bet on Team B
-                            teamB_match = (predictedB === correctB);
-                        }
-
-                        if (!teamA_match || !teamB_match) {
-                            isWinner = false;
-                            break;
                         }
                     }
                 }
