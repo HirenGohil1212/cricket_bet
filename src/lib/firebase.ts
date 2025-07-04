@@ -20,6 +20,6 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 // Explicitly pass the storage bucket URL to the getStorage function.
-const storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
+const storage = getStorage(app);
 
 export { app, auth, db, storage };
