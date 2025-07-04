@@ -134,7 +134,7 @@ export default function AdminLayout({
                     </Link>
                 </SheetTitle>
               </SheetHeader>
-              <nav className="grid gap-6 text-lg font-medium mt-4">
+              <nav className="grid gap-6 text-lg font-medium mt-4 flex-1 overflow-y-auto">
                 {renderNavLinks(true)}
               </nav>
               <div className="mt-auto">
