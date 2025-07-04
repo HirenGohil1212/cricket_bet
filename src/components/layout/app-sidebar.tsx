@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
@@ -27,18 +27,30 @@ import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dia
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
+interface AppSidebarProps {
+  onNavigate: () => void;
+}
 
-export function AppSidebar() {
+export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { toast } = useToast();
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const pathname = usePathname();
+
+  const handleLinkClick = (href: string) => {
+    if (pathname !== href) {
+        onNavigate();
+    }
+    if (isMobile) {
+        setOpenMobile(false);
+    }
+  };
 
   const handleLogout = async () => {
       try {
           await signOut(auth);
-           // Clear the session storage key so the promo can be shown on next login.
           try {
             sessionStorage.removeItem('promoVideoShown');
           } catch (error) {
@@ -49,6 +61,9 @@ export function AppSidebar() {
               description: "You have been successfully logged out.",
           });
           router.push('/login');
+          if (isMobile) {
+            setOpenMobile(false);
+          }
       } catch (error) {
           toast({
               variant: "destructive",
@@ -68,6 +83,9 @@ export function AppSidebar() {
               description: "Please login to see your betting history.",
           });
           router.push('/login');
+      }
+      if (isMobile) {
+        setOpenMobile(false);
       }
   }
 
@@ -116,7 +134,7 @@ export function AppSidebar() {
             )}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton onClick={() => handleLinkClick('/')} asChild>
                 <Link href="/">
                     <Ticket />
                     Matches
@@ -124,7 +142,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton onClick={() => handleLinkClick('/wallet')} asChild>
                 <Link href="/wallet">
                     <Wallet />
                     My Wallet
@@ -138,7 +156,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton onClick={() => handleLinkClick('/profile')} asChild>
                 <Link href="/profile">
                     <UserIcon />
                     My Profile
@@ -154,7 +172,7 @@ export function AppSidebar() {
                     <p className="text-xs font-semibold text-muted-foreground px-2 mb-1">Admin</p>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
+                            <SidebarMenuButton onClick={() => handleLinkClick('/admin/dashboard')} asChild>
                                 <Link href="/admin/dashboard">
                                     <Shield />
                                     Admin Panel
@@ -180,13 +198,13 @@ export function AppSidebar() {
                     </Button>
                 ) : (
                     <>
-                        <Button asChild>
+                        <Button onClick={() => handleLinkClick('/login')} asChild>
                             <Link href="/login">
                                 <LogIn />
                                 Login
                             </Link>
                         </Button>
-                        <Button variant="secondary" asChild>
+                        <Button variant="secondary" onClick={() => handleLinkClick('/signup')} asChild>
                             <Link href="/signup">
                                 Sign Up
                             </Link>

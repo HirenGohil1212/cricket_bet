@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 import { BannerAd } from "@/components/banner-ad";
+import { Loader2 } from "lucide-react";
 
 interface HomePageClientProps {
   children: React.ReactNode;
@@ -19,31 +21,37 @@ interface HomePageClientProps {
 
 const PROMO_VIDEO_SESSION_KEY = 'promoVideoShown';
 
+function PageLoader() {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
 export function HomePageClient({ children, content }: HomePageClientProps) {
   const { user, loading } = useRequireAuth();
   const [isPromoOpen, setIsPromoOpen] = useState(false);
-  
-  // This state tracks if we've already run the check after the initial auth loading.
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const pathname = usePathname();
+
+  // This effect will run when a new page has finished loading, turning off the loader.
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
 
   useEffect(() => {
-    // We only want to run this logic *once* after the initial authentication check is done.
     if (!loading && !initialAuthCheckComplete) {
-      // Mark that the check has been performed to prevent re-triggering on subsequent re-renders.
       setInitialAuthCheckComplete(true);
-
-      // If the auth check is complete, we have a user, and there's a video URL...
       if (user && content?.youtubeUrl) {
         try {
-          // Check if the video has already been shown in this session.
           const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
           if (!hasBeenShown) {
             setIsPromoOpen(true);
-            // Mark it as shown for this session.
             sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
           }
         } catch (error) {
-          // sessionStorage may not be available in all environments (e.g., SSR-like scenarios)
           console.error("Session storage is not available.", error);
         }
       }
@@ -97,12 +105,12 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar onNavigate={() => setIsNavigating(true)} />
       <SidebarInset className="flex flex-col min-h-screen">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col">
           <BannerAd imageUrl={content?.bannerImageUrl} />
-          {children}
+          {isNavigating ? <PageLoader /> : children}
         </main>
         <WhatsAppSupportButton />
         {content?.youtubeUrl && (
