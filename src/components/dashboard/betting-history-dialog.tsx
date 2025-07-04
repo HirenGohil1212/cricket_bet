@@ -103,7 +103,21 @@ export function BettingHistoryDialog({ open, onOpenChange }: BettingHistoryDialo
                         </div>
                       </TableCell>
                       <TableCell>
-                         {bet.predictions.length > 0 ? (
+                         {bet.betType === 'player' ? (
+                            <div className="text-xs space-y-1">
+                                <div className="font-semibold text-muted-foreground">Player Bet</div>
+                                {bet.predictions[0]?.predictedAnswer?.teamA && (
+                                  <div className="font-medium">
+                                    {teamAName}: <span className="text-primary">{bet.predictions[0].predictedAnswer.teamA}</span>
+                                  </div>
+                                )}
+                                {bet.predictions[0]?.predictedAnswer?.teamB && (
+                                  <div className="font-medium">
+                                    {teamBName}: <span className="text-primary">{bet.predictions[0].predictedAnswer.teamB}</span>
+                                  </div>
+                                )}
+                            </div>
+                         ) : bet.predictions.length > 0 ? (
                             <Accordion type="single" collapsible className="w-full">
                               <AccordionItem value="item-1">
                                 <AccordionTrigger className="text-xs py-1 hover:no-underline">

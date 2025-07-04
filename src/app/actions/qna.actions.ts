@@ -279,6 +279,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         for (const betDoc of pendingBetsSnapshot.docs) {
             const betData = betDoc.data();
             const betRef = doc(db, 'bets', betDoc.id);
+            const betType = betData.betType || 'qna';
 
             // AGGRESSIVE VALIDATION
             if (!betData.userId || !Array.isArray(betData.predictions) || typeof betData.potentialWin !== 'number') {
@@ -287,56 +288,102 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
             
             let isWinner = true;
-            if (betData.predictions.length !== activeQuestions.length) {
-                isWinner = false;
-            } else {
-                for (const prediction of betData.predictions) {
-                    if (!prediction || typeof prediction.questionId !== 'string' || !prediction.predictedAnswer || typeof prediction.predictedAnswer.teamA !== 'string' || typeof prediction.predictedAnswer.teamB !== 'string') {
-                        isWinner = false;
-                        break;
-                    }
 
-                    const question = activeQuestions.find(q => q.id === prediction.questionId);
-                    if (!question) {
-                        isWinner = false;
-                        break;
-                    }
+            if (betType === 'qna') {
+                if (betData.predictions.length !== activeQuestions.length) {
+                    isWinner = false;
+                } else {
+                    for (const prediction of betData.predictions) {
+                        if (!prediction || typeof prediction.questionId !== 'string' || !prediction.predictedAnswer || typeof prediction.predictedAnswer.teamA !== 'string' || typeof prediction.predictedAnswer.teamB !== 'string') {
+                            isWinner = false;
+                            break;
+                        }
 
-                    // Use betType to determine which result to check against
-                    const betType = betData.betType || 'qna';
-                    const correctResult = betType === 'player' ? question.playerResult : question.result;
+                        const question = activeQuestions.find(q => q.id === prediction.questionId);
+                        if (!question) {
+                            isWinner = false;
+                            break;
+                        }
 
-                    if (!correctResult) {
-                        isWinner = false;
-                        break;
-                    }
+                        const correctResult = question.result; // QnA bets check against 'result'
 
-                    const predictedA = prediction.predictedAnswer.teamA?.trim().toLowerCase();
-                    const predictedB = prediction.predictedAnswer.teamB?.trim().toLowerCase();
+                        if (!correctResult) {
+                            isWinner = false;
+                            break;
+                        }
 
-                    if (!predictedA && !predictedB) {
-                        isWinner = false;
-                        break;
-                    }
+                        const predictedA = prediction.predictedAnswer.teamA?.trim().toLowerCase();
+                        const predictedB = prediction.predictedAnswer.teamB?.trim().toLowerCase();
 
-                    const correctA = correctResult.teamA?.trim().toLowerCase();
-                    const correctB = correctResult.teamB?.trim().toLowerCase();
+                        if (!predictedA && !predictedB) {
+                            isWinner = false;
+                            break;
+                        }
 
-                    let teamA_match = true;
-                    if (predictedA) {
-                        teamA_match = (predictedA === correctA);
-                    }
+                        const correctA = correctResult.teamA?.trim().toLowerCase();
+                        const correctB = correctResult.teamB?.trim().toLowerCase();
 
-                    let teamB_match = true;
-                    if (predictedB) {
-                        teamB_match = (predictedB === correctB);
-                    }
-                    
-                    if (!teamA_match || !teamB_match) {
-                        isWinner = false;
-                        break;
+                        let teamA_match = true;
+                        if (predictedA) {
+                            teamA_match = (predictedA === correctA);
+                        }
+
+                        let teamB_match = true;
+                        if (predictedB) {
+                            teamB_match = (predictedB === correctB);
+                        }
+                        
+                        if (!teamA_match || !teamB_match) {
+                            isWinner = false;
+                            break;
+                        }
                     }
                 }
+            } else if (betType === 'player') {
+                if (betData.predictions.length !== 1 || !betData.predictions[0].predictedAnswer) {
+                    isWinner = false;
+                } else {
+                    const playerPrediction = betData.predictions[0];
+                    
+                    // A player bet must be correct for ALL active questions
+                    for (const question of activeQuestions) {
+                        const correctPlayerResult = question.playerResult;
+                        if (!correctPlayerResult) {
+                            // If any question doesn't have a player result, the bet cannot be a winner.
+                            isWinner = false;
+                            break;
+                        }
+
+                        const predictedA = playerPrediction.predictedAnswer.teamA?.trim().toLowerCase();
+                        const predictedB = playerPrediction.predictedAnswer.teamB?.trim().toLowerCase();
+
+                        if (!predictedA && !predictedB) { // User must have made at least one prediction
+                            isWinner = false;
+                            break;
+                        }
+
+                        const correctA = correctPlayerResult.teamA?.trim().toLowerCase();
+                        const correctB = correctPlayerResult.teamB?.trim().toLowerCase();
+                        
+                        let teamA_match = true;
+                        if (predictedA) { // If user bet on Team A
+                            teamA_match = (predictedA === correctA);
+                        }
+
+                        let teamB_match = true;
+                        if (predictedB) { // If user bet on Team B
+                            teamB_match = (predictedB === correctB);
+                        }
+
+                        if (!teamA_match || !teamB_match) {
+                            isWinner = false;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Unknown bet type, treat as lost
+                isWinner = false;
             }
 
 

@@ -203,14 +203,15 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
     let finalPredictions: Prediction[] = [];
     
     if (bettingMode === 'player' && data.playerPrediction) {
-        finalPredictions = questions.map(q => ({
-            questionId: q.id,
-            questionText: q.question,
-            predictedAnswer: {
-                teamA: data.playerPrediction!.teamA || '',
-                teamB: data.playerPrediction!.teamB || '',
-            }
-        }));
+      // Create a single prediction object for player bets
+      finalPredictions = [{
+        questionId: 'player_bet', // Generic ID for player bets
+        questionText: 'Player Prediction', // Generic text
+        predictedAnswer: {
+          teamA: data.playerPrediction.teamA || '',
+          teamB: data.playerPrediction.teamB || '',
+        }
+      }];
     } else if (data.predictions) {
         finalPredictions = Object.entries(data.predictions).map(([questionId, predictedAnswer]: [string, any]) => {
           const question = questions.find(q => q.id === questionId);
