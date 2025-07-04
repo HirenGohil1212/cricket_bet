@@ -27,10 +27,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { FormControl, FormField, FormItem, FormMessage, FormLabel } from "../ui/form";
-import { PlayerSelect } from "./player-select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 interface GuessDialogProps {
@@ -55,69 +55,64 @@ const createPredictionSchema = (
         }),
     };
     
-    if (bettingMode === 'player') {
-        let playerPredictionSchema = z.object({
-            teamA: z.string().optional(),
-            teamB: z.string().optional(),
-        });
-        
-        const refinementOptions = {
-            message: "A prediction is required for the selected side.",
-            path: ['root'],
-        };
-
-        if (allowOneSidedBets) {
-             playerPredictionSchema = playerPredictionSchema.refine(data => {
-                if (betOnSide === 'both') return !!data.teamA && !!data.teamB;
-                if (betOnSide === 'teamA') return !!data.teamA;
-                if (betOnSide === 'teamB') return !!data.teamB;
-                return false;
-            }, refinementOptions);
-        } else {
-             playerPredictionSchema = z.object({
-                teamA: z.string({ required_error: 'Prediction is required' }).min(1, 'Prediction is required'),
-                teamB: z.string({ required_error: 'Prediction is required' }).min(1, 'Prediction is required'),
-            });
-        }
-        
-        return z.object({
-            ...baseSchema,
-            playerPrediction: playerPredictionSchema,
-            predictions: z.object({}).optional(), // Not used in player mode
-        });
-
-    }
-
-    // Default to Q&A mode schema
-    let questionFieldSchema = z.object({
+    // The schema for player prediction should remain the same. It expects a string.
+    let playerPredictionSchema = z.object({
         teamA: z.string().optional(),
         teamB: z.string().optional(),
     });
+    
+    const refinementOptions = {
+        message: "A prediction is required for the selected side.",
+        path: ['root'],
+    };
 
     if (allowOneSidedBets) {
-        questionFieldSchema = questionFieldSchema.refine(data => {
-            if (betOnSide === 'both') return (data.teamA?.trim() ?? '') !== '' && (data.teamB?.trim() ?? '') !== '';
-            if (betOnSide === 'teamA') return (data.teamA?.trim() ?? '') !== '';
-            if (betOnSide === 'teamB') return (data.teamB?.trim() ?? '') !== '';
+         playerPredictionSchema = playerPredictionSchema.refine(data => {
+            if (betOnSide === 'both') return !!data.teamA && !!data.teamB;
+            if (betOnSide === 'teamA') return !!data.teamA;
+            if (betOnSide === 'teamB') return !!data.teamB;
             return false;
-        }, { message: "A prediction is required for the selected side.", path: ['root'] });
+        }, refinementOptions);
     } else {
-        questionFieldSchema = z.object({
-            teamA: z.string().min(1, 'Prediction is required'),
-            teamB: z.string().min(1, 'Prediction is required'),
+         playerPredictionSchema = z.object({
+            teamA: z.string({ required_error: 'Prediction is required' }).min(1, 'Prediction is required'),
+            teamB: z.string({ required_error: 'Prediction is required' }).min(1, 'Prediction is required'),
         });
     }
+    
+    const qnaSchemaObject = questions.reduce((acc, q) => {
+        let questionFieldSchema = z.object({
+            teamA: z.string().optional(),
+            teamB: z.string().optional(),
+        });
 
-    const schemaObject = questions.reduce((acc, q) => {
+        if (allowOneSidedBets) {
+            questionFieldSchema = questionFieldSchema.refine(data => {
+                if (betOnSide === 'both') return (data.teamA?.trim() ?? '') !== '' && (data.teamB?.trim() ?? '') !== '';
+                if (betOnSide === 'teamA') return (data.teamA?.trim() ?? '') !== '';
+                if (betOnSide === 'teamB') return (data.teamB?.trim() ?? '') !== '';
+                return false;
+            }, { message: "A prediction is required for the selected side.", path: ['root'] });
+        } else {
+            questionFieldSchema = z.object({
+                teamA: z.string().min(1, 'Prediction is required'),
+                teamB: z.string().min(1, 'Prediction is required'),
+            });
+        }
         acc[q.id] = questionFieldSchema;
         return acc;
-    }, {} as Record<string, typeof questionFieldSchema>);
+    }, {} as Record<string, z.ZodType<any, any, any>>);
     
-    return z.object({
+    const finalSchema = z.object({
         ...baseSchema,
-        predictions: z.object(schemaObject),
-        playerPrediction: z.object({}).optional(), // Not used in QnA mode
+        predictions: z.object(qnaSchemaObject),
+        playerPrediction: playerPredictionSchema,
     });
+
+    if (bettingMode === 'player') {
+        return finalSchema.omit({ predictions: true });
+    }
+    return finalSchema.omit({ playerPrediction: true });
 };
 
 
@@ -132,13 +127,14 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
   const [bettingMode, setBettingMode] = useState<'qna' | 'player'>('qna');
 
   const validBetAmounts = React.useMemo(() => betOptions.map(opt => opt.amount), [betOptions]);
-  const predictionSchema = React.useMemo(() => createPredictionSchema(questions, validBetAmounts, match?.allowOneSidedBets || false, betOnSide, bettingMode), [questions, validBetAmounts, match, betOnSide, bettingMode]);
-  type PredictionFormValues = z.infer<typeof predictionSchema>;
-
-  const form = useForm<PredictionFormValues>({
-    resolver: zodResolver(predictionSchema),
+  
+  const form = useForm<z.infer<ReturnType<typeof createPredictionSchema>>>({
+    resolver: (data, context, options) => {
+      const schema = createPredictionSchema(questions, validBetAmounts, match?.allowOneSidedBets || false, betOnSide, bettingMode);
+      return zodResolver(schema)(data, context, options);
+    },
   });
-
+  
   // Effect to clear form values when user changes bet side preference
   useEffect(() => {
     if (match?.allowOneSidedBets && open) {
@@ -170,10 +166,11 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
       if (match) {
         setIsLoading(true);
         // Reset state on open
-        setBettingMode('qna');
-        setBetOnSide(match.allowOneSidedBets ? 'both' : 'both');
+        const newBettingMode = 'qna';
+        const newBetOnSide = match.allowOneSidedBets ? 'both' : 'both';
+        setBettingMode(newBettingMode);
+        setBetOnSide(newBetOnSide);
         setQuestions([]);
-        form.reset();
         
         const fetchedQuestions = await getQuestionsForMatch(match.id);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
@@ -197,27 +194,25 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
     if (open) {
       fetchQuestionsAndSetDefaults();
     }
-  }, [match, open, betOptions]);
+  }, [match, open, betOptions, form]);
 
 
-  async function handleSubmit(data: PredictionFormValues) {
+  async function handleSubmit(data: any) {
     if (!user || !match) return;
 
     let finalPredictions: Prediction[] = [];
     
     if (bettingMode === 'player' && data.playerPrediction) {
-        // If betting on players, create a prediction for each question using the single player selection.
         finalPredictions = questions.map(q => ({
             questionId: q.id,
-            questionText: q.question, // Still useful for history
+            questionText: q.question,
             predictedAnswer: {
                 teamA: data.playerPrediction!.teamA || '',
                 teamB: data.playerPrediction!.teamB || '',
             }
         }));
     } else if (data.predictions) {
-        // Standard Q&A bet processing
-        finalPredictions = Object.entries(data.predictions).map(([questionId, predictedAnswer]) => {
+        finalPredictions = Object.entries(data.predictions).map(([questionId, predictedAnswer]: [string, any]) => {
           const question = questions.find(q => q.id === questionId);
           return {
             questionId,
@@ -230,6 +225,10 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
         });
     }
 
+    if (finalPredictions.length === 0) {
+        toast({ variant: "destructive", title: "Bet Failed", description: "No valid predictions to place." });
+        return;
+    }
 
     setIsSubmitting(true);
     const result = await createBet({
@@ -362,42 +361,90 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                 </div>
                              ))
                         ) : (
-                            <div className="p-4 border rounded-lg space-y-3">
+                             <div className="p-4 border rounded-lg space-y-3">
                                 <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-2')}>
                                     {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                       <FormField
-                                        control={form.control}
-                                        name={`playerPrediction.teamA`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <p className="text-sm font-semibold text-center">{match.teamA.name}</p>
-                                            <PlayerSelect
-                                                players={match.teamA.players || []}
-                                                onValueChange={field.onChange}
-                                                value={field.value}
-                                                placeholder="Select a player"
-                                            />
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
+                                        <FormField
+                                            control={form.control}
+                                            name={`playerPrediction.teamA`}
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-3">
+                                                    <FormLabel className="text-sm font-semibold text-center block">{match.teamA.name}</FormLabel>
+                                                    <FormControl>
+                                                        <RadioGroup
+                                                            onValueChange={field.onChange}
+                                                            value={field.value}
+                                                            className="flex flex-col space-y-1"
+                                                        >
+                                                            <ScrollArea className="h-40 w-full rounded-md border p-2">
+                                                                {(match.teamA.players && match.teamA.players.length > 0) ? (
+                                                                    match.teamA.players.map((player) => (
+                                                                        <FormItem key={`${player.name}-a`} className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted cursor-pointer">
+                                                                            <FormControl>
+                                                                                <RadioGroupItem value={player.name} id={`${player.name}-a`}/>
+                                                                            </FormControl>
+                                                                            <Label htmlFor={`${player.name}-a`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
+                                                                                <Avatar className="h-8 w-8">
+                                                                                    <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span className="truncate">{player.name}</span>
+                                                                            </Label>
+                                                                        </FormItem>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                                                                        <p>No players listed.</p>
+                                                                    </div>
+                                                                )}
+                                                            </ScrollArea>
+                                                        </RadioGroup>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     )}
                                      {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                         <FormField
-                                          control={form.control}
-                                          name={`playerPrediction.teamB`}
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <p className="text-sm font-semibold text-center">{match.teamB.name}</p>
-                                              <PlayerSelect
-                                                  players={match.teamB.players || []}
-                                                  onValueChange={field.onChange}
-                                                  value={field.value}
-                                                  placeholder="Select a player"
-                                              />
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
+                                            control={form.control}
+                                            name={`playerPrediction.teamB`}
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-3">
+                                                    <FormLabel className="text-sm font-semibold text-center block">{match.teamB.name}</FormLabel>
+                                                    <FormControl>
+                                                         <RadioGroup
+                                                            onValueChange={field.onChange}
+                                                            value={field.value}
+                                                            className="flex flex-col space-y-1"
+                                                        >
+                                                            <ScrollArea className="h-40 w-full rounded-md border p-2">
+                                                                {(match.teamB.players && match.teamB.players.length > 0) ? (
+                                                                    match.teamB.players.map((player) => (
+                                                                        <FormItem key={`${player.name}-b`} className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted cursor-pointer">
+                                                                            <FormControl>
+                                                                                <RadioGroupItem value={player.name} id={`${player.name}-b`} />
+                                                                            </FormControl>
+                                                                            <Label htmlFor={`${player.name}-b`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
+                                                                                <Avatar className="h-8 w-8">
+                                                                                    <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span className="truncate">{player.name}</span>
+                                                                            </Label>
+                                                                        </FormItem>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                                                                        <p>No players listed.</p>
+                                                                    </div>
+                                                                )}
+                                                            </ScrollArea>
+                                                        </RadioGroup>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
                                         />
                                     )}
                                 </div>
