@@ -32,6 +32,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useState } from "react";
 
 export default function AdminLayout({
   children,
@@ -40,6 +41,7 @@ export default function AdminLayout({
 }) {
   const { userProfile, loading } = useAuth();
   const pathname = usePathname();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   if (loading) {
     return <AdminSkeleton />;
@@ -68,6 +70,11 @@ export default function AdminLayout({
       <Link
         key={href}
         href={href}
+        onClick={() => {
+          if (isMobile) {
+            setIsSheetOpen(false);
+          }
+        }}
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
           pathname.startsWith(href)
@@ -111,7 +118,7 @@ export default function AdminLayout({
       </aside>
       <div className="flex flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
