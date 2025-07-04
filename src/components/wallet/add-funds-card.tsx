@@ -86,18 +86,20 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                         <span>Pay with UPI QR / Bank Transfer</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4">
-                    {account.qrCodeUrl && (
-                        <div className="flex flex-col items-center">
-                            <Image src={account.qrCodeUrl} alt="UPI QR Code" width={200} height={200} className="rounded-md border p-1 h-40 w-40 sm:h-48 sm:w-48 object-contain" />
-                            <p className="text-muted-foreground text-sm mt-2">Scan the QR code to pay</p>
+                  <AccordionContent>
+                    <div className="flex flex-col sm:flex-row gap-6 items-center">
+                      {account.qrCodeUrl && (
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <Image src={account.qrCodeUrl} alt="UPI QR Code" width={160} height={160} className="rounded-md border p-1 h-40 w-40 object-contain" />
+                          <p className="text-muted-foreground text-xs mt-2 text-center">Scan the QR code to pay</p>
                         </div>
-                    )}
-                    <div className="space-y-2 text-sm">
-                        <DetailRow label="UPI ID" value={account.upiId} onCopy={() => handleCopy(account.upiId, 'UPI ID')} />
-                        <DetailRow label="Account Name" value={account.accountHolderName} onCopy={() => handleCopy(account.accountHolderName, 'Account Name')} />
-                        <DetailRow label="Account Number" value={account.accountNumber} onCopy={() => handleCopy(account.accountNumber, 'Account Number')} />
-                        <DetailRow label="IFSC Code" value={account.ifscCode} onCopy={() => handleCopy(account.ifscCode, 'IFSC Code')} />
+                      )}
+                      <div className="w-full space-y-2 text-sm">
+                          <DetailRow label="UPI ID" value={account.upiId} onCopy={() => handleCopy(account.upiId, 'UPI ID')} />
+                          <DetailRow label="Account Name" value={account.accountHolderName} onCopy={() => handleCopy(account.accountHolderName, 'Account Name')} />
+                          <DetailRow label="Account Number" value={account.accountNumber} onCopy={() => handleCopy(account.accountNumber, 'Account Number')} />
+                          <DetailRow label="IFSC Code" value={account.ifscCode} onCopy={() => handleCopy(account.ifscCode, 'IFSC Code')} />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
