@@ -20,6 +20,7 @@ import {
   GalleryHorizontal,
   LineChart,
   Percent,
+  Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -32,7 +33,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+function PageLoader() {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
 
 export default function AdminLayout({
   children,
@@ -42,6 +51,12 @@ export default function AdminLayout({
   const { userProfile, loading } = useAuth();
   const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // This effect will run when a new page has finished loading, turning off the loader.
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
 
   if (loading) {
     return <AdminSkeleton />;
@@ -50,6 +65,16 @@ export default function AdminLayout({
   if (!userProfile || userProfile.role !== "admin") {
     return <AccessDenied />;
   }
+
+  const handleLinkClick = (href: string, isMobile: boolean) => {
+    // Only show loader if navigating to a different page
+    if (pathname !== href) {
+      setIsNavigating(true);
+    }
+    if (isMobile) {
+      setIsSheetOpen(false);
+    }
+  };
 
   const navLinks = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -70,11 +95,7 @@ export default function AdminLayout({
       <Link
         key={href}
         href={href}
-        onClick={() => {
-          if (isMobile) {
-            setIsSheetOpen(false);
-          }
-        }}
+        onClick={() => handleLinkClick(href, isMobile)}
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
           pathname.startsWith(href)
@@ -129,22 +150,25 @@ export default function AdminLayout({
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <SheetHeader>
+            <SheetContent side="left" className="flex flex-col p-0">
+              <SheetHeader className="border-b p-4">
                 <SheetTitle asChild>
                    <Link
                       href="/admin/dashboard"
                       className="flex items-center gap-2 text-lg font-semibold"
+                      onClick={() => {
+                        handleLinkClick('/admin/dashboard', true);
+                      }}
                     >
                       <Award className="h-6 w-6 text-primary" />
                       <span>Guess & Win Admin</span>
                     </Link>
                 </SheetTitle>
               </SheetHeader>
-              <nav className="grid gap-6 text-lg font-medium mt-4 flex-1 overflow-y-auto">
+              <nav className="grid gap-2 text-lg font-medium p-4 flex-1 overflow-y-auto">
                 {renderNavLinks(true)}
               </nav>
-              <div className="mt-auto">
+              <div className="mt-auto border-t p-4">
                 <Button size="sm" className="w-full" asChild>
                   <Link href="/">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -157,7 +181,7 @@ export default function AdminLayout({
           <div className="w-full flex-1" />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto">
-          {children}
+          {isNavigating ? <PageLoader /> : children}
         </main>
       </div>
     </div>
