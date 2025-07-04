@@ -55,7 +55,6 @@ const createPredictionSchema = (
         }),
     };
     
-    // The schema for player prediction should remain the same. It expects a string.
     let playerPredictionSchema = z.object({
         teamA: z.string().optional(),
         teamB: z.string().optional(),
@@ -135,7 +134,6 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
     },
   });
   
-  // Effect to clear form values when user changes bet side preference
   useEffect(() => {
     if (match?.allowOneSidedBets && open) {
         if (bettingMode === 'qna') {
@@ -203,16 +201,15 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
     let finalPredictions: Prediction[] = [];
     
     if (bettingMode === 'player' && data.playerPrediction) {
-      // Create a single prediction object for player bets
       finalPredictions = [{
-        questionId: 'player_bet', // Generic ID for player bets
-        questionText: 'Player Prediction', // Generic text
+        questionId: 'player_bet', 
+        questionText: 'Player Prediction',
         predictedAnswer: {
           teamA: data.playerPrediction.teamA || '',
           teamB: data.playerPrediction.teamB || '',
         }
       }];
-    } else if (data.predictions) {
+    } else if (bettingMode === 'qna' && data.predictions) {
         finalPredictions = Object.entries(data.predictions).map(([questionId, predictedAnswer]: [string, any]) => {
           const question = questions.find(q => q.id === questionId);
           return {
