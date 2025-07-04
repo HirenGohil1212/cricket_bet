@@ -30,7 +30,7 @@ async function WalletActionsSection() {
     const bankAccounts = await getBankDetails();
 
     return (
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="space-y-8">
             <AddFundsCard bankAccounts={bankAccounts} />
             <WithdrawFundsCard />
         </div>

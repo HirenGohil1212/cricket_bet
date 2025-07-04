@@ -88,68 +88,73 @@ export function WithdrawFundsCard() {
           Request a withdrawal to your registered bank account.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="p-4 bg-muted rounded-lg text-center">
-            <p className="text-sm text-muted-foreground">Available Balance</p>
-            <p className="text-2xl font-bold font-headline text-primary">INR {walletBalance.toFixed(2)}</p>
+      <CardContent className="grid md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+            <h3 className="font-semibold">Available Balance</h3>
+            <div className="p-4 bg-muted rounded-lg text-center h-full flex flex-col justify-center min-h-[150px]">
+                <p className="text-sm text-muted-foreground">Currently in Wallet</p>
+                <p className="text-2xl font-bold font-headline text-primary">INR {walletBalance.toFixed(2)}</p>
+            </div>
         </div>
-
-        {!hasBankAccount ? (
-            <Alert>
-                <CircleDollarSign className="h-4 w-4" />
-                <AlertTitle>Bank Account Required</AlertTitle>
-                <AlertDescription>
-                    You need to add your bank details before you can make a withdrawal.
-                    <Button asChild variant="link" className="p-0 h-auto ml-1">
-                        <Link href="/profile">Add Bank Details</Link>
-                    </Button>
-                </AlertDescription>
-            </Alert>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount to Withdraw</FormLabel>
-                    <FormControl>
-                        <div className="flex items-start gap-2">
-                            <div className="relative flex-grow">
-                                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  type="number" 
-                                  placeholder="Enter amount" 
-                                  className="pl-10" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                                />
+        <div>
+            <h3 className="font-semibold mb-4">Request Withdrawal</h3>
+            {!hasBankAccount ? (
+                <Alert>
+                    <CircleDollarSign className="h-4 w-4" />
+                    <AlertTitle>Bank Account Required</AlertTitle>
+                    <AlertDescription>
+                        You need to add your bank details before you can make a withdrawal.
+                        <Button asChild variant="link" className="p-0 h-auto ml-1">
+                            <Link href="/profile">Add Bank Details</Link>
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount to Withdraw</FormLabel>
+                        <FormControl>
+                            <div className="flex items-start gap-2">
+                                <div className="relative flex-grow">
+                                    <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                      type="number" 
+                                      placeholder="Enter amount" 
+                                      className="pl-10" 
+                                      {...field} 
+                                      onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="shrink-0"
+                                    onClick={() => form.setValue('amount', Math.floor(walletBalance), { shouldValidate: true })}
+                                    disabled={walletBalance < 100}
+                                >
+                                    Max
+                                </Button>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="shrink-0"
-                                onClick={() => form.setValue('amount', Math.floor(walletBalance), { shouldValidate: true })}
-                                disabled={walletBalance < 100}
-                            >
-                                Max
-                            </Button>
-                        </div>
-                    </FormControl>
-                    <FormDesc>
-                      Minimum withdrawal is INR 100.
-                    </FormDesc>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isSubmitting || !hasBankAccount || loading}>
-                {isSubmitting ? "Submitting..." : "Request Withdrawal"}
-              </Button>
-            </form>
-          </Form>
-        )}
+                        </FormControl>
+                        <FormDesc>
+                          Minimum withdrawal is INR 100.
+                        </FormDesc>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !hasBankAccount || loading}>
+                    {isSubmitting ? "Submitting..." : "Request Withdrawal"}
+                  </Button>
+                </form>
+              </Form>
+            )}
+        </div>
       </CardContent>
     </Card>
   );
