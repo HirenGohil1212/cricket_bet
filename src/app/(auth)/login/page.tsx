@@ -40,7 +40,6 @@ export default function LoginPage() {
             toast({ title: "Login Successful", description: "Welcome back!" });
             router.push("/");
         } catch (error: any) {
-            console.error("Error logging in: ", error);
             // The 'auth/invalid-credential' error is the modern, secure way Firebase
             // indicates that the user/password combination is incorrect.
             let description = "An unknown error occurred. Please try again later.";
