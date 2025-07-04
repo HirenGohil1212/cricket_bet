@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -16,7 +15,7 @@ import { SettlementResultsDialog } from './settlement-results-dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '../ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
 
 interface ManageQnaDialogProps {
@@ -112,6 +111,147 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     };
 
     const hasActiveQuestions = questions.some(q => q.status === 'active');
+    
+    const QnaSection = (
+        <Card>
+            <CardHeader>
+                <CardTitle>Q&A Results</CardTitle>
+                <CardDescription>Enter the text-based results for each question.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 {questions.length > 0 ? (
+                    questions.map(q => {
+                        const isSettled = q.status === 'settled';
+                        return (
+                            <div key={q.id} className="p-4 border rounded-md space-y-4">
+                                <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
+                                
+                                {isSettled && q.result ? (
+                                    <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
+                                        <span>{match.teamA.name}: {q.result.teamA}</span>
+                                        <span>{match.teamB.name}: {q.result.teamB}</span>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor={`${q.id}-teamA`} className="text-xs">{match.teamA.name}</Label>
+                                            <Input
+                                                id={`${q.id}-teamA`}
+                                                placeholder="Result for Team A"
+                                                value={results[q.id]?.teamA || ''}
+                                                onChange={(e) => handleResultChange(q.id, 'teamA', e.target.value)}
+                                                disabled={isSaving || isSettling}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor={`${q.id}-teamB`} className="text-xs">{match.teamB.name}</Label>
+                                            <Input
+                                                id={`${q.id}-teamB`}
+                                                placeholder="Result for Team B"
+                                                value={results[q.id]?.teamB || ''}
+                                                onChange={(e) => handleResultChange(q.id, 'teamB', e.target.value)}
+                                                disabled={isSaving || isSettling}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })
+                ) : (
+                    <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+    
+    const PlayerSection = (
+        <Card>
+            <CardHeader>
+                <CardTitle>Winning Player Selection</CardTitle>
+                <CardDescription>Select the winning player for each question.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {questions.length > 0 ? (
+                    questions.map(q => {
+                        const isSettled = q.status === 'settled';
+                        return (
+                             <div key={q.id} className="p-4 border rounded-md space-y-4">
+                                <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
+                                 {isSettled && q.playerResult ? (
+                                    <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
+                                        <span>{match.teamA.name}: {q.playerResult.teamA}</span>
+                                        <span>{match.teamB.name}: {q.playerResult.teamB}</span>
+                                    </div>
+                                 ) : (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="rounded-md border p-2 space-y-2">
+                                            <Label className="px-1 font-semibold">{match.teamA.name}</Label>
+                                            <ScrollArea className="h-40">
+                                                <RadioGroup
+                                                    value={playerResults[q.id]?.teamA || ''}
+                                                    onValueChange={(value) => handlePlayerResultChange(q.id, 'teamA', value)}
+                                                    disabled={isSaving || isSettling}
+                                                    className="space-y-1 p-1"
+                                                >
+                                                    {(match.teamA.players && match.teamA.players.length > 0) ? (
+                                                        match.teamA.players.map(player => (
+                                                            <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
+                                                                <RadioGroupItem value={player.name} id={`${q.id}-a-${player.name}`} />
+                                                                <Avatar className="h-8 w-8">
+                                                                    <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                                <span>{player.name}</span>
+                                                            </Label>
+                                                        ))
+                                                    ) : (
+                                                        <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                                                            <p>No players listed.</p>
+                                                        </div>
+                                                    )}
+                                                </RadioGroup>
+                                            </ScrollArea>
+                                        </div>
+                                        <div className="rounded-md border p-2 space-y-2">
+                                            <Label className="px-1 font-semibold">{match.teamB.name}</Label>
+                                            <ScrollArea className="h-40">
+                                                <RadioGroup
+                                                    value={playerResults[q.id]?.teamB || ''}
+                                                    onValueChange={(value) => handlePlayerResultChange(q.id, 'teamB', value)}
+                                                    disabled={isSaving || isSettling}
+                                                    className="space-y-1 p-1"
+                                                >
+                                                    {(match.teamB.players && match.teamB.players.length > 0) ? (
+                                                        match.teamB.players.map(player => (
+                                                            <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
+                                                                <RadioGroupItem value={player.name} id={`${q.id}-b-${player.name}`} />
+                                                                <Avatar className="h-8 w-8">
+                                                                    <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                                <span>{player.name}</span>
+                                                            </Label>
+                                                        ))
+                                                    ) : (
+                                                        <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                                                            <p>No players listed.</p>
+                                                        </div>
+                                                    )}
+                                                </RadioGroup>
+                                            </ScrollArea>
+                                        </div>
+                                    </div>
+                                 )}
+                            </div>
+                        )
+                    })
+                ) : (
+                     <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
 
     return (
         <>
@@ -125,120 +265,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                     </DialogHeader>
                     <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
                         <div className="space-y-6">
-                            {questions.length > 0 ? (
-                                questions.map(q => {
-                                    const isSettled = q.status === 'settled';
-
-                                    return (
-                                        <div key={q.id} className="p-4 border rounded-md space-y-4">
-                                            <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
-                                            
-                                            {isSettled && q.result ? (
-                                                <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
-                                                <span>{match.teamA.name}: {q.result.teamA}</span>
-                                                <span>{match.teamB.name}: {q.result.teamB}</span>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <Label htmlFor={`${q.id}-teamA`} className="text-xs">{match.teamA.name}</Label>
-                                                        <Input
-                                                            id={`${q.id}-teamA`}
-                                                            placeholder="Result for Team A"
-                                                            value={results[q.id]?.teamA || ''}
-                                                            onChange={(e) => handleResultChange(q.id, 'teamA', e.target.value)}
-                                                            disabled={isSaving || isSettling}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label htmlFor={`${q.id}-teamB`} className="text-xs">{match.teamB.name}</Label>
-                                                        <Input
-                                                            id={`${q.id}-teamB`}
-                                                            placeholder="Result for Team B"
-                                                            value={results[q.id]?.teamB || ''}
-                                                            onChange={(e) => handleResultChange(q.id, 'teamB', e.target.value)}
-                                                            disabled={isSaving || isSettling}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {match.isSpecialMatch && (
-                                                <div>
-                                                    <p className="font-semibold text-sm text-center mb-2">Select Winning Players</p>
-                                                     {isSettled && q.playerResult ? (
-                                                        <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
-                                                            <span>{match.teamA.name}: {q.playerResult.teamA}</span>
-                                                            <span>{match.teamB.name}: {q.playerResult.teamB}</span>
-                                                        </div>
-                                                     ) : (
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="rounded-md border p-2 space-y-2">
-                                                                <Label className="px-1 font-semibold">{match.teamA.name}</Label>
-                                                                <ScrollArea className="h-40">
-                                                                    <RadioGroup
-                                                                        value={playerResults[q.id]?.teamA || ''}
-                                                                        onValueChange={(value) => handlePlayerResultChange(q.id, 'teamA', value)}
-                                                                        disabled={isSaving || isSettling}
-                                                                        className="space-y-1 p-1"
-                                                                    >
-                                                                        {(match.teamA.players && match.teamA.players.length > 0) ? (
-                                                                            match.teamA.players.map(player => (
-                                                                                <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
-                                                                                    <RadioGroupItem value={player.name} id={`${q.id}-a-${player.name}`} />
-                                                                                    <Avatar className="h-8 w-8">
-                                                                                        <AvatarImage src={player.imageUrl} alt={player.name} />
-                                                                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                                                    </Avatar>
-                                                                                    <span>{player.name}</span>
-                                                                                </Label>
-                                                                            ))
-                                                                        ) : (
-                                                                            <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                                                                                <p>No players listed.</p>
-                                                                            </div>
-                                                                        )}
-                                                                    </RadioGroup>
-                                                                </ScrollArea>
-                                                            </div>
-                                                            <div className="rounded-md border p-2 space-y-2">
-                                                                <Label className="px-1 font-semibold">{match.teamB.name}</Label>
-                                                                <ScrollArea className="h-40">
-                                                                    <RadioGroup
-                                                                        value={playerResults[q.id]?.teamB || ''}
-                                                                        onValueChange={(value) => handlePlayerResultChange(q.id, 'teamB', value)}
-                                                                        disabled={isSaving || isSettling}
-                                                                        className="space-y-1 p-1"
-                                                                    >
-                                                                        {(match.teamB.players && match.teamB.players.length > 0) ? (
-                                                                            match.teamB.players.map(player => (
-                                                                                <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
-                                                                                    <RadioGroupItem value={player.name} id={`${q.id}-b-${player.name}`} />
-                                                                                    <Avatar className="h-8 w-8">
-                                                                                        <AvatarImage src={player.imageUrl} alt={player.name} />
-                                                                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                                                    </Avatar>
-                                                                                    <span>{player.name}</span>
-                                                                                </Label>
-                                                                            ))
-                                                                        ) : (
-                                                                            <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                                                                                <p>No players listed.</p>
-                                                                            </div>
-                                                                        )}
-                                                                    </RadioGroup>
-                                                                </ScrollArea>
-                                                            </div>
-                                                        </div>
-                                                     )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })
-                            ) : (
-                                <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
-                            )}
+                           {QnaSection}
+                           {match.isSpecialMatch && PlayerSection}
                         </div>
                     </ScrollArea>
                     <DialogFooter className="mt-6 flex-col sm:flex-row items-center sm:justify-between w-full">
@@ -254,7 +282,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                              {isSaving ? 'Saving...' : 'Save Results'}
                          </Button>
                          <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions}>
-                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
+                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle &amp; Payout')}
                          </Button>
                        </div>
                    </DialogFooter>
