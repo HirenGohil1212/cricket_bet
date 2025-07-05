@@ -70,9 +70,10 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     setIsSubmitting(true);
     
     const result = await createDepositRequest({
-        ...data,
         userId: user.uid,
         userName: userProfile.name,
+        amount: data.amount,
+        screenshotDataUri: data.screenshotDataUri,
     });
 
     if (result.error) {
