@@ -95,9 +95,9 @@ export const depositRequestSchema = z.object({
   amount: z.coerce.number().min(100, "Minimum deposit amount is INR 100."),
   screenshot: z.any() // The File object from input
     .refine((file) => file instanceof File, "Payment screenshot is required.")
-    .refine((file) => file.size <= MAX_SCREENSHOT_SIZE, `Max file size is 5MB.`)
+    .refine((file) => !(file instanceof File) || file.size <= MAX_SCREENSHOT_SIZE, `Max file size is 5MB.`)
     .refine(
-      (file) => ACCEPTED_SCREENSHOT_TYPES.includes(file.type),
+      (file) => !(file instanceof File) || ACCEPTED_SCREENSHOT_TYPES.includes(file.type),
       ".jpg, .jpeg, .png and .webp files are accepted."
     ),
   screenshotDataUri: z.string().min(1, "Payment screenshot is required."), // The data URI string
