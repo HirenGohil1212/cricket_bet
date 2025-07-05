@@ -3,36 +3,42 @@ import { WhatsAppIcon } from "@/components/icons";
 
 export function WhatsAppSupportButton() {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center">
-      {/* SVG for curved text */}
-      <div className="w-24 h-12 pointer-events-none mb-[-8px]">
-        <svg
-          viewBox="0 0 100 40"
-          className="w-full h-full text-primary font-headline font-bold"
-          style={{ fontSize: '13px' }}
+    <div className="fixed bottom-4 right-4 z-50">
+      <div className="relative flex h-28 w-28 items-center justify-center">
+        {/* Orbiting Text */}
+        <div className="absolute inset-0 animate-orbit">
+          <svg
+            viewBox="0 0 100 100"
+            className="h-full w-full"
+          >
+            <defs>
+              <path
+                id="orbit-path"
+                fill="transparent"
+                d="M 50, 50 m -42, 0 a 42,42 0 1,1 82,0 a 42,42 0 1,1 -82,0"
+              />
+            </defs>
+            <text
+              className="fill-primary font-headline text-[10px] font-bold tracking-wider"
+            >
+              <textPath xlinkHref="#orbit-path" startOffset="25%" textAnchor="middle">
+                24 X 7 SUPPORT
+              </textPath>
+            </text>
+          </svg>
+        </div>
+
+        {/* Center Button */}
+        <Button
+          asChild
+          className="absolute h-16 w-16 rounded-full bg-[#25D366] hover:bg-[#128C7E] shadow-lg"
+          aria-label="WhatsApp Support"
         >
-          <path
-            id="curve"
-            fill="transparent"
-            d="M 10 30 C 25 5, 75 5, 90 30"
-          />
-          <text textAnchor="middle" fill="currentColor">
-            <textPath href="#curve" startOffset="50%">
-              24 X 7
-            </textPath>
-          </text>
-        </svg>
+          <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
+            <WhatsAppIcon className="h-8 w-8 text-white" />
+          </a>
+        </Button>
       </div>
-      {/* The button */}
-      <Button
-        asChild
-        className="h-16 w-16 rounded-full bg-[#25D366] hover:bg-[#128C7E] shadow-lg flex items-center justify-center"
-        aria-label="WhatsApp Support"
-      >
-        <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-          <WhatsAppIcon className="h-8 w-8 text-white" />
-        </a>
-      </Button>
     </div>
   );
 }
