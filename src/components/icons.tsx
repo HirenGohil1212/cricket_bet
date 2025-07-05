@@ -1,51 +1,32 @@
 import type { Sport } from "@/lib/types";
 
 const CricketIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14.5 13.5l-5 5" />
-    <path d="M13 18l-1.5-1.5" />
-    <path d="M12 15l-1.5-1.5" />
-    <path d="M14 8l-8 8" />
-    <path d="M12.5 3.5c-2 2-2 5.5 0 7.5s5.5 2 7.5 0l-5-5z" />
+  <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M15.5,15.5L18,18L15,21L12.5,18.5L10,21L7.5,18.5L5,21L2,18L4.5,15.5L2,13L5,10L7.5,12.5L10,10L12.5,12.5L15,10L18,13L15.5,15.5M18,6A3,3 0 0,1 15,9A3,3 0 0,1 12,6A3,3 0 0,1 15,3A3,3 0 0,1 18,6Z" />
   </svg>
 );
 
 const BadmintonIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14.5 9.5L5 19" />
-    <path d="M15 13l-4 4" />
-    <path d="M8 12l4 4" />
-    <path d="M17 11l-4 4" />
-    <path d="M21 7l-4 4" />
-    <path d="M12 22a2.5 2.5 0 0 1-4-3l7-7a2.5 2.5 0 0 1 3.5 3.5L12 22z" />
-  </svg>
+    <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M14.7,8.3L16.1,9.7L12,13.8L11.3,13.1L5.9,18.5L2,14.6L7.4,9.2L6.7,8.5L10.8,4.4L12.2,5.8L14.7,8.3M17.5,3C18.3,3 19.1,3.3 19.7,3.9C20.9,5.1 20.9,7 19.7,8.2L18.3,9.6L14.1,5.5L15.5,4.1C16.1,3.5 16.8,3.2 17.5,3Z" />
+    </svg>
 );
 
 const FootballIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 2L12 22" />
-    <path d="M2 12L22 12" />
-    <path d="M5.636 5.636l12.728 12.728" />
-    <path d="M18.364 5.636l-12.728 12.728" />
-  </svg>
+    <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M8.3,4.5L12,12L4.5,8.3C5.5,6.1,6.7,5,8.3,4.5M15.7,4.5C17.3,5,18.5,6.1,19.5,8.3L12,12L15.7,4.5M4.5,15.7C5.5,17.9,6.7,19,8.3,19.5L12,12L4.5,15.7M19.5,15.7C18.5,17.9,17.3,19,15.7,19.5L12,12L19.5,15.7Z" />
+    </svg>
 );
 
 const TennisIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M4.222 19.778A9.95 9.95 0 0 0 12 22a9.95 9.95 0 0 0 7.778-2.222" />
-    <path d="M19.778 4.222A9.95 9.95 0 0 0 12 2a9.95 9.95 0 0 0-7.778 2.222" />
-  </svg>
+    <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.5,5A1.5,1.5 0 0,0 18,6.5A1.5,1.5 0 0,0 19.5,8A1.5,1.5 0 0,0 21,6.5A1.5,1.5 0 0,0 19.5,5M3.28,21L12.8,11.5C13.5,12.1,14.5,12.1,15.2,11.5L16.2,10.5C16.8,9.8,16.8,8.8,16.2,8.1L15.2,7.1C14.5,6.5,13.5,6.5,12.8,7.1L3.28,16.7L2,18L6,22L7.3,20.7L3.28,21Z" />
+    </svg>
 );
 
 const TableTennisIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14.5 13.5l-5 5" />
-    <path d="M13 18l-1.5-1.5" />
-    <path d="M12 15l-1.5-1.5" />
-    <path d="M9 12l-1.5-1.5" />
-    <circle cx="7.5" cy="7.5" r="4.5" />
+  <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19,15.5V13H21.5L19,15.5M19,5.5L21.5,8H19V5.5M17.5,16.5L13.88,12.88L15.63,11.13L19.25,14.75L17.5,16.5M6,9A4,4 0 0,0 2,13V21H10V13A4,4 0 0,0 6,9M4,13A2,2 0 0,1 6,11A2,2 0 0,1 8,13V19H4V13Z" />
   </svg>
 );
 
