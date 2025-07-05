@@ -19,7 +19,7 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
-// The getStorage function will automatically use the correct storageBucket from the config.
-const storage = getStorage(app);
+// Explicitly pass the storage bucket URL to ensure the correct bucket is used.
+const storage = getStorage(app, "gs://staffable-e2ebf.firebasestorage.app");
 
 export { app, auth, db, storage };
