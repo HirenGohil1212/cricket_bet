@@ -2,7 +2,7 @@
 'use server';
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
@@ -98,8 +98,7 @@ export async function updateContent(data: ContentManagementFormValues) {
             const storageRef = ref(storage, newBannerPath);
             const mimeType = bannerImageDataUri.match(/data:(.*);base64,/)?.[1];
             const base64Data = bannerImageDataUri.split(',')[1];
-            const imageBuffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
+            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             updatePayload.bannerImagePath = newBannerPath;
         }
 
@@ -109,8 +108,7 @@ export async function updateContent(data: ContentManagementFormValues) {
             const storageRef = ref(storage, newVideoPath);
             const mimeType = smallVideoDataUri.match(/data:(.*);base64,/)?.[1];
             const base64Data = smallVideoDataUri.split(',')[1];
-            const videoBuffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, videoBuffer, { contentType: mimeType });
+            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             updatePayload.smallVideoPath = newVideoPath;
         }
 
