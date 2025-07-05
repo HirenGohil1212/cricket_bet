@@ -1,8 +1,8 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
@@ -87,27 +87,13 @@ export async function updateContent(data: ContentManagementFormValues) {
 
     try {
         const docRef = doc(db, 'adminSettings', 'content');
-        const currentContentSnap = await getDoc(docRef);
-        const currentContent = currentContentSnap.data();
-
+        
         const updatePayload: Record<string, any> = {
             youtubeUrl: youtubeUrl || ''
         };
 
-        // If a new banner is uploaded, upload it to storage and delete the old one
+        // If a new banner is uploaded, just upload it and set the new path.
         if (bannerImageDataUri) {
-            if (currentContent?.bannerImagePath) {
-                try {
-                    const pathToDelete = getPathFromStorageUrl(currentContent.bannerImagePath);
-                    if (pathToDelete) {
-                        const oldFileRef = ref(storage, pathToDelete);
-                        await deleteObject(oldFileRef);
-                    }
-                } catch (e: any) {
-                    if (e.code !== 'storage/object-not-found') console.error("Could not delete old banner:", e);
-                }
-            }
-            // Upload new banner
             const newBannerPath = `content/banner-${uuidv4()}`;
             const storageRef = ref(storage, newBannerPath);
             const mimeType = bannerImageDataUri.match(/data:(.*);base64,/)?.[1];
@@ -117,20 +103,8 @@ export async function updateContent(data: ContentManagementFormValues) {
             updatePayload.bannerImagePath = newBannerPath;
         }
 
-        // If a new video is uploaded, upload it to storage and delete the old one
+        // If a new video is uploaded, just upload it and set the new path.
         if (smallVideoDataUri) {
-             if (currentContent?.smallVideoPath) {
-                try {
-                    const pathToDelete = getPathFromStorageUrl(currentContent.smallVideoPath);
-                    if (pathToDelete) {
-                        const oldFileRef = ref(storage, pathToDelete);
-                        await deleteObject(oldFileRef);
-                    }
-                } catch (e: any) {
-                     if (e.code !== 'storage/object-not-found') console.error("Could not delete old video:", e);
-                }
-            }
-            // Upload new video
             const newVideoPath = `content/video-${uuidv4()}`;
             const storageRef = ref(storage, newVideoPath);
             const mimeType = smallVideoDataUri.match(/data:(.*);base64,/)?.[1];
@@ -140,11 +114,8 @@ export async function updateContent(data: ContentManagementFormValues) {
             updatePayload.smallVideoPath = newVideoPath;
         }
 
-        if (currentContentSnap.exists()) {
-            await updateDoc(docRef, updatePayload);
-        } else {
-            await setDoc(docRef, updatePayload);
-        }
+        // Use setDoc with merge:true to create or update the document without overwriting fields not in the payload.
+        await setDoc(docRef, updatePayload, { merge: true });
         
         revalidatePath('/admin/content');
         revalidatePath('/'); // Also revalidate home page where banner is shown

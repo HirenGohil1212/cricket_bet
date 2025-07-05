@@ -2,7 +2,7 @@
 'use server';
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
@@ -59,35 +59,14 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        // Step 1: Get the current state from the database to compare against
-        const currentDocSnap = await getDoc(docRef);
-        const currentAccounts: BankAccount[] = currentDocSnap.exists() ? currentDocSnap.data().accounts || [] : [];
-        const currentAccountsMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
-
-        const submittedAccounts = validatedFields.data.accounts;
-        const submittedAccountIds = new Set(submittedAccounts.map(acc => acc.id));
         const finalAccounts: BankAccount[] = [];
 
-        // Step 2: Process submitted accounts (updates and additions)
-        for (const submittedAccount of submittedAccounts) {
+        // Process submitted accounts (updates and additions)
+        for (const submittedAccount of validatedFields.data.accounts) {
             let qrCodeUrl = submittedAccount.qrCodeUrl || '';
-            const existingAccount = currentAccountsMap.get(submittedAccount.id!);
 
-            // If a new QR code is uploaded, handle file replacement
+            // If a new QR code is uploaded, just upload it and get the new URL
             if (submittedAccount.qrCodeDataUri) {
-                // Delete the old file if it exists by checking the record from the DB
-                if (existingAccount?.qrCodeUrl) {
-                    const pathToDelete = getPathFromStorageUrl(existingAccount.qrCodeUrl);
-                    if (pathToDelete) {
-                        try {
-                            await deleteObject(ref(storage, pathToDelete));
-                        } catch (e: any) {
-                            if (e.code !== 'storage/object-not-found') console.error("Could not delete old QR Code:", e);
-                        }
-                    }
-                }
-
-                // Upload the new file
                 const newPath = `qrcodes/${uuidv4()}`;
                 const storageRef = ref(storage, newPath);
                 const mimeType = submittedAccount.qrCodeDataUri.match(/data:(.*);base64,/)?.[1];
@@ -107,22 +86,7 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
             });
         }
 
-        // Step 3: Process deletions (accounts present in DB but not in submission)
-        const accountsToDelete = currentAccounts.filter(acc => !submittedAccountIds.has(acc.id));
-        for (const accountToDelete of accountsToDelete) {
-            if (accountToDelete.qrCodeUrl) {
-                const pathToDelete = getPathFromStorageUrl(accountToDelete.qrCodeUrl);
-                if (pathToDelete) {
-                     try {
-                        await deleteObject(ref(storage, pathToDelete));
-                    } catch (e: any) {
-                        if (e.code !== 'storage/object-not-found') console.error("Could not delete old QR Code on remove:", e);
-                    }
-                }
-            }
-        }
-
-        // Step 4: Save the new, final state to the database
+        // Overwrite the existing accounts with the new list
         await setDoc(docRef, { accounts: finalAccounts });
         
         revalidatePath('/admin/bank-details');

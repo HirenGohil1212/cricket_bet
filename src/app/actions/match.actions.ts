@@ -2,7 +2,7 @@
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -328,15 +328,6 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         // Handle Team A Logo Update
         if (teamALogoDataUri) {
-            const pathToDelete = getPathFromStorageUrl(teamALogoUrl);
-            if (pathToDelete) {
-                 try {
-                    const oldFileRef = ref(storage, pathToDelete);
-                    await deleteObject(oldFileRef);
-                } catch (e: any) {
-                    if (e.code !== 'storage/object-not-found') console.error("Could not delete old logo for Team A:", e);
-                }
-            }
             const storageRef = ref(storage, `logos/${uuidv4()}`);
             const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
             const base64Data = teamALogoDataUri.split(',')[1];
@@ -347,15 +338,6 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         // Handle Team B Logo Update
         if (teamBLogoDataUri) {
-             const pathToDelete = getPathFromStorageUrl(teamBLogoUrl);
-             if (pathToDelete) {
-                 try {
-                    const oldFileRef = ref(storage, pathToDelete);
-                    await deleteObject(oldFileRef);
-                } catch (e: any) {
-                    if (e.code !== 'storage/object-not-found') console.error("Could not delete old logo for Team B:", e);
-                }
-            }
             const storageRef = ref(storage, `logos/${uuidv4()}`);
             const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
             const base64Data = teamBLogoDataUri.split(',')[1];
@@ -364,7 +346,7 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
-        const processPlayerUpdates = async (newPlayers: MatchFormValues['teamAPlayers'], existingPlayers: Player[] = []) => {
+        const processPlayerUpdates = async (newPlayers: MatchFormValues['teamAPlayers']) => {
             if (!newPlayers) return [];
 
             const updatedPlayers: Player[] = [];
@@ -378,19 +360,6 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
                     await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
                     const newImageUrl = await getDownloadURL(storageRef);
                     updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
-                    
-                    const originalPlayer = existingPlayers.find(p => p.name === player.name);
-                    if (originalPlayer?.imageUrl) {
-                        const pathToDelete = getPathFromStorageUrl(originalPlayer.imageUrl);
-                         if (pathToDelete) {
-                             try {
-                                const oldFileRef = ref(storage, pathToDelete);
-                                await deleteObject(oldFileRef);
-                            } catch (e: any) {
-                                if (e.code !== 'storage/object-not-found') console.error(`Could not delete old player image: ${originalPlayer.imageUrl}`, e);
-                            }
-                         }
-                    }
                 } else {
                     updatedPlayers.push({ name: player.name, imageUrl: player.playerImageDataUri || '' });
                 }
@@ -398,8 +367,8 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             return updatedPlayers;
         };
 
-        const processedTeamAPlayers = await processPlayerUpdates(teamAPlayers, existingMatchData.teamA.players);
-        const processedTeamBPlayers = await processPlayerUpdates(teamBPlayers, existingMatchData.teamB.players);
+        const processedTeamAPlayers = await processPlayerUpdates(teamAPlayers);
+        const processedTeamBPlayers = await processPlayerUpdates(teamBPlayers);
 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
