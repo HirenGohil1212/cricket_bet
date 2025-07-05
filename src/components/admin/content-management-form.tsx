@@ -23,7 +23,7 @@ import { contentManagementSchema, type ContentManagementFormValues } from "@/lib
 import type { ContentSettings } from "@/lib/types";
 import { updateContent } from "@/app/actions/content.actions";
 import { Card, CardContent } from "@/components/ui/card";
-import { uploadFile, deleteFileFromUrl } from "@/lib/storage";
+import { uploadFile } from "@/lib/storage";
 
 interface ContentManagementFormProps {
     initialData: ContentSettings | null;
@@ -65,26 +65,20 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
     setIsSubmitting(true);
     
     try {
-        let bannerImagePath = initialData?.bannerImagePath || '';
+        let bannerImageUrl = initialData?.bannerImageUrl || '';
         if (data.bannerImageFile) {
-            if (initialData?.bannerImagePath) {
-                await deleteFileFromUrl(initialData.bannerImagePath);
-            }
-            bannerImagePath = await uploadFile(data.bannerImageFile, 'content');
+            bannerImageUrl = await uploadFile(data.bannerImageFile, 'content');
         }
 
-        let smallVideoPath = initialData?.smallVideoPath || '';
+        let smallVideoUrl = initialData?.smallVideoUrl || '';
         if (data.smallVideoFile) {
-            if (initialData?.smallVideoPath) {
-                await deleteFileFromUrl(initialData.smallVideoPath);
-            }
-            smallVideoPath = await uploadFile(data.smallVideoFile, 'content');
+            smallVideoUrl = await uploadFile(data.smallVideoFile, 'content');
         }
 
         const payload = {
             youtubeUrl: data.youtubeUrl || '',
-            bannerImagePath,
-            smallVideoPath,
+            bannerImageUrl,
+            smallVideoUrl,
         };
 
         const result = await updateContent(payload);

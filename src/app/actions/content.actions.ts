@@ -2,15 +2,14 @@
 'use server';
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import type { ContentSettings } from '@/lib/types';
 
 interface UpdateContentPayload {
     youtubeUrl: string;
-    bannerImagePath?: string;
-    smallVideoPath?: string;
+    bannerImageUrl?: string;
+    smallVideoUrl?: string;
 }
 
 // Function to get existing content settings
@@ -21,32 +20,12 @@ export async function getContent(): Promise<ContentSettings | null> {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
+            // Data is now stored directly as URLs, so no need for getDownloadURL logic.
             const contentSettings: ContentSettings = {
                 youtubeUrl: data.youtubeUrl || '',
-                bannerImageUrl: '',
-                bannerImagePath: data.bannerImagePath,
-                smallVideoUrl: '',
-                smallVideoPath: data.smallVideoPath,
+                bannerImageUrl: data.bannerImageUrl || '',
+                smallVideoUrl: data.smallVideoUrl || '',
             };
-
-            if (data.bannerImagePath) {
-                try {
-                    contentSettings.bannerImageUrl = await getDownloadURL(ref(storage, data.bannerImagePath));
-                } catch (e) {
-                     // If URL fails to generate (e.g., object deleted), it will just be an empty string
-                    console.error("Error generating banner download URL:", e);
-                }
-            }
-
-            if (data.smallVideoPath) {
-                try {
-                    contentSettings.smallVideoUrl = await getDownloadURL(ref(storage, data.smallVideoPath));
-                } catch (e) {
-                     // If URL fails to generate, it will just be an empty string
-                    console.error("Error generating video download URL:", e);
-                }
-            }
-
             return contentSettings;
         }
         return null;

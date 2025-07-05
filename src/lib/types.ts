@@ -138,9 +138,7 @@ export type ReferralSettings = {
 export type ContentSettings = {
     youtubeUrl: string;
     bannerImageUrl: string;
-    bannerImagePath?: string;
     smallVideoUrl: string;
-    smallVideoPath?: string;
 };
 
 export type DailyFinancialActivity = {

@@ -23,7 +23,7 @@ import { bankDetailsFormSchema, type BankDetailsFormValues } from "@/lib/schemas
 import type { BankAccount } from "@/lib/types";
 import { updateBankDetails } from "@/app/actions/settings.actions";
 import { Card, CardContent } from "@/components/ui/card";
-import { uploadFile, deleteFileFromUrl } from "@/lib/storage";
+import { uploadFile } from "@/lib/storage";
 
 interface BankDetailsFormProps {
     initialData: BankAccount[];
@@ -43,7 +43,6 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
   const [previews, setPreviews] = React.useState<Record<string, string>>({});
-  const [removedAccountUrls, setRemovedAccountUrls] = React.useState<string[]>([]);
 
   const form = useForm<BankDetailsFormValues>({
     resolver: zodResolver(bankDetailsFormSchema),
@@ -56,14 +55,6 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     control: form.control,
     name: "accounts",
   });
-
-  const handleRemove = (index: number) => {
-    const accountToRemove = form.getValues(`accounts.${index}`);
-    if (accountToRemove.qrCodeUrl) {
-      setRemovedAccountUrls(prev => [...prev, accountToRemove.qrCodeUrl]);
-    }
-    remove(index);
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string, index: number) => {
     const file = e.target.files?.[0];
@@ -86,23 +77,13 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     setIsSubmitting(true);
 
     try {
-        // Delete URLs from accounts that were removed from the form
-        for (const url of removedAccountUrls) {
-            await deleteFileFromUrl(url);
-        }
-        setRemovedAccountUrls([]); // Clear the queue
-
         const finalAccounts: BankAccount[] = [];
 
         for (const account of data.accounts) {
             let qrCodeUrl = account.qrCodeUrl || '';
 
             if (account.qrCodeFile instanceof File) {
-                // If there's an old URL, delete it first
-                if (account.qrCodeUrl) {
-                    await deleteFileFromUrl(account.qrCodeUrl);
-                }
-                // Upload the new file
+                // Just upload the new file. No deletion of the old one as requested.
                 qrCodeUrl = await uploadFile(account.qrCodeFile, 'qrcodes');
             }
 
@@ -145,7 +126,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                           variant="ghost"
                           size="icon"
                           className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemove(index)}
+                          onClick={() => remove(index)}
                       >
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Remove Account</span>

@@ -38,7 +38,7 @@ import { updateMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
 import { CountrySelect } from "./country-select";
 import { Separator } from "../ui/separator";
-import { uploadFile, deleteFileFromUrl } from "@/lib/storage";
+import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
 
 interface EditMatchFormProps {
@@ -144,33 +144,21 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     try {
         let teamALogoUrl = match.teamA.logoUrl;
         if (data.teamALogoFile) {
-            if (match.teamA.logoUrl && !match.teamA.logoUrl.includes('flagpedia.net')) {
-                await deleteFileFromUrl(match.teamA.logoUrl);
-            }
             teamALogoUrl = await uploadFile(data.teamALogoFile, 'logos');
         }
 
         let teamBLogoUrl = match.teamB.logoUrl;
         if (data.teamBLogoFile) {
-            if (match.teamB.logoUrl && !match.teamB.logoUrl.includes('flagpedia.net')) {
-                await deleteFileFromUrl(match.teamB.logoUrl);
-            }
             teamBLogoUrl = await uploadFile(data.teamBLogoFile, 'logos');
         }
         
-        const processPlayers = async (newPlayers: MatchFormValues['teamAPlayers'], oldPlayers: Player[]): Promise<Player[]> => {
+        const processPlayers = async (newPlayers: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
             const processedPlayers: Player[] = [];
             if (!newPlayers) return processedPlayers;
 
-            for (let i = 0; i < newPlayers.length; i++) {
-                const player = newPlayers[i];
+            for (const player of newPlayers) {
                 let imageUrl = player.playerImageUrl || '';
-                
                 if (player.playerImageFile) {
-                    // Delete old image if it exists and a new one is uploaded
-                    if (oldPlayers[i]?.imageUrl) {
-                        await deleteFileFromUrl(oldPlayers[i].imageUrl);
-                    }
                     imageUrl = await uploadFile(player.playerImageFile, 'players');
                 }
                 processedPlayers.push({ name: player.name, imageUrl });
@@ -178,8 +166,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             return processedPlayers;
         };
 
-        const teamAPlayers = await processPlayers(data.teamAPlayers, match.teamA.players || []);
-        const teamBPlayers = await processPlayers(data.teamBPlayers, match.teamB.players || []);
+        const teamAPlayers = await processPlayers(data.teamAPlayers);
+        const teamBPlayers = await processPlayers(data.teamBPlayers);
 
         const countryA = countries.find(c => c.code.toLowerCase() === data.teamACountry.toLowerCase());
         const countryB = countries.find(c => c.code.toLowerCase() === data.teamBCountry.toLowerCase());
