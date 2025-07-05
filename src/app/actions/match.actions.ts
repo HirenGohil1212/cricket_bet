@@ -10,6 +10,28 @@ import type { Match, Player } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
 import { countries } from '@/lib/countries';
 
+// Helper function to get a storage path from a full URL
+function getPathFromStorageUrl(url: string): string | null {
+  if (!url || !url.includes('firebasestorage.googleapis.com')) {
+    return null; // Not a Firebase Storage URL that we can delete
+  }
+  try {
+    const urlObject = new URL(url);
+    // Pathname is /v0/b/your-bucket.appspot.com/o/path%2Fto%2Ffile.jpg
+    const decodedPath = decodeURIComponent(urlObject.pathname);
+    // We want to extract 'path/to/file.jpg'
+    const pathSegment = '/o/';
+    const startIndex = decodedPath.indexOf(pathSegment);
+    if (startIndex === -1) return null;
+    
+    // Extract the path and remove any query parameters
+    return decodedPath.substring(startIndex + pathSegment.length).split('?')[0]; 
+  } catch (error) {
+    console.error("Could not parse storage URL:", error, "URL:", url);
+    return null;
+  }
+}
+
 // Server action to create a new match
 export async function createMatch(values: MatchFormValues) {
     try {
@@ -306,9 +328,10 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         // Handle Team A Logo Update
         if (teamALogoDataUri) {
-            if (teamALogoUrl && teamALogoUrl.includes('firebasestorage.googleapis.com')) {
+            const pathToDelete = getPathFromStorageUrl(teamALogoUrl);
+            if (pathToDelete) {
                  try {
-                    const oldFileRef = ref(storage, teamALogoUrl);
+                    const oldFileRef = ref(storage, pathToDelete);
                     await deleteObject(oldFileRef);
                 } catch (e: any) {
                     if (e.code !== 'storage/object-not-found') console.error("Could not delete old logo for Team A:", e);
@@ -324,9 +347,10 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         // Handle Team B Logo Update
         if (teamBLogoDataUri) {
-             if (teamBLogoUrl && teamBLogoUrl.includes('firebasestorage.googleapis.com')) {
+             const pathToDelete = getPathFromStorageUrl(teamBLogoUrl);
+             if (pathToDelete) {
                  try {
-                    const oldFileRef = ref(storage, teamBLogoUrl);
+                    const oldFileRef = ref(storage, pathToDelete);
                     await deleteObject(oldFileRef);
                 } catch (e: any) {
                     if (e.code !== 'storage/object-not-found') console.error("Could not delete old logo for Team B:", e);
@@ -356,13 +380,16 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
                     updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
                     
                     const originalPlayer = existingPlayers.find(p => p.name === player.name);
-                    if (originalPlayer?.imageUrl && originalPlayer.imageUrl.includes('firebasestorage.googleapis.com')) {
-                         try {
-                            const oldFileRef = ref(storage, originalPlayer.imageUrl);
-                            await deleteObject(oldFileRef);
-                        } catch (e: any) {
-                            if (e.code !== 'storage/object-not-found') console.error(`Could not delete old player image: ${originalPlayer.imageUrl}`, e);
-                        }
+                    if (originalPlayer?.imageUrl) {
+                        const pathToDelete = getPathFromStorageUrl(originalPlayer.imageUrl);
+                         if (pathToDelete) {
+                             try {
+                                const oldFileRef = ref(storage, pathToDelete);
+                                await deleteObject(oldFileRef);
+                            } catch (e: any) {
+                                if (e.code !== 'storage/object-not-found') console.error(`Could not delete old player image: ${originalPlayer.imageUrl}`, e);
+                            }
+                         }
                     }
                 } else {
                     updatedPlayers.push({ name: player.name, imageUrl: player.playerImageDataUri || '' });

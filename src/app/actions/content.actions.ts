@@ -10,6 +10,29 @@ import type { ContentSettings } from '@/lib/types';
 import { contentManagementSchema, type ContentManagementFormValues } from '@/lib/schemas';
 
 
+// Helper function to get a storage path from a full URL
+function getPathFromStorageUrl(url: string): string | null {
+  if (!url || !url.includes('firebasestorage.googleapis.com')) {
+    return null; // Not a Firebase Storage URL that we can delete
+  }
+  try {
+    const urlObject = new URL(url);
+    // Pathname is /v0/b/your-bucket.appspot.com/o/path%2Fto%2Ffile.jpg
+    const decodedPath = decodeURIComponent(urlObject.pathname);
+    // We want to extract 'path/to/file.jpg'
+    const pathSegment = '/o/';
+    const startIndex = decodedPath.indexOf(pathSegment);
+    if (startIndex === -1) return null;
+    
+    // Extract the path and remove any query parameters
+    return decodedPath.substring(startIndex + pathSegment.length).split('?')[0]; 
+  } catch (error) {
+    console.error("Could not parse storage URL:", error, "URL:", url);
+    return null;
+  }
+}
+
+
 // Function to get existing content settings
 export async function getContent(): Promise<ContentSettings | null> {
     try {
@@ -67,18 +90,19 @@ export async function updateContent(data: ContentManagementFormValues) {
         const currentContentSnap = await getDoc(docRef);
         const currentContent = currentContentSnap.data();
 
-        // Use updateDoc for partial updates
         const updatePayload: Record<string, any> = {
             youtubeUrl: youtubeUrl || ''
         };
 
         // If a new banner is uploaded, upload it to storage and delete the old one
         if (bannerImageDataUri) {
-            // Delete old banner if path exists in Firestore
             if (currentContent?.bannerImagePath) {
                 try {
-                    const oldFileRef = ref(storage, currentContent.bannerImagePath);
-                    await deleteObject(oldFileRef);
+                    const pathToDelete = getPathFromStorageUrl(currentContent.bannerImagePath);
+                    if (pathToDelete) {
+                        const oldFileRef = ref(storage, pathToDelete);
+                        await deleteObject(oldFileRef);
+                    }
                 } catch (e: any) {
                     if (e.code !== 'storage/object-not-found') console.error("Could not delete old banner:", e);
                 }
@@ -95,11 +119,13 @@ export async function updateContent(data: ContentManagementFormValues) {
 
         // If a new video is uploaded, upload it to storage and delete the old one
         if (smallVideoDataUri) {
-             // Delete old video if path exists in Firestore
              if (currentContent?.smallVideoPath) {
                 try {
-                    const oldFileRef = ref(storage, currentContent.smallVideoPath);
-                    await deleteObject(oldFileRef);
+                    const pathToDelete = getPathFromStorageUrl(currentContent.smallVideoPath);
+                    if (pathToDelete) {
+                        const oldFileRef = ref(storage, pathToDelete);
+                        await deleteObject(oldFileRef);
+                    }
                 } catch (e: any) {
                      if (e.code !== 'storage/object-not-found') console.error("Could not delete old video:", e);
                 }
