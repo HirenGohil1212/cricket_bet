@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { WhatsAppSupportButton } from "@/components/whatsapp-support-button";
-import { useRequireAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
@@ -30,7 +30,16 @@ function PageLoader() {
 }
 
 export function HomePageClient({ children, content }: HomePageClientProps) {
-  const { user, loading } = useRequireAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Logic to protect the route, moved from useRequireAuth hook
+  useEffect(() => {
+    if (!loading && !user) {
+        router.push('/login');
+    }
+  }, [user, loading, router]);
+  
   const [isPromoOpen, setIsPromoOpen] = useState(false);
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
