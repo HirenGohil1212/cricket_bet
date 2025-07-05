@@ -26,6 +26,7 @@ import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 interface AppSidebarProps {
   onNavigate: () => void;
@@ -98,8 +99,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   const MobileHeader = () => (
     <SheetHeader className="p-4 border-b">
-        <SheetTitle asChild>
-          <HeaderContent />
+        <SheetTitle className={cn("flex items-center gap-2 font-headline text-2xl font-bold")}>
+            <Award className="w-8 h-8 text-primary" />
+            <span>Guess and Win</span>
         </SheetTitle>
     </SheetHeader>
   )
