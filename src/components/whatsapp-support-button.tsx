@@ -21,8 +21,8 @@ export function WhatsAppSupportButton() {
             <text
               className="fill-primary font-headline text-[10px] font-bold tracking-wider"
             >
-              <textPath xlinkHref="#orbit-path" startOffset="25%" textAnchor="middle">
-                24 X 7 SUPPORT
+              <textPath xlinkHref="#orbit-path">
+                24 X 7 SUPPORT • 24 X 7 SUPPORT •
               </textPath>
             </text>
           </svg>
