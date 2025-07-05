@@ -18,6 +18,7 @@ import { useAuth } from "@/context/auth-context";
 import { depositRequestSchema, type DepositRequestFormValues } from "@/lib/schemas";
 import type { BankAccount } from "@/lib/types";
 import { createDepositRequest } from "@/app/actions/wallet.actions";
+import { uploadFile } from "@/lib/storage";
 
 interface AddFundsCardProps {
   bankAccounts: BankAccount[];
@@ -48,8 +49,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        form.setValue("screenshotDataUri", result, { shouldValidate: true });
-        form.setValue("screenshot", file, { shouldValidate: true });
+        form.setValue("screenshotFile", file, { shouldValidate: true });
         setScreenshotPreview(result);
       };
       reader.readAsDataURL(file);
@@ -57,9 +57,12 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
   };
 
   const clearScreenshot = () => {
-    form.resetField("screenshot");
-    form.resetField("screenshotDataUri");
+    form.resetField("screenshotFile");
     setScreenshotPreview(null);
+    const fileInput = document.getElementById('screenshot-upload') as HTMLInputElement;
+    if (fileInput) {
+        fileInput.value = '';
+    }
   };
   
   async function onSubmit(data: DepositRequestFormValues) {
@@ -69,23 +72,33 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     }
     setIsSubmitting(true);
     
-    const result = await createDepositRequest({
-        userId: user.uid,
-        userName: userProfile.name,
-        amount: data.amount,
-        screenshotDataUri: data.screenshotDataUri,
-    });
+    try {
+        if (!data.screenshotFile) {
+            throw new Error("Screenshot is required.");
+        }
+        
+        const screenshotUrl = await uploadFile(data.screenshotFile, `deposits/${user.uid}`);
+        
+        const result = await createDepositRequest({
+            userId: user.uid,
+            userName: userProfile.name,
+            amount: data.amount,
+            screenshotUrl: screenshotUrl,
+        });
 
-    if (result.error) {
-      toast({ variant: "destructive", title: "Submission Failed", description: result.error });
-    } else {
-      toast({ title: "Request Submitted", description: result.success });
-      form.reset({ amount: 100 });
-      setScreenshotPreview(null);
-      router.refresh(); // Refresh to show new entry in history
+        if (result.error) {
+            toast({ variant: "destructive", title: "Submission Failed", description: result.error });
+        } else {
+            toast({ title: "Request Submitted", description: result.success });
+            form.reset({ amount: 100 });
+            clearScreenshot();
+            router.refresh();
+        }
+    } catch (error: any) {
+         toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload screenshot. Please try again." });
+    } finally {
+        setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   }
 
   return (
@@ -155,7 +168,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
               />
               <FormField
                 control={form.control}
-                name="screenshot"
+                name="screenshotFile"
                 render={() => (
                   <FormItem>
                     <FormLabel>Payment Screenshot</FormLabel>

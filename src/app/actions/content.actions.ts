@@ -2,16 +2,16 @@
 'use server';
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid';
+import { getDownloadURL, ref } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
 import type { ContentSettings } from '@/lib/types';
-import { contentManagementSchema, type ContentManagementFormValues } from '@/lib/schemas';
 
-
-const ACCEPTED_BANNER_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const ACCEPTED_VIDEO_TYPES = ["video/mp4"];
+interface UpdateContentPayload {
+    youtubeUrl: string;
+    bannerImagePath?: string;
+    smallVideoPath?: string;
+}
 
 // Function to get existing content settings
 export async function getContent(): Promise<ContentSettings | null> {
@@ -57,59 +57,15 @@ export async function getContent(): Promise<ContentSettings | null> {
 }
 
 // Server action to update content settings
-export async function updateContent(data: ContentManagementFormValues) {
-    const validatedFields = contentManagementSchema.safeParse(data);
-    if (!validatedFields.success) {
+export async function updateContent(payload: UpdateContentPayload) {
+    if (!payload) {
       return { error: 'Invalid data provided.' };
     }
-
-    const { youtubeUrl, bannerImageDataUri, smallVideoDataUri } = validatedFields.data;
 
     try {
         const docRef = doc(db, 'adminSettings', 'content');
         
-        const updatePayload: Record<string, any> = {
-            youtubeUrl: youtubeUrl || ''
-        };
-
-        if (bannerImageDataUri) {
-            const matches = bannerImageDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) {
-                return { error: 'Invalid banner image format. Please re-upload the image.' };
-            }
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-
-            if (!ACCEPTED_BANNER_TYPES.includes(mimeType)) {
-                return { error: 'Invalid banner file type. Only PNG, JPG, or WEBP are allowed.' };
-            }
-            const newBannerPath = `content/banner-${uuidv4()}`;
-            const storageRef = ref(storage, newBannerPath);
-            const buffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, buffer, { contentType: mimeType });
-            updatePayload.bannerImagePath = newBannerPath;
-        }
-
-        if (smallVideoDataUri) {
-            const matches = smallVideoDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) {
-                return { error: 'Invalid video format. Please re-upload the video.' };
-            }
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-
-            if (!ACCEPTED_VIDEO_TYPES.includes(mimeType)) {
-                return { error: 'Invalid video file type. Only MP4 videos are allowed.' };
-            }
-
-            const newVideoPath = `content/video-${uuidv4()}`;
-            const storageRef = ref(storage, newVideoPath);
-            const buffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, buffer, { contentType: mimeType });
-            updatePayload.smallVideoPath = newVideoPath;
-        }
-
-        await setDoc(docRef, updatePayload, { merge: true });
+        await setDoc(docRef, payload, { merge: true });
         
         revalidatePath('/admin/content');
         revalidatePath('/'); // Also revalidate home page where banner is shown
@@ -117,9 +73,6 @@ export async function updateContent(data: ContentManagementFormValues) {
 
     } catch (error: any) {
         console.error("Error updating content: ", error);
-        if (error.code && error.code.startsWith('storage/')) {
-            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
-        }
         return { error: error.message || 'An unknown error occurred while updating content.' };
     }
 }

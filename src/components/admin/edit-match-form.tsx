@@ -32,12 +32,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { sports, type Match } from "@/lib/types";
+import { sports, type Match, type Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { updateMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
 import { CountrySelect } from "./country-select";
 import { Separator } from "../ui/separator";
+import { uploadFile, deleteFileFromUrl } from "@/lib/storage";
+import { countries } from "@/lib/countries";
 
 interface EditMatchFormProps {
     match: Match;
@@ -48,8 +50,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const [teamAPreview, setTeamAPreview] = React.useState<string | null>(null);
-  const [teamBPreview, setTeamBPreview] = React.useState<string | null>(null);
+  const [teamAPreview, setTeamAPreview] = React.useState<string | null>(match.teamA.logoUrl);
+  const [teamBPreview, setTeamBPreview] = React.useState<string | null>(match.teamB.logoUrl);
   const [playerPreviews, setPlayerPreviews] = React.useState<{ teamA: Record<number, string>; teamB: Record<number, string> }>({ teamA: {}, teamB: {} });
   
   const form = useForm<MatchFormValues>({
@@ -63,12 +65,15 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         startTime: new Date(match.startTime),
         isSpecialMatch: match.isSpecialMatch || false,
         allowOneSidedBets: match.allowOneSidedBets || false,
-        teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageDataUri: p.imageUrl })) || [],
-        teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageDataUri: p.imageUrl })) || [],
+        teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [],
+        teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [],
     }
   });
   
   React.useEffect(() => {
+    const defaultTeamAPlayers = match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [];
+    const defaultTeamBPlayers = match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [];
+
     form.reset({
         sport: match.sport,
         teamA: match.teamA.name,
@@ -78,9 +83,25 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         startTime: new Date(match.startTime),
         isSpecialMatch: match.isSpecialMatch || false,
         allowOneSidedBets: match.allowOneSidedBets || false,
-        teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageDataUri: p.imageUrl })) || [],
-        teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageDataUri: p.imageUrl })) || [],
+        teamAPlayers: defaultTeamAPlayers,
+        teamBPlayers: defaultTeamBPlayers,
     });
+
+    setTeamAPreview(match.teamA.logoUrl);
+    setTeamBPreview(match.teamB.logoUrl);
+
+    const initialPlayerPreviewsA = defaultTeamAPlayers.reduce((acc, player, index) => {
+        if (player.playerImageUrl) acc[index] = player.playerImageUrl;
+        return acc;
+    }, {} as Record<number, string>);
+
+    const initialPlayerPreviewsB = defaultTeamBPlayers.reduce((acc, player, index) => {
+        if (player.playerImageUrl) acc[index] = player.playerImageUrl;
+        return acc;
+    }, {} as Record<number, string>);
+    
+    setPlayerPreviews({ teamA: initialPlayerPreviewsA, teamB: initialPlayerPreviewsB });
+
   }, [match, form]);
 
   const { fields: teamAPlayerFields, append: appendTeamAPlayer, remove: removeTeamAPlayer } = useFieldArray({
@@ -93,59 +114,108 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
       name: "teamBPlayers"
   });
 
-  const handleTeamLogoChange = (e: React.ChangeEvent<HTMLInputElement>, team: 'teamA' | 'teamB') => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'teamALogoFile' | 'teamBLogoFile' | `teamAPlayers.${number}.playerImageFile` | `teamBPlayers.${number}.playerImageFile`
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        if (team === 'teamA') {
-          form.setValue(`teamALogoDataUri`, result);
-          form.setValue(`teamALogoFile`, file);
-          setTeamAPreview(result);
-        } else {
-          form.setValue(`teamBLogoDataUri`, result);
-          form.setValue(`teamBLogoFile`, file);
-          setTeamBPreview(result);
+        if (field === 'teamALogoFile') setTeamAPreview(result);
+        else if (field === 'teamBLogoFile') setTeamBPreview(result);
+        else if (field.startsWith('teamAPlayers')) {
+            const index = parseInt(field.split('.')[1]);
+            setPlayerPreviews(prev => ({...prev, teamA: {...prev.teamA, [index]: result }}));
+        } else if (field.startsWith('teamBPlayers')) {
+            const index = parseInt(field.split('.')[1]);
+            setPlayerPreviews(prev => ({...prev, teamB: {...prev.teamB, [index]: result }}));
         }
       };
       reader.readAsDataURL(file);
-    }
-  };
-  
-   const handlePlayerFileChange = (e: React.ChangeEvent<HTMLInputElement>, team: 'teamA' | 'teamB', index: number) => {
-    const file = e.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const result = reader.result as string;
-            const fieldName = team === 'teamA' ? `teamAPlayers` : `teamBPlayers`;
-            form.setValue(`${fieldName}.${index}.playerImageDataUri`, result);
-            form.setValue(`${fieldName}.${index}.playerImageFile`, file);
-            setPlayerPreviews(prev => ({ ...prev, [team]: { ...prev[team], [index]: result }}));
-        };
-        reader.readAsDataURL(file);
+      form.setValue(field, file, { shouldValidate: true });
     }
   };
 
   async function onSubmit(data: MatchFormValues) {
     setIsSubmitting(true);
-    const result = await updateMatch(match.id, data);
     
-    if (result.error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.error,
-        });
-    } else {
-        toast({
-            title: "Match Updated",
-            description: `The match has been updated.`,
-        });
-        router.push("/admin/matches");
+    try {
+        let teamALogoUrl = match.teamA.logoUrl;
+        if (data.teamALogoFile) {
+            if (match.teamA.logoUrl && !match.teamA.logoUrl.includes('flagpedia.net')) {
+                await deleteFileFromUrl(match.teamA.logoUrl);
+            }
+            teamALogoUrl = await uploadFile(data.teamALogoFile, 'logos');
+        }
+
+        let teamBLogoUrl = match.teamB.logoUrl;
+        if (data.teamBLogoFile) {
+            if (match.teamB.logoUrl && !match.teamB.logoUrl.includes('flagpedia.net')) {
+                await deleteFileFromUrl(match.teamB.logoUrl);
+            }
+            teamBLogoUrl = await uploadFile(data.teamBLogoFile, 'logos');
+        }
+        
+        const processPlayers = async (newPlayers: MatchFormValues['teamAPlayers'], oldPlayers: Player[]): Promise<Player[]> => {
+            const processedPlayers: Player[] = [];
+            if (!newPlayers) return processedPlayers;
+
+            for (let i = 0; i < newPlayers.length; i++) {
+                const player = newPlayers[i];
+                let imageUrl = player.playerImageUrl || '';
+                
+                if (player.playerImageFile) {
+                    // Delete old image if it exists and a new one is uploaded
+                    if (oldPlayers[i]?.imageUrl) {
+                        await deleteFileFromUrl(oldPlayers[i].imageUrl);
+                    }
+                    imageUrl = await uploadFile(player.playerImageFile, 'players');
+                }
+                processedPlayers.push({ name: player.name, imageUrl });
+            }
+            return processedPlayers;
+        };
+
+        const teamAPlayers = await processPlayers(data.teamAPlayers, match.teamA.players || []);
+        const teamBPlayers = await processPlayers(data.teamBPlayers, match.teamB.players || []);
+
+        const countryA = countries.find(c => c.code.toLowerCase() === data.teamACountry.toLowerCase());
+        const countryB = countries.find(c => c.code.toLowerCase() === data.teamBCountry.toLowerCase());
+
+        const payload = {
+            sport: data.sport,
+            startTime: data.startTime,
+            isSpecialMatch: data.isSpecialMatch,
+            allowOneSidedBets: data.allowOneSidedBets,
+            teamA: {
+                name: data.teamA || countryA!.name,
+                logoUrl: teamALogoUrl,
+                countryCode: data.teamACountry,
+                players: teamAPlayers
+            },
+            teamB: {
+                name: data.teamB || countryB!.name,
+                logoUrl: teamBLogoUrl,
+                countryCode: data.teamBCountry,
+                players: teamBPlayers
+            }
+        };
+
+        const result = await updateMatch(match.id, payload);
+        
+        if (result.error) {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        } else {
+            toast({ title: "Match Updated", description: `The match has been updated.` });
+            router.push("/admin/matches");
+        }
+    } catch (error: any) {
+         toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload files. Please try again." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   return (
@@ -320,12 +390,12 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                 <FormControl>
                                     <div className="flex items-center gap-4">
                                         <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                                            <Image src={teamAPreview || match.teamA.logoUrl} alt="Team A Logo" width={96} height={96} className="object-contain"/>
+                                            {teamAPreview ? <Image src={teamAPreview} alt="Team A Logo" width={96} height={96} className="object-contain"/> : <UploadCloud className="h-8 w-8 text-muted-foreground" />}
                                         </div>
                                         <Input 
                                             type="file" 
                                             accept="image/png, image/jpeg, image/webp, image/svg+xml" 
-                                            onChange={(e) => handleTeamLogoChange(e, 'teamA')} 
+                                            onChange={(e) => handleFileChange(e, 'teamALogoFile')} 
                                             className="max-w-xs"
                                         />
                                     </div>
@@ -345,10 +415,10 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                   render={() => (
                                       <FormItem className="flex flex-col items-center gap-2">
                                           <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
-                                            <Image src={playerPreviews.teamA?.[index] || field.playerImageDataUri || `https://placehold.co/64x64.png`} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
+                                            <Image src={playerPreviews.teamA?.[index] || field.playerImageUrl || `https://placehold.co/64x64.png`} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
                                           </div>
                                           <FormControl>
-                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handlePlayerFileChange(e, 'teamA', index)} className="max-w-xs text-xs h-8" />
+                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `teamAPlayers.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
                                           </FormControl>
                                       </FormItem>
                                   )}
@@ -419,12 +489,12 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                 <FormControl>
                                     <div className="flex items-center gap-4">
                                         <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                                           <Image src={teamBPreview || match.teamB.logoUrl} alt="Team B Logo" width={96} height={96} className="object-contain"/>
+                                           {teamBPreview ? <Image src={teamBPreview} alt="Team B Logo" width={96} height={96} className="object-contain"/> : <UploadCloud className="h-8 w-8 text-muted-foreground" />}
                                         </div>
                                         <Input 
                                             type="file" 
                                             accept="image/png, image/jpeg, image/webp, image/svg+xml" 
-                                            onChange={(e) => handleTeamLogoChange(e, 'teamB')} 
+                                            onChange={(e) => handleFileChange(e, 'teamBLogoFile')} 
                                             className="max-w-xs"
                                         />
                                     </div>
@@ -444,10 +514,10 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                   render={() => (
                                       <FormItem className="flex flex-col items-center gap-2">
                                           <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
-                                            <Image src={playerPreviews.teamB?.[index] || field.playerImageDataUri || `https://placehold.co/64x64.png`} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
+                                            <Image src={playerPreviews.teamB?.[index] || field.playerImageUrl || `https://placehold.co/64x64.png`} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
                                           </div>
                                           <FormControl>
-                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handlePlayerFileChange(e, 'teamB', index)} className="max-w-xs text-xs h-8" />
+                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `teamBPlayers.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
                                           </FormControl>
                                       </FormItem>
                                   )}

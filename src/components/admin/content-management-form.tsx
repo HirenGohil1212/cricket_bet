@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +23,7 @@ import { contentManagementSchema, type ContentManagementFormValues } from "@/lib
 import type { ContentSettings } from "@/lib/types";
 import { updateContent } from "@/app/actions/content.actions";
 import { Card, CardContent } from "@/components/ui/card";
+import { uploadFile, deleteFileFromUrl } from "@/lib/storage";
 
 interface ContentManagementFormProps {
     initialData: ContentSettings | null;
@@ -31,7 +33,6 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
-  // State for previews
   const [bannerPreview, setBannerPreview] = React.useState<string | null>(initialData?.bannerImageUrl || null);
   const [videoPreview, setVideoPreview] = React.useState<string | null>(initialData?.smallVideoUrl || null);
 
@@ -39,24 +40,20 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
     resolver: zodResolver(contentManagementSchema),
     defaultValues: {
       youtubeUrl: initialData?.youtubeUrl || "",
-      bannerImageUrl: initialData?.bannerImageUrl || "",
-      smallVideoUrl: initialData?.smallVideoUrl || "",
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: "bannerImage" | "smallVideo") => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: "bannerImageFile" | "smallVideoFile") => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        form.setValue(`${fieldName}DataUri`, result);
-        form.setValue(fieldName, file);
-        form.clearErrors(fieldName);
+        form.setValue(fieldName, file, { shouldValidate: true });
         
-        if (fieldName === 'bannerImage') {
+        if (fieldName === 'bannerImageFile') {
             setBannerPreview(result);
-        } else if (fieldName === 'smallVideo') {
+        } else if (fieldName === 'smallVideoFile') {
             setVideoPreview(result);
         }
       };
@@ -66,22 +63,42 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
 
   async function onSubmit(data: ContentManagementFormValues) {
     setIsSubmitting(true);
-    const result = await updateContent(data);
     
-    if (result.error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.error,
-        });
-    } else {
-        toast({
-            title: "Success!",
-            description: result.success,
-        });
-        // The page will be revalidated by the server action, so we don't need to refresh the router
+    try {
+        let bannerImagePath = initialData?.bannerImagePath || '';
+        if (data.bannerImageFile) {
+            if (initialData?.bannerImagePath) {
+                await deleteFileFromUrl(initialData.bannerImagePath);
+            }
+            bannerImagePath = await uploadFile(data.bannerImageFile, 'content');
+        }
+
+        let smallVideoPath = initialData?.smallVideoPath || '';
+        if (data.smallVideoFile) {
+            if (initialData?.smallVideoPath) {
+                await deleteFileFromUrl(initialData.smallVideoPath);
+            }
+            smallVideoPath = await uploadFile(data.smallVideoFile, 'content');
+        }
+
+        const payload = {
+            youtubeUrl: data.youtubeUrl || '',
+            bannerImagePath,
+            smallVideoPath,
+        };
+
+        const result = await updateContent(payload);
+        
+        if (result.error) {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        } else {
+            toast({ title: "Success!", description: result.success });
+        }
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload files. Please try again." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   return (
@@ -109,7 +126,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                  <CardContent className="pt-6">
                      <FormField
                         control={form.control}
-                        name="bannerImage"
+                        name="bannerImageFile"
                         render={() => (
                         <FormItem>
                             <FormLabel className="flex items-center gap-2 font-semibold"><ImageIcon className="h-5 w-5"/> Banner Image</FormLabel>
@@ -124,7 +141,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         <Input 
                                             type="file" 
                                             accept="image/png, image/jpeg, image/webp" 
-                                            onChange={(e) => handleFileChange(e, 'bannerImage')} 
+                                            onChange={(e) => handleFileChange(e, 'bannerImageFile')} 
                                             className="max-w-xs"
                                         />
                                     </FormControl>
@@ -142,7 +159,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                  <CardContent className="pt-6">
                      <FormField
                         control={form.control}
-                        name="smallVideo"
+                        name="smallVideoFile"
                         render={() => (
                         <FormItem>
                             <FormLabel className="flex items-center gap-2 font-semibold"><Film className="h-5 w-5"/> Small Video Ad</FormLabel>
@@ -157,7 +174,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         <Input 
                                             type="file" 
                                             accept="video/mp4" 
-                                            onChange={(e) => handleFileChange(e, 'smallVideo')} 
+                                            onChange={(e) => handleFileChange(e, 'smallVideoFile')} 
                                             className="max-w-xs"
                                         />
                                     </FormControl>

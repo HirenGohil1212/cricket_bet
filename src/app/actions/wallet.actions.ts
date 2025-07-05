@@ -14,53 +14,30 @@ import {
     updateDoc,
     writeBatch
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import type { DepositRequest } from '@/lib/types';
 
 interface CreateDepositRequestParams {
     userId: string;
     userName: string;
     amount: number;
-    screenshotDataUri?: string;
+    screenshotUrl: string; // Changed from screenshotDataUri
 }
 
-const ACCEPTED_SCREENSHOT_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
 // User action to create a deposit request
-export async function createDepositRequest({ userId, userName, amount, screenshotDataUri }: CreateDepositRequestParams) {
+export async function createDepositRequest({ userId, userName, amount, screenshotUrl }: CreateDepositRequestParams) {
     if (!userId || !userName) {
         return { error: 'You must be logged in to make a deposit.' };
     }
     if (amount < 100) {
         return { error: 'Minimum deposit amount is INR 100.' };
     }
-     if (!screenshotDataUri) {
+     if (!screenshotUrl) {
         return { error: 'A payment screenshot is required.' };
     }
 
     try {
-        let screenshotUrl = "";
-        
-        const matches = screenshotDataUri.match(/^data:(.+);base64,(.*)$/);
-        if (!matches || matches.length !== 3) {
-            return { error: 'Invalid screenshot format. Please re-upload the image.' };
-        }
-        const mimeType = matches[1];
-        const base64Data = matches[2];
-    
-        if (!ACCEPTED_SCREENSHOT_TYPES.includes(mimeType)) {
-            return { error: 'Invalid file type. Only PNG, JPG, or WEBP are allowed.' };
-        }
-        
-        const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
-        const buffer = Buffer.from(base64Data, 'base64');
-        await uploadBytes(storageRef, buffer, { contentType: mimeType });
-        screenshotUrl = await getDownloadURL(storageRef);
-        
-
         await addDoc(collection(db, "deposits"), {
             userId,
             userName,
@@ -77,9 +54,6 @@ export async function createDepositRequest({ userId, userName, amount, screensho
 
     } catch (error: any) {
         console.error("Error creating deposit request: ", error);
-        if (error.code && error.code.startsWith('storage/')) {
-            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
-        }
         return { error: 'An unknown error occurred while submitting your deposit.' };
     }
 }

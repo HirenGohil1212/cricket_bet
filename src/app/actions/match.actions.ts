@@ -2,113 +2,42 @@
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Match, Player } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
 import { countries } from '@/lib/countries';
 
-const ACCEPTED_LOGO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"];
-const ACCEPTED_PLAYER_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+// This is a simplified payload that the server action will receive
+interface MatchServerPayload {
+    sport: Match['sport'];
+    teamA: { name: string; logoUrl: string; countryCode: string; players: Player[] };
+    teamB: { name: string; logoUrl: string; countryCode: string; players: Player[] };
+    startTime: Date;
+    isSpecialMatch: boolean;
+    allowOneSidedBets: boolean;
+}
 
 // Server action to create a new match
-export async function createMatch(values: MatchFormValues) {
+export async function createMatch(payload: MatchServerPayload) {
     try {
-        const validatedFields = matchSchema.safeParse(values);
-
-        if (!validatedFields.success) {
-            return { error: 'Invalid fields.' };
-        }
-
         const { 
             sport, 
             teamA, 
             teamB, 
-            teamACountry, 
-            teamBCountry, 
             startTime, 
-            teamALogoDataUri, 
-            teamBLogoDataUri,
-            teamAPlayers,
-            teamBPlayers,
             isSpecialMatch,
-            allowOneSidedBets,
-        } = validatedFields.data;
-
-        const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
-        const countryB = countries.find(c => c.code.toLowerCase() === teamBCountry.toLowerCase());
-
-        if (!countryA || !countryB) {
-            return { error: 'Invalid country selection.' };
-        }
-        
-        const teamAName = teamA && teamA.trim() ? teamA.trim() : countryA.name;
-        const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
-
-        let teamALogoUrl = `https://flagpedia.net/data/flags/w320/${teamACountry.toLowerCase()}.webp`;
-        let teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${teamBCountry.toLowerCase()}.webp`;
-
-        if (teamALogoDataUri) {
-            const matches = teamALogoDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) return { error: 'Invalid Team A logo format.' };
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team A logo file type.' };
-            
-            const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const buffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, buffer, { contentType: mimeType });
-            teamALogoUrl = await getDownloadURL(storageRef);
-        }
-
-        if (teamBLogoDataUri) {
-            const matches = teamBLogoDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) return { error: 'Invalid Team B logo format.' };
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team B logo file type.' };
-
-            const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const buffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, buffer, { contentType: mimeType });
-            teamBLogoUrl = await getDownloadURL(storageRef);
-        }
-
-        const processPlayers = async (players: MatchFormValues['teamAPlayers']) => {
-            if (!players || players.length === 0) return [];
-            
-            const processedPlayers: Player[] = [];
-            for (const player of players) {
-                let playerImageUrl = '';
-                if (player.playerImageDataUri) {
-                    const matches = player.playerImageDataUri.match(/^data:(.+);base64,(.*)$/);
-                    if (!matches || matches.length !== 3) throw new Error(`Invalid image format for player ${player.name}.`);
-                    const mimeType = matches[1];
-                    const base64Data = matches[2];
-                    if (!ACCEPTED_PLAYER_IMAGE_TYPES.includes(mimeType)) throw new Error(`Invalid image file type for player ${player.name}.`);
-
-                    const storageRef = ref(storage, `players/${uuidv4()}`);
-                    const buffer = Buffer.from(base64Data, 'base64');
-                    await uploadBytes(storageRef, buffer, { contentType: mimeType });
-                    playerImageUrl = await getDownloadURL(storageRef);
-                }
-                processedPlayers.push({ name: player.name, imageUrl: playerImageUrl });
-            }
-            return processedPlayers;
-        };
-        
-        const processedTeamAPlayers = await processPlayers(teamAPlayers);
-        const processedTeamBPlayers = await processPlayers(teamBPlayers);
+            allowOneSidedBets
+        } = payload;
 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { name: teamAName, logoUrl: teamALogoUrl, countryCode: teamACountry, players: processedTeamAPlayers },
-            teamB: { name: teamBName, logoUrl: teamBLogoUrl, countryCode: teamBCountry, players: processedTeamBPlayers },
+            teamA,
+            teamB,
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',
@@ -145,9 +74,6 @@ export async function createMatch(values: MatchFormValues) {
         return { success: 'Match created successfully and questions applied!' };
     } catch (error: any) {
         console.error("Error creating match: ", error);
-        if (error.code && error.code.startsWith('storage/')) {
-            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
-        }
         return { error: 'An unknown error occurred while creating the match.' };
     }
 }
@@ -253,14 +179,8 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
     }
 }
 
-export async function updateMatch(matchId: string, values: MatchFormValues) {
+export async function updateMatch(matchId: string, payload: MatchServerPayload) {
     try {
-        const validatedFields = matchSchema.safeParse(values);
-
-        if (!validatedFields.success) {
-            return { error: 'Invalid fields.' };
-        }
-        
         const matchRef = doc(db, 'matches', matchId);
         const existingMatchSnap = await getDoc(matchRef);
         if (!existingMatchSnap.exists()) {
@@ -272,90 +192,18 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             sport,
             teamA,
             teamB,
-            teamACountry,
-            teamBCountry,
             startTime,
-            teamALogoDataUri,
-            teamBLogoDataUri,
-            teamAPlayers,
-            teamBPlayers,
             isSpecialMatch,
             allowOneSidedBets,
-        } = validatedFields.data;
-        
-        const countryA = countries.find(c => c.code.toLowerCase() === teamACountry.toLowerCase());
-        const countryB = countries.find(c => c.code.toLowerCase() === teamBCountry.toLowerCase());
-
-        if (!countryA || !countryB) {
-            return { error: 'Invalid country selection.' };
-        }
-        
-        const teamAName = teamA && teamA.trim() ? teamA.trim() : countryA.name;
-        const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
-        
-        let teamALogoUrl = existingMatchData.teamA.logoUrl;
-        let teamBLogoUrl = existingMatchData.teamB.logoUrl;
-
-        if (teamALogoDataUri) {
-            const matches = teamALogoDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) return { error: 'Invalid Team A logo format.' };
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team A logo file type.' };
-
-            const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const buffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, buffer, { contentType: mimeType });
-            teamALogoUrl = await getDownloadURL(storageRef);
-        }
-
-        if (teamBLogoDataUri) {
-            const matches = teamBLogoDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) return { error: 'Invalid Team B logo format.' };
-            const mimeType = matches[1];
-            const base64Data = matches[2];
-            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team B logo file type.' };
-
-            const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const buffer = Buffer.from(base64Data, 'base64');
-            await uploadBytes(storageRef, buffer, { contentType: mimeType });
-            teamBLogoUrl = await getDownloadURL(storageRef);
-        }
-
-        const processPlayerUpdates = async (newPlayers: MatchFormValues['teamAPlayers']) => {
-            if (!newPlayers) return [];
-            const updatedPlayers: Player[] = [];
-
-            for (const player of newPlayers) {
-                if (player.playerImageDataUri && player.playerImageDataUri.startsWith('data:')) {
-                    const matches = player.playerImageDataUri.match(/^data:(.+);base64,(.*)$/);
-                    if (!matches || matches.length !== 3) throw new Error(`Invalid image format for player ${player.name}.`);
-                    const mimeType = matches[1];
-                    const base64Data = matches[2];
-                    if (!ACCEPTED_PLAYER_IMAGE_TYPES.includes(mimeType)) throw new Error(`Invalid image file type for player ${player.name}.`);
-
-                    const storageRef = ref(storage, `players/${uuidv4()}`);
-                    const buffer = Buffer.from(base64Data, 'base64');
-                    await uploadBytes(storageRef, buffer, { contentType: mimeType });
-                    const newImageUrl = await getDownloadURL(storageRef);
-                    updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
-                } else {
-                    updatedPlayers.push({ name: player.name, imageUrl: player.playerImageDataUri || '' });
-                }
-            }
-            return updatedPlayers;
-        };
-
-        const processedTeamAPlayers = await processPlayerUpdates(teamAPlayers);
-        const processedTeamBPlayers = await processPlayerUpdates(teamBPlayers);
+        } = payload;
 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         await updateDoc(matchRef, {
             sport,
-            teamA: { name: teamAName, logoUrl: teamALogoUrl, countryCode: teamACountry, players: processedTeamAPlayers },
-            teamB: { name: teamBName, logoUrl: teamBLogoUrl, countryCode: teamBCountry, players: processedTeamBPlayers },
+            teamA,
+            teamB,
             startTime: Timestamp.fromDate(startTime),
             ...(existingMatchData.status !== 'Finished' && { status }),
             isSpecialMatch,
@@ -369,9 +217,6 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
         
     } catch (error: any) {
         console.error("Error updating match: ", error);
-        if (error.code && error.code.startsWith('storage/')) {
-            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
-        }
         return { error: 'An unknown error occurred while updating the match.' };
     }
 }

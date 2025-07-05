@@ -23,6 +23,7 @@ import { bankDetailsFormSchema, type BankDetailsFormValues } from "@/lib/schemas
 import type { BankAccount } from "@/lib/types";
 import { updateBankDetails } from "@/app/actions/settings.actions";
 import { Card, CardContent } from "@/components/ui/card";
+import { uploadFile, deleteFileFromUrl } from "@/lib/storage";
 
 interface BankDetailsFormProps {
     initialData: BankAccount[];
@@ -41,8 +42,8 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
-  // State to hold previews for newly selected files
   const [previews, setPreviews] = React.useState<Record<string, string>>({});
+  const [removedAccountUrls, setRemovedAccountUrls] = React.useState<string[]>([]);
 
   const form = useForm<BankDetailsFormValues>({
     resolver: zodResolver(bankDetailsFormSchema),
@@ -56,20 +57,25 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     name: "accounts",
   });
 
+  const handleRemove = (index: number) => {
+    const accountToRemove = form.getValues(`accounts.${index}`);
+    if (accountToRemove.qrCodeUrl) {
+      setRemovedAccountUrls(prev => [...prev, accountToRemove.qrCodeUrl]);
+    }
+    remove(index);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file on the client side before creating a preview
       if (file.size > 5 * 1024 * 1024) {
-          form.setError(`accounts.${index}.qrCode`, { message: "Max file size is 5MB." });
+          form.setError(`accounts.${index}.qrCodeFile`, { message: "Max file size is 5MB." });
           return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        form.setValue(`accounts.${index}.qrCodeDataUri`, result);
-        form.setValue(`accounts.${index}.qrCode`, file); // Also store file for validation
-        form.clearErrors(`accounts.${index}.qrCode`);
+        form.setValue(`accounts.${index}.qrCodeFile`, file, { shouldValidate: true });
         setPreviews(prev => ({...prev, [fieldId]: result }));
       };
       reader.readAsDataURL(file);
@@ -78,26 +84,53 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
 
   async function onSubmit(data: BankDetailsFormValues) {
     setIsSubmitting(true);
-    const result = await updateBankDetails(data);
-    
-    if (result.error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.error,
-        });
-    } else {
-        toast({
-            title: "Success!",
-            description: result.success,
-        });
-        setPreviews({});
-        // We don't router.refresh() here to avoid refetching and resetting the form,
-        // as the server action already revalidates the path for subsequent page loads.
-        // The form state will be stale until next navigation, but this is a better UX
-        // than resetting the form and losing the user's current view.
+
+    try {
+        // Delete URLs from accounts that were removed from the form
+        for (const url of removedAccountUrls) {
+            await deleteFileFromUrl(url);
+        }
+        setRemovedAccountUrls([]); // Clear the queue
+
+        const finalAccounts: BankAccount[] = [];
+
+        for (const account of data.accounts) {
+            let qrCodeUrl = account.qrCodeUrl || '';
+
+            if (account.qrCodeFile instanceof File) {
+                // If there's an old URL, delete it first
+                if (account.qrCodeUrl) {
+                    await deleteFileFromUrl(account.qrCodeUrl);
+                }
+                // Upload the new file
+                qrCodeUrl = await uploadFile(account.qrCodeFile, 'qrcodes');
+            }
+
+            finalAccounts.push({
+                id: account.id,
+                upiId: account.upiId,
+                accountHolderName: account.accountHolderName,
+                accountNumber: account.accountNumber,
+                ifscCode: account.ifscCode,
+                qrCodeUrl: qrCodeUrl,
+            });
+        }
+
+        const result = await updateBankDetails(finalAccounts);
+        
+        if (result.error) {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        } else {
+            toast({ title: "Success!", description: result.success });
+            form.reset({ accounts: finalAccounts }); // Reset form with new data including URLs
+            setPreviews({});
+        }
+
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload QR code. Please try again." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   return (
@@ -112,7 +145,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                           variant="ghost"
                           size="icon"
                           className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
-                          onClick={() => remove(index)}
+                          onClick={() => handleRemove(index)}
                       >
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Remove Account</span>
@@ -170,7 +203,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                         <div className="md:col-span-2">
                              <FormField
                                 control={form.control}
-                                name={`accounts.${index}.qrCode`}
+                                name={`accounts.${index}.qrCodeFile`}
                                 render={() => (
                                 <FormItem>
                                     <FormLabel>QR Code Image</FormLabel>

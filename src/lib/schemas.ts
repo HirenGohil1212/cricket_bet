@@ -10,14 +10,11 @@ const ACCEPTED_PLAYER_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "im
 
 const playerSchema = z.object({
   name: z.string().min(2, "Player name must be at least 2 characters."),
-  playerImageFile: z.any()
-    .optional()
-    .refine((file) => !file || (file instanceof File && file.size <= MAX_PLAYER_IMAGE_SIZE), `Max player image size is 1MB.`)
-    .refine((file) => !file || (file instanceof File && ACCEPTED_PLAYER_IMAGE_TYPES.includes(file.type)), ".jpg, .jpeg, .png, and .webp files are accepted."),
-  playerImageDataUri: z.string().optional(),
+  playerImageFile: z.instanceof(File).optional(),
+  playerImageUrl: z.string().optional(),
 });
 
-// Schema for adding/editing a match
+// Schema for the client-side form for adding/editing a match
 export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
   teamA: z.string().optional(),
@@ -26,7 +23,6 @@ export const matchSchema = z.object({
   teamBCountry: z.string({ required_error: "Country for Team B is required." }).min(1, { message: "Country for Team B is required."}),
   startTime: z.date({ required_error: "A start date and time is required." }),
   
-  // Team Logos
   teamALogoFile: z.any()
     .optional()
     .refine((file) => !file || (file instanceof File && file.size <= MAX_LOGO_SIZE), `Max logo size is 2MB.`)
@@ -36,14 +32,9 @@ export const matchSchema = z.object({
     .refine((file) => !file || (file instanceof File && file.size <= MAX_LOGO_SIZE), `Max logo size is 2MB.`)
     .refine((file) => !file || (file instanceof File && ACCEPTED_LOGO_TYPES.includes(file.type)), ".jpg, .jpeg, .png, .webp, and .svg files are accepted."),
   
-  teamALogoDataUri: z.string().optional(),
-  teamBLogoDataUri: z.string().optional(),
-
-  // Players
   teamAPlayers: z.array(playerSchema).optional(),
   teamBPlayers: z.array(playerSchema).optional(),
 
-  // Match options
   isSpecialMatch: z.boolean().default(false),
   allowOneSidedBets: z.boolean().default(false),
 });
@@ -61,12 +52,11 @@ export const bankAccountSchema = z.object({
   accountHolderName: z.string().min(2, "Account holder name is required."),
   accountNumber: z.string().min(1, "Account number is required."),
   ifscCode: z.string().min(1, "IFSC code is required."),
-  qrCode: z.any()
+  qrCodeFile: z.any()
     .optional()
     .refine((file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE), `Max file size is 5MB.`)
     .refine((file) => !file || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), ".jpg, .jpeg, .png and .webp files are accepted."),
   qrCodeUrl: z.string().url().optional().or(z.literal('')),
-  qrCodeDataUri: z.string().optional(),
 });
 
 export const bankDetailsFormSchema = z.object({
@@ -93,14 +83,13 @@ const ACCEPTED_SCREENSHOT_TYPES = ["image/jpeg", "image/jpg", "image/png", "imag
 
 export const depositRequestSchema = z.object({
   amount: z.coerce.number().min(100, "Minimum deposit amount is INR 100."),
-  screenshot: z.any() // The File object from input
+  screenshotFile: z.any()
     .refine((file) => file instanceof File, "Payment screenshot is required.")
     .refine((file) => !(file instanceof File) || file.size <= MAX_SCREENSHOT_SIZE, `Max file size is 5MB.`)
     .refine(
       (file) => !(file instanceof File) || ACCEPTED_SCREENSHOT_TYPES.includes(file.type),
       ".jpg, .jpeg, .png and .webp files are accepted."
     ),
-  screenshotDataUri: z.string().min(1, "Payment screenshot is required."), // The data URI string
 });
 
 export type DepositRequestFormValues = z.infer<typeof depositRequestSchema>;
@@ -142,18 +131,14 @@ const ACCEPTED_VIDEO_TYPES = ["video/mp4"];
 
 export const contentManagementSchema = z.object({
   youtubeUrl: z.string().url({ message: "Please enter a valid YouTube URL." }).optional().or(z.literal('')),
-  bannerImage: z.any()
+  bannerImageFile: z.any()
     .optional()
     .refine((file) => !file || (file instanceof File && file.size <= MAX_BANNER_SIZE), `Max banner size is 5MB.`)
     .refine((file) => !file || (file instanceof File && ACCEPTED_BANNER_TYPES.includes(file.type)), ".jpg, .jpeg, .png and .webp files are accepted."),
-  bannerImageDataUri: z.string().optional(),
-  bannerImageUrl: z.string().url().optional().or(z.literal('')),
-  smallVideo: z.any()
+  smallVideoFile: z.any()
     .optional()
     .refine((file) => !file || (file instanceof File && file.size <= MAX_VIDEO_SIZE), `Max video size is 10MB.`)
     .refine((file) => !file || (file instanceof File && ACCEPTED_VIDEO_TYPES.includes(file.type)), "Only .mp4 videos are accepted."),
-  smallVideoDataUri: z.string().optional(),
-  smallVideoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 export type ContentManagementFormValues = z.infer<typeof contentManagementSchema>;

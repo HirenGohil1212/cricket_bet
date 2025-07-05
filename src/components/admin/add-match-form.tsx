@@ -32,18 +32,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { sports } from "@/lib/types";
+import { sports, type Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { createMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
 import { CountrySelect } from "./country-select";
 import { Separator } from "../ui/separator";
+import { uploadFile } from "@/lib/storage";
+import { countries } from "@/lib/countries";
 
 
 export function AddMatchForm() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
   const [teamAPreview, setTeamAPreview] = React.useState<string | null>(null);
   const [teamBPreview, setTeamBPreview] = React.useState<string | null>(null);
   const [playerPreviews, setPlayerPreviews] = React.useState<{ teamA: Record<number, string>; teamB: Record<number, string> }>({ teamA: {}, teamB: {} });
@@ -72,66 +75,96 @@ export function AddMatchForm() {
       name: "teamBPlayers"
   });
 
-  const handleTeamLogoChange = (e: React.ChangeEvent<HTMLInputElement>, team: 'teamA' | 'teamB') => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'teamALogoFile' | 'teamBLogoFile' | `teamAPlayers.${number}.playerImageFile` | `teamBPlayers.${number}.playerImageFile`
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        if (team === 'teamA') {
-          form.setValue(`teamALogoDataUri`, result);
-          form.setValue(`teamALogoFile`, file); // For validation
-          form.clearErrors(`teamALogoFile`);
-          setTeamAPreview(result);
-        } else {
-          form.setValue(`teamBLogoDataUri`, result);
-          form.setValue(`teamBLogoFile`, file); // For validation
-          form.clearErrors(`teamBLogoFile`);
-          setTeamBPreview(result);
+        if (field === 'teamALogoFile') setTeamAPreview(result);
+        else if (field === 'teamBLogoFile') setTeamBPreview(result);
+        else if (field.startsWith('teamAPlayers')) {
+            const index = parseInt(field.split('.')[1]);
+            setPlayerPreviews(prev => ({...prev, teamA: {...prev.teamA, [index]: result }}));
+        } else if (field.startsWith('teamBPlayers')) {
+            const index = parseInt(field.split('.')[1]);
+            setPlayerPreviews(prev => ({...prev, teamB: {...prev.teamB, [index]: result }}));
         }
       };
       reader.readAsDataURL(file);
+      form.setValue(field, file, { shouldValidate: true });
     }
   };
-
-  const handlePlayerFileChange = (e: React.ChangeEvent<HTMLInputElement>, team: 'teamA' | 'teamB', index: number) => {
-    const file = e.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const result = reader.result as string;
-            const fieldName = team === 'teamA' ? `teamAPlayers` : `teamBPlayers`;
-            form.setValue(`${fieldName}.${index}.playerImageDataUri`, result);
-            form.setValue(`${fieldName}.${index}.playerImageFile`, file);
-            form.clearErrors(`${fieldName}.${index}.playerImageFile`);
-            setPlayerPreviews(prev => ({
-                ...prev,
-                [team]: { ...prev[team], [index]: result }
-            }));
-        };
-        reader.readAsDataURL(file);
-    }
-  };
-
 
   async function onSubmit(data: MatchFormValues) {
     setIsSubmitting(true);
-    const result = await createMatch(data);
-    
-    if (result.error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: result.error,
-        });
-    } else {
-        toast({
-            title: "Match Created",
-            description: `The match has been added.`,
-        });
-        router.push("/admin/matches");
+    try {
+        let teamALogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamACountry.toLowerCase()}.webp`;
+        if (data.teamALogoFile) {
+            teamALogoUrl = await uploadFile(data.teamALogoFile, 'logos');
+        }
+
+        let teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamBCountry.toLowerCase()}.webp`;
+        if (data.teamBLogoFile) {
+            teamBLogoUrl = await uploadFile(data.teamBLogoFile, 'logos');
+        }
+
+        const processPlayers = async (players: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
+            const processedPlayers: Player[] = [];
+            if (!players) return processedPlayers;
+
+            for (const player of players) {
+                let imageUrl = '';
+                if (player.playerImageFile) {
+                    imageUrl = await uploadFile(player.playerImageFile, 'players');
+                }
+                processedPlayers.push({ name: player.name, imageUrl });
+            }
+            return processedPlayers;
+        }
+
+        const teamAPlayers = await processPlayers(data.teamAPlayers);
+        const teamBPlayers = await processPlayers(data.teamBPlayers);
+
+        const countryA = countries.find(c => c.code.toLowerCase() === data.teamACountry.toLowerCase());
+        const countryB = countries.find(c => c.code.toLowerCase() === data.teamBCountry.toLowerCase());
+
+        const payload = {
+            sport: data.sport,
+            startTime: data.startTime,
+            isSpecialMatch: data.isSpecialMatch,
+            allowOneSidedBets: data.allowOneSidedBets,
+            teamA: {
+                name: data.teamA || countryA!.name,
+                logoUrl: teamALogoUrl,
+                countryCode: data.teamACountry,
+                players: teamAPlayers
+            },
+            teamB: {
+                name: data.teamB || countryB!.name,
+                logoUrl: teamBLogoUrl,
+                countryCode: data.teamBCountry,
+                players: teamBPlayers
+            }
+        };
+
+        const result = await createMatch(payload);
+        
+        if (result.error) {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        } else {
+            toast({ title: "Match Created", description: `The match has been added.` });
+            router.push("/admin/matches");
+        }
+
+    } catch (error: any) {
+         toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload files. Please try again." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   return (
@@ -318,7 +351,7 @@ export function AddMatchForm() {
                                         <Input 
                                             type="file" 
                                             accept="image/png, image/jpeg, image/webp, image/svg+xml" 
-                                            onChange={(e) => handleTeamLogoChange(e, 'teamA')} 
+                                            onChange={(e) => handleFileChange(e, 'teamALogoFile')} 
                                             className="max-w-xs"
                                         />
                                     </div>
@@ -345,7 +378,7 @@ export function AddMatchForm() {
                                               )}
                                           </div>
                                           <FormControl>
-                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handlePlayerFileChange(e, 'teamA', index)} className="max-w-xs text-xs h-8" />
+                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `teamAPlayers.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
                                           </FormControl>
                                       </FormItem>
                                   )}
@@ -425,7 +458,7 @@ export function AddMatchForm() {
                                         <Input 
                                             type="file" 
                                             accept="image/png, image/jpeg, image/webp, image/svg+xml" 
-                                            onChange={(e) => handleTeamLogoChange(e, 'teamB')} 
+                                            onChange={(e) => handleFileChange(e, 'teamBLogoFile')} 
                                             className="max-w-xs"
                                         />
                                     </div>
@@ -452,7 +485,7 @@ export function AddMatchForm() {
                                               )}
                                           </div>
                                           <FormControl>
-                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handlePlayerFileChange(e, 'teamB', index)} className="max-w-xs text-xs h-8" />
+                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `teamBPlayers.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
                                           </FormControl>
                                       </FormItem>
                                   )}
