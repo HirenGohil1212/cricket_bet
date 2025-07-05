@@ -10,28 +10,8 @@ import type { ContentSettings } from '@/lib/types';
 import { contentManagementSchema, type ContentManagementFormValues } from '@/lib/schemas';
 
 
-// Helper function to get a storage path from a full URL
-function getPathFromStorageUrl(url: string): string | null {
-  if (!url || !url.includes('firebasestorage.googleapis.com')) {
-    return null; // Not a Firebase Storage URL that we can delete
-  }
-  try {
-    const urlObject = new URL(url);
-    // Pathname is /v0/b/your-bucket.appspot.com/o/path%2Fto%2Ffile.jpg
-    const decodedPath = decodeURIComponent(urlObject.pathname);
-    // We want to extract 'path/to/file.jpg'
-    const pathSegment = '/o/';
-    const startIndex = decodedPath.indexOf(pathSegment);
-    if (startIndex === -1) return null;
-    
-    // Extract the path and remove any query parameters
-    return decodedPath.substring(startIndex + pathSegment.length).split('?')[0]; 
-  } catch (error) {
-    console.error("Could not parse storage URL:", error, "URL:", url);
-    return null;
-  }
-}
-
+const ACCEPTED_BANNER_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ACCEPTED_VIDEO_TYPES = ["video/mp4"];
 
 // Function to get existing content settings
 export async function getContent(): Promise<ContentSettings | null> {
@@ -92,27 +72,41 @@ export async function updateContent(data: ContentManagementFormValues) {
             youtubeUrl: youtubeUrl || ''
         };
 
-        // If a new banner is uploaded, just upload it and set the new path.
         if (bannerImageDataUri) {
+            const matches = bannerImageDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) {
+                return { error: 'Invalid banner image format. Please re-upload the image.' };
+            }
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+
+            if (!ACCEPTED_BANNER_TYPES.includes(mimeType)) {
+                return { error: 'Invalid banner file type. Only PNG, JPG, or WEBP are allowed.' };
+            }
             const newBannerPath = `content/banner-${uuidv4()}`;
             const storageRef = ref(storage, newBannerPath);
-            const mimeType = bannerImageDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = bannerImageDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             updatePayload.bannerImagePath = newBannerPath;
         }
 
-        // If a new video is uploaded, just upload it and set the new path.
         if (smallVideoDataUri) {
+            const matches = smallVideoDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) {
+                return { error: 'Invalid video format. Please re-upload the video.' };
+            }
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+
+            if (!ACCEPTED_VIDEO_TYPES.includes(mimeType)) {
+                return { error: 'Invalid video file type. Only MP4 videos are allowed.' };
+            }
+
             const newVideoPath = `content/video-${uuidv4()}`;
             const storageRef = ref(storage, newVideoPath);
-            const mimeType = smallVideoDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = smallVideoDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             updatePayload.smallVideoPath = newVideoPath;
         }
 
-        // Use setDoc with merge:true to create or update the document without overwriting fields not in the payload.
         await setDoc(docRef, updatePayload, { merge: true });
         
         revalidatePath('/admin/content');

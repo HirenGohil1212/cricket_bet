@@ -27,6 +27,8 @@ interface CreateDepositRequestParams {
     screenshotDataUri?: string;
 }
 
+const ACCEPTED_SCREENSHOT_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 // User action to create a deposit request
 export async function createDepositRequest({ userId, userName, amount, screenshotDataUri }: CreateDepositRequestParams) {
     if (!userId || !userName) {
@@ -41,16 +43,23 @@ export async function createDepositRequest({ userId, userName, amount, screensho
 
     try {
         let screenshotUrl = "";
-        // Upload screenshot to Firebase Storage if it exists
         if (screenshotDataUri) {
+            const matches = screenshotDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) {
+                return { error: 'Invalid screenshot format. Please re-upload the image.' };
+            }
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+        
+            if (!ACCEPTED_SCREENSHOT_TYPES.includes(mimeType)) {
+                return { error: 'Invalid file type. Only PNG, JPG, or WEBP are allowed.' };
+            }
+            
             const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
-            const mimeType = screenshotDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = screenshotDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             screenshotUrl = await getDownloadURL(storageRef);
         }
 
-        // Create deposit request document in Firestore
         await addDoc(collection(db, "deposits"), {
             userId,
             userName,

@@ -9,28 +9,7 @@ import { db, storage } from '@/lib/firebase';
 import type { BankAccount, BettingSettings } from '@/lib/types';
 import { bankDetailsFormSchema, type BankDetailsFormValues, bettingSettingsSchema, type BettingSettingsFormValues } from '@/lib/schemas';
 
-
-// Helper function to get a storage path from a full URL
-function getPathFromStorageUrl(url: string): string | null {
-  if (!url || !url.includes('firebasestorage.googleapis.com')) {
-    return null; // Not a Firebase Storage URL that we can delete
-  }
-  try {
-    const urlObject = new URL(url);
-    // Pathname is /v0/b/your-bucket.appspot.com/o/path%2Fto%2Ffile.jpg
-    const decodedPath = decodeURIComponent(urlObject.pathname);
-    // We want to extract 'path/to/file.jpg'
-    const pathSegment = '/o/';
-    const startIndex = decodedPath.indexOf(pathSegment);
-    if (startIndex === -1) return null;
-    
-    // Extract the path and remove any query parameters
-    return decodedPath.substring(startIndex + pathSegment.length).split('?')[0]; 
-  } catch (error) {
-    console.error("Could not parse storage URL:", error, "URL:", url);
-    return null;
-  }
-}
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 // Function to get existing bank details
 export async function getBankDetails(): Promise<BankAccount[]> {
@@ -61,22 +40,28 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
     try {
         const finalAccounts: BankAccount[] = [];
 
-        // Process submitted accounts (updates and additions)
         for (const submittedAccount of validatedFields.data.accounts) {
             let qrCodeUrl = submittedAccount.qrCodeUrl || '';
 
-            // If a new QR code is uploaded, just upload it and get the new URL
             if (submittedAccount.qrCodeDataUri) {
-                const newPath = `qrcodes/${uuidv4()}`;
+                const matches = submittedAccount.qrCodeDataUri.match(/^data:(.+);base64,(.*)$/);
+                if (!matches || matches.length !== 3) {
+                    return { error: `Invalid QR code image format for account ${submittedAccount.accountNumber}.` };
+                }
+                const mimeType = matches[1];
+                const base64Data = matches[2];
+                if (!ACCEPTED_IMAGE_TYPES.includes(mimeType)) {
+                    return { error: `Invalid QR code file type for account ${submittedAccount.accountNumber}.` };
+                }
+
+                const newPath = `qrcodes/${submittedAccount.id || uuidv4()}`;
                 const storageRef = ref(storage, newPath);
-                const mimeType = submittedAccount.qrCodeDataUri.match(/data:(.*);base64,/)?.[1];
-                const base64Data = submittedAccount.qrCodeDataUri.split(',')[1];
                 await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
                 qrCodeUrl = await getDownloadURL(storageRef);
             }
 
             finalAccounts.push({
-                id: submittedAccount.id, // Persist the ID
+                id: submittedAccount.id,
                 upiId: submittedAccount.upiId,
                 accountHolderName: submittedAccount.accountHolderName,
                 accountNumber: submittedAccount.accountNumber,
@@ -85,7 +70,6 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
             });
         }
 
-        // Overwrite the existing accounts with the new list
         await setDoc(docRef, { accounts: finalAccounts });
         
         revalidatePath('/admin/bank-details');

@@ -10,27 +10,8 @@ import type { Match, Player } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
 import { countries } from '@/lib/countries';
 
-// Helper function to get a storage path from a full URL
-function getPathFromStorageUrl(url: string): string | null {
-  if (!url || !url.includes('firebasestorage.googleapis.com')) {
-    return null; // Not a Firebase Storage URL that we can delete
-  }
-  try {
-    const urlObject = new URL(url);
-    // Pathname is /v0/b/your-bucket.appspot.com/o/path%2Fto%2Ffile.jpg
-    const decodedPath = decodeURIComponent(urlObject.pathname);
-    // We want to extract 'path/to/file.jpg'
-    const pathSegment = '/o/';
-    const startIndex = decodedPath.indexOf(pathSegment);
-    if (startIndex === -1) return null;
-    
-    // Extract the path and remove any query parameters
-    return decodedPath.substring(startIndex + pathSegment.length).split('?')[0]; 
-  } catch (error) {
-    console.error("Could not parse storage URL:", error, "URL:", url);
-    return null;
-  }
-}
+const ACCEPTED_LOGO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"];
+const ACCEPTED_PLAYER_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 // Server action to create a new match
 export async function createMatch(values: MatchFormValues) {
@@ -66,27 +47,33 @@ export async function createMatch(values: MatchFormValues) {
         const teamAName = teamA && teamA.trim() ? teamA.trim() : countryA.name;
         const teamBName = teamB && teamB.trim() ? teamB.trim() : countryB.name;
 
-        // Use country flag as default logo if no custom logo is provided
         let teamALogoUrl = `https://flagpedia.net/data/flags/w320/${teamACountry.toLowerCase()}.webp`;
         let teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${teamBCountry.toLowerCase()}.webp`;
 
         if (teamALogoDataUri) {
+            const matches = teamALogoDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) return { error: 'Invalid Team A logo format.' };
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team A logo file type.' };
+            
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = teamALogoDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             teamALogoUrl = await getDownloadURL(storageRef);
         }
 
         if (teamBLogoDataUri) {
+            const matches = teamBLogoDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) return { error: 'Invalid Team B logo format.' };
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team B logo file type.' };
+
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = teamBLogoDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
-        // Process players
         const processPlayers = async (players: MatchFormValues['teamAPlayers']) => {
             if (!players || players.length === 0) return [];
             
@@ -94,9 +81,13 @@ export async function createMatch(values: MatchFormValues) {
             for (const player of players) {
                 let playerImageUrl = '';
                 if (player.playerImageDataUri) {
+                    const matches = player.playerImageDataUri.match(/^data:(.+);base64,(.*)$/);
+                    if (!matches || matches.length !== 3) throw new Error(`Invalid image format for player ${player.name}.`);
+                    const mimeType = matches[1];
+                    const base64Data = matches[2];
+                    if (!ACCEPTED_PLAYER_IMAGE_TYPES.includes(mimeType)) throw new Error(`Invalid image file type for player ${player.name}.`);
+
                     const storageRef = ref(storage, `players/${uuidv4()}`);
-                    const mimeType = player.playerImageDataUri.match(/data:(.*);base64,/)?.[1];
-                    const base64Data = player.playerImageDataUri.split(',')[1];
                     await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
                     playerImageUrl = await getDownloadURL(storageRef);
                 }
@@ -111,21 +102,10 @@ export async function createMatch(values: MatchFormValues) {
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
-        // Create the match document
         const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
-            teamA: { 
-                name: teamAName, 
-                logoUrl: teamALogoUrl, 
-                countryCode: teamACountry,
-                players: processedTeamAPlayers
-            },
-            teamB: { 
-                name: teamBName, 
-                logoUrl: teamBLogoUrl, 
-                countryCode: teamBCountry,
-                players: processedTeamBPlayers
-            },
+            teamA: { name: teamAName, logoUrl: teamALogoUrl, countryCode: teamACountry, players: processedTeamAPlayers },
+            teamB: { name: teamBName, logoUrl: teamBLogoUrl, countryCode: teamBCountry, players: processedTeamBPlayers },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',
@@ -134,19 +114,16 @@ export async function createMatch(values: MatchFormValues) {
             allowOneSidedBets,
         });
 
-        // Now, check for a question template and apply it
         const templateRef = doc(db, 'questionTemplates', sport);
         const templateSnap = await getDoc(templateRef);
 
         if (templateSnap.exists()) {
             const templateData = templateSnap.data();
-            const questions = templateData.questions;
-
-            if (questions && Array.isArray(questions) && questions.length > 0) {
+            if (templateData.questions && Array.isArray(templateData.questions) && templateData.questions.length > 0) {
                 const batch = writeBatch(db);
                 const questionsCollectionRef = collection(db, `matches/${newMatchRef.id}/questions`);
                 
-                questions.forEach((q: any) => {
+                templateData.questions.forEach((q: any) => {
                     const questionRef = doc(questionsCollectionRef);
                     batch.set(questionRef, {
                         question: q.question,
@@ -169,7 +146,6 @@ export async function createMatch(values: MatchFormValues) {
     }
 }
 
-// Server action to delete a match
 export async function deleteMatch(matchId: string) {
     if (!matchId) {
         return { error: 'Match ID is required.' };
@@ -185,26 +161,22 @@ export async function deleteMatch(matchId: string) {
     }
 }
 
-
-// Function to get all matches from Firestore
 export async function getMatches(): Promise<Match[]> {
     try {
         const matchesCol = collection(db, 'matches');
         const q = query(matchesCol, orderBy('startTime', 'desc'), limit(50));
         const matchSnapshot = await getDocs(q);
-        const now = new Date(); // Get current time once
+        const now = new Date();
 
         const matchList = matchSnapshot.docs.map(doc => {
             const data = doc.data();
             const startTime = (data.startTime as Timestamp).toDate();
             
             let currentStatus: Match['status'] = data.status;
-            // Dynamically update status if it's 'Upcoming' and the start time has passed.
             if (currentStatus === 'Upcoming' && startTime <= now) {
                 currentStatus = 'Live';
             }
 
-            // Fix blurry flag URLs on the fly by always requesting high-resolution images
             if (data.teamA.logoUrl && data.teamA.logoUrl.includes('flagpedia.net')) {
                 data.teamA.logoUrl = data.teamA.logoUrl.replace('/w80/', '/w320/').replace('/w40/', '/w320/');
             }
@@ -217,9 +189,8 @@ export async function getMatches(): Promise<Match[]> {
                 sport: data.sport,
                 teamA: data.teamA,
                 teamB: data.teamB,
-                status: currentStatus, // Use the calculated status
+                status: currentStatus,
                 startTime: startTime.toISOString(),
-                // Ensure score and winner are always strings to avoid serialization errors
                 score: data.score || '', 
                 winner: data.winner || '',
                 isSpecialMatch: data.isSpecialMatch || false,
@@ -233,7 +204,6 @@ export async function getMatches(): Promise<Match[]> {
     }
 }
 
-// Function to get a single match by ID
 export async function getMatchById(matchId: string): Promise<Match | null> {
     try {
         const matchRef = doc(db, 'matches', matchId);
@@ -248,7 +218,6 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
         const now = new Date();
         
         let currentStatus: Match['status'] = data.status;
-        // Dynamically update status if it's 'Upcoming' and the start time has passed.
         if (currentStatus === 'Upcoming' && startTime <= now) {
             currentStatus = 'Live';
         }
@@ -265,7 +234,7 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
             sport: data.sport,
             teamA: data.teamA,
             teamB: data.teamB,
-            status: currentStatus, // Use the calculated status
+            status: currentStatus,
             startTime: startTime.toISOString(),
             score: data.score || '',
             winner: data.winner || '',
@@ -278,8 +247,6 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
     }
 }
 
-
-// Function to update a match
 export async function updateMatch(matchId: string, values: MatchFormValues) {
     try {
         const validatedFields = matchSchema.safeParse(values);
@@ -323,34 +290,43 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
         let teamALogoUrl = existingMatchData.teamA.logoUrl;
         let teamBLogoUrl = existingMatchData.teamB.logoUrl;
 
-        // Handle Team A Logo Update
         if (teamALogoDataUri) {
+            const matches = teamALogoDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) return { error: 'Invalid Team A logo format.' };
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team A logo file type.' };
+
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const mimeType = teamALogoDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = teamALogoDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             teamALogoUrl = await getDownloadURL(storageRef);
         }
 
-        // Handle Team B Logo Update
         if (teamBLogoDataUri) {
+            const matches = teamBLogoDataUri.match(/^data:(.+);base64,(.*)$/);
+            if (!matches || matches.length !== 3) return { error: 'Invalid Team B logo format.' };
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team B logo file type.' };
+
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            const mimeType = teamBLogoDataUri.match(/data:(.*);base64,/)?.[1];
-            const base64Data = teamBLogoDataUri.split(',')[1];
             await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
         const processPlayerUpdates = async (newPlayers: MatchFormValues['teamAPlayers']) => {
             if (!newPlayers) return [];
-
             const updatedPlayers: Player[] = [];
 
             for (const player of newPlayers) {
                 if (player.playerImageDataUri && player.playerImageDataUri.startsWith('data:')) {
+                    const matches = player.playerImageDataUri.match(/^data:(.+);base64,(.*)$/);
+                    if (!matches || matches.length !== 3) throw new Error(`Invalid image format for player ${player.name}.`);
+                    const mimeType = matches[1];
+                    const base64Data = matches[2];
+                    if (!ACCEPTED_PLAYER_IMAGE_TYPES.includes(mimeType)) throw new Error(`Invalid image file type for player ${player.name}.`);
+
                     const storageRef = ref(storage, `players/${uuidv4()}`);
-                    const mimeType = player.playerImageDataUri.match(/data:(.*);base64,/)?.[1];
-                    const base64Data = player.playerImageDataUri.split(',')[1];
                     await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
                     const newImageUrl = await getDownloadURL(storageRef);
                     updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
@@ -369,18 +345,8 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         await updateDoc(matchRef, {
             sport,
-            teamA: { 
-                name: teamAName, 
-                logoUrl: teamALogoUrl, 
-                countryCode: teamACountry,
-                players: processedTeamAPlayers
-            },
-            teamB: { 
-                name: teamBName, 
-                logoUrl: teamBLogoUrl, 
-                countryCode: teamBCountry,
-                players: processedTeamBPlayers
-            },
+            teamA: { name: teamAName, logoUrl: teamALogoUrl, countryCode: teamACountry, players: processedTeamAPlayers },
+            teamB: { name: teamBName, logoUrl: teamBLogoUrl, countryCode: teamBCountry, players: processedTeamBPlayers },
             startTime: Timestamp.fromDate(startTime),
             ...(existingMatchData.status !== 'Finished' && { status }),
             isSpecialMatch,
