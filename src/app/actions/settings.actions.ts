@@ -6,8 +6,8 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
-import type { BankAccount } from '@/lib/types';
-import { bankDetailsFormSchema, type BankDetailsFormValues } from '@/lib/schemas';
+import type { BankAccount, BettingSettings } from '@/lib/types';
+import { bankDetailsFormSchema, type BankDetailsFormValues, bettingSettingsSchema, type BettingSettingsFormValues } from '@/lib/schemas';
 
 
 // Helper function to get a storage path from a full URL
@@ -51,58 +51,79 @@ export async function getBankDetails(): Promise<BankAccount[]> {
 
 // Server action to update bank details
 export async function updateBankDetails(data: BankDetailsFormValues) {
-    
     const validatedFields = bankDetailsFormSchema.safeParse(data);
     if (!validatedFields.success) {
       return { error: 'Invalid data provided.' };
     }
 
-    const { accounts } = validatedFields.data;
+    const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        const docRef = doc(db, 'adminSettings', 'paymentDetails');
-        const updatedAccounts: BankAccount[] = [];
+        // Step 1: Get the current state from the database to compare against
+        const currentDocSnap = await getDoc(docRef);
+        const currentAccounts: BankAccount[] = currentDocSnap.exists() ? currentDocSnap.data().accounts || [] : [];
+        const currentAccountsMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
 
-        for (const account of accounts) {
-            let qrCodeUrl = account.qrCodeUrl || '';
+        const submittedAccounts = validatedFields.data.accounts;
+        const submittedAccountIds = new Set(submittedAccounts.map(acc => acc.id));
+        const finalAccounts: BankAccount[] = [];
 
-            // If a new QR code is uploaded as a data URI, upload it to storage
-            if (account.qrCodeDataUri) {
-                // First, delete the old QR code if it exists
-                if (account.qrCodeUrl) {
-                    const pathToDelete = getPathFromStorageUrl(account.qrCodeUrl);
+        // Step 2: Process submitted accounts (updates and additions)
+        for (const submittedAccount of submittedAccounts) {
+            let qrCodeUrl = submittedAccount.qrCodeUrl || '';
+            const existingAccount = currentAccountsMap.get(submittedAccount.id!);
+
+            // If a new QR code is uploaded, handle file replacement
+            if (submittedAccount.qrCodeDataUri) {
+                // Delete the old file if it exists by checking the record from the DB
+                if (existingAccount?.qrCodeUrl) {
+                    const pathToDelete = getPathFromStorageUrl(existingAccount.qrCodeUrl);
                     if (pathToDelete) {
                         try {
-                            const oldFileRef = ref(storage, pathToDelete);
-                            await deleteObject(oldFileRef);
+                            await deleteObject(ref(storage, pathToDelete));
                         } catch (e: any) {
-                            // If the object doesn't exist, we don't need to throw an error.
-                            if (e.code !== 'storage/object-not-found') {
-                                console.error("Could not delete old QR Code:", e);
-                            }
+                            if (e.code !== 'storage/object-not-found') console.error("Could not delete old QR Code:", e);
                         }
                     }
                 }
-                
-                // Now, upload the new QR code
-                const storageRef = ref(storage, `qrcodes/${uuidv4()}`);
-                const mimeType = account.qrCodeDataUri.match(/data:(.*);base64,/)?.[1];
-                const base64Data = account.qrCodeDataUri.split(',')[1];
+
+                // Upload the new file
+                const newPath = `qrcodes/${uuidv4()}`;
+                const storageRef = ref(storage, newPath);
+                const mimeType = submittedAccount.qrCodeDataUri.match(/data:(.*);base64,/)?.[1];
+                const base64Data = submittedAccount.qrCodeDataUri.split(',')[1];
                 const imageBuffer = Buffer.from(base64Data, 'base64');
                 await uploadBytes(storageRef, imageBuffer, { contentType: mimeType });
                 qrCodeUrl = await getDownloadURL(storageRef);
             }
 
-            updatedAccounts.push({
-                upiId: account.upiId,
-                accountHolderName: account.accountHolderName,
-                accountNumber: account.accountNumber,
-                ifscCode: account.ifscCode,
+            finalAccounts.push({
+                id: submittedAccount.id, // Persist the ID
+                upiId: submittedAccount.upiId,
+                accountHolderName: submittedAccount.accountHolderName,
+                accountNumber: submittedAccount.accountNumber,
+                ifscCode: submittedAccount.ifscCode,
                 qrCodeUrl: qrCodeUrl,
             });
         }
 
-        await setDoc(docRef, { accounts: updatedAccounts }, { merge: true });
+        // Step 3: Process deletions (accounts present in DB but not in submission)
+        const accountsToDelete = currentAccounts.filter(acc => !submittedAccountIds.has(acc.id));
+        for (const accountToDelete of accountsToDelete) {
+            if (accountToDelete.qrCodeUrl) {
+                const pathToDelete = getPathFromStorageUrl(accountToDelete.qrCodeUrl);
+                if (pathToDelete) {
+                     try {
+                        await deleteObject(ref(storage, pathToDelete));
+                    } catch (e: any) {
+                        if (e.code !== 'storage/object-not-found') console.error("Could not delete old QR Code on remove:", e);
+                    }
+                }
+            }
+        }
+
+        // Step 4: Save the new, final state to the database
+        await setDoc(docRef, { accounts: finalAccounts });
         
         revalidatePath('/admin/bank-details');
         return { success: 'Bank details updated successfully!' };

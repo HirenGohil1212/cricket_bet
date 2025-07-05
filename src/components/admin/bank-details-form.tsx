@@ -6,6 +6,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import * as React from "react";
 import Image from "next/image";
 import { PlusCircle, Trash2, UploadCloud } from "lucide-react";
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,25 +28,26 @@ interface BankDetailsFormProps {
     initialData: BankAccount[];
 }
 
-const defaultAccount = {
+const createDefaultAccount = (): BankAccount => ({
+  id: uuidv4(),
   upiId: '',
   accountHolderName: '',
   accountNumber: '',
   ifscCode: '',
   qrCodeUrl: '',
-};
+});
 
 export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
   // State to hold previews for newly selected files
-  const [previews, setPreviews] = React.useState<Record<number, string>>({});
+  const [previews, setPreviews] = React.useState<Record<string, string>>({});
 
   const form = useForm<BankDetailsFormValues>({
     resolver: zodResolver(bankDetailsFormSchema),
     defaultValues: {
-      accounts: initialData.length > 0 ? initialData : [defaultAccount],
+      accounts: initialData.length > 0 ? initialData : [createDefaultAccount()],
     },
   });
 
@@ -54,7 +56,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     name: "accounts",
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file on the client side before creating a preview
@@ -68,7 +70,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
         form.setValue(`accounts.${index}.qrCodeDataUri`, result);
         form.setValue(`accounts.${index}.qrCode`, file); // Also store file for validation
         form.clearErrors(`accounts.${index}.qrCode`);
-        setPreviews(prev => ({...prev, [index]: result }));
+        setPreviews(prev => ({...prev, [fieldId]: result }));
       };
       reader.readAsDataURL(file);
     }
@@ -92,6 +94,8 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
         setPreviews({});
         // We don't router.refresh() here to avoid refetching and resetting the form,
         // as the server action already revalidates the path for subsequent page loads.
+        // The form state will be stale until next navigation, but this is a better UX
+        // than resetting the form and losing the user's current view.
     }
     setIsSubmitting(false);
   }
@@ -173,8 +177,8 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                                     <FormControl>
                                         <div className="flex items-center gap-4">
                                             <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                                                {previews[index] ? (
-                                                    <Image src={previews[index]} alt="QR Preview" width={96} height={96} className="object-contain"/>
+                                                {previews[field.id] ? (
+                                                    <Image src={previews[field.id]} alt="QR Preview" width={96} height={96} className="object-contain"/>
                                                 ) : form.getValues(`accounts.${index}.qrCodeUrl`) ? (
                                                      <Image src={form.getValues(`accounts.${index}.qrCodeUrl`)!} alt="Current QR Code" width={96} height={96} className="object-contain" />
                                                 ) : (
@@ -184,7 +188,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                                             <Input 
                                                 type="file" 
                                                 accept="image/png, image/jpeg, image/webp" 
-                                                onChange={(e) => handleFileChange(e, index)} 
+                                                onChange={(e) => handleFileChange(e, field.id, index)} 
                                                 className="max-w-xs"
                                             />
                                         </div>
@@ -203,7 +207,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
             <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => append(defaultAccount)}
+                onClick={() => append(createDefaultAccount())}
                 disabled={fields.length >= 5 || isSubmitting}
             >
                 <PlusCircle className="mr-2 h-4 w-4" />

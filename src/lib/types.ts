@@ -71,6 +71,7 @@ export type UserProfile = {
 };
 
 export type BankAccount = {
+  id?: string;
   qrCodeUrl: string;
   upiId: string;
   accountHolderName: string;
