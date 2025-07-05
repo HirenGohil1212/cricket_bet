@@ -284,7 +284,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                        <div className="space-y-4">
                         {match.isSpecialMatch && (
                           <div className="flex items-center justify-center space-x-2 rounded-lg border p-3">
-                            <Label htmlFor="betting-mode" className={cn('text-sm', bettingMode === 'qna' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                            <Label htmlFor="betting-mode" className={cn('text-xs sm:text-sm', bettingMode === 'qna' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                               Predict Q&A
                             </Label>
                             <Switch
@@ -293,7 +293,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                               onCheckedChange={(checked) => setBettingMode(checked ? 'player' : 'qna')}
                               aria-label="Toggle between Q&A and Player prediction"
                             />
-                            <Label htmlFor="betting-mode" className={cn('text-sm', bettingMode === 'player' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                            <Label htmlFor="betting-mode" className={cn('text-xs sm:text-sm', bettingMode === 'player' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                               Predict Players
                             </Label>
                           </div>
@@ -305,7 +305,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                 <RadioGroup
                                     value={betOnSide}
                                     onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
-                                    className="grid grid-cols-3 gap-2"
+                                    className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
                                 >
                                     <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="teamA" id="r-teamA" />
