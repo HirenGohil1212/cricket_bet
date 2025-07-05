@@ -2,7 +2,7 @@
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -58,7 +58,8 @@ export async function createMatch(values: MatchFormValues) {
             if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team A logo file type.' };
             
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+            const buffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, buffer, { contentType: mimeType });
             teamALogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -70,7 +71,8 @@ export async function createMatch(values: MatchFormValues) {
             if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team B logo file type.' };
 
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+            const buffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, buffer, { contentType: mimeType });
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -88,7 +90,8 @@ export async function createMatch(values: MatchFormValues) {
                     if (!ACCEPTED_PLAYER_IMAGE_TYPES.includes(mimeType)) throw new Error(`Invalid image file type for player ${player.name}.`);
 
                     const storageRef = ref(storage, `players/${uuidv4()}`);
-                    await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+                    const buffer = Buffer.from(base64Data, 'base64');
+                    await uploadBytes(storageRef, buffer, { contentType: mimeType });
                     playerImageUrl = await getDownloadURL(storageRef);
                 }
                 processedPlayers.push({ name: player.name, imageUrl: playerImageUrl });
@@ -301,7 +304,8 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team A logo file type.' };
 
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+            const buffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, buffer, { contentType: mimeType });
             teamALogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -313,7 +317,8 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
             if (!ACCEPTED_LOGO_TYPES.includes(mimeType)) return { error: 'Invalid Team B logo file type.' };
 
             const storageRef = ref(storage, `logos/${uuidv4()}`);
-            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+            const buffer = Buffer.from(base64Data, 'base64');
+            await uploadBytes(storageRef, buffer, { contentType: mimeType });
             teamBLogoUrl = await getDownloadURL(storageRef);
         }
 
@@ -330,7 +335,8 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
                     if (!ACCEPTED_PLAYER_IMAGE_TYPES.includes(mimeType)) throw new Error(`Invalid image file type for player ${player.name}.`);
 
                     const storageRef = ref(storage, `players/${uuidv4()}`);
-                    await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+                    const buffer = Buffer.from(base64Data, 'base64');
+                    await uploadBytes(storageRef, buffer, { contentType: mimeType });
                     const newImageUrl = await getDownloadURL(storageRef);
                     updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
                 } else {

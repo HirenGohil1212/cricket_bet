@@ -2,7 +2,7 @@
 'use server';
 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
@@ -56,7 +56,8 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
 
                 const newPath = `qrcodes/${submittedAccount.id || uuidv4()}`;
                 const storageRef = ref(storage, newPath);
-                await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+                const buffer = Buffer.from(base64Data, 'base64');
+                await uploadBytes(storageRef, buffer, { contentType: mimeType });
                 qrCodeUrl = await getDownloadURL(storageRef);
             }
 

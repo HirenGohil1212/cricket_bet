@@ -14,7 +14,7 @@ import {
     updateDoc,
     writeBatch
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { db, storage } from '@/lib/firebase';
@@ -56,7 +56,8 @@ export async function createDepositRequest({ userId, userName, amount, screensho
         }
         
         const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
-        await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+        const buffer = Buffer.from(base64Data, 'base64');
+        await uploadBytes(storageRef, buffer, { contentType: mimeType });
         screenshotUrl = await getDownloadURL(storageRef);
         
 
