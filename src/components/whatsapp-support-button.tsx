@@ -8,20 +8,23 @@ export function WhatsAppSupportButton() {
         {/* Orbiting Text */}
         <div className="absolute inset-0 animate-orbit">
           <svg
-            viewBox="0 0 100 100"
+            viewBox="0 0 120 120" // Increased viewBox for more space
             className="h-full w-full"
           >
             <defs>
               <path
                 id="orbit-path"
                 fill="transparent"
-                d="M 50, 50 m -42, 0 a 42,42 0 1,1 82,0 a 42,42 0 1,1 -82,0"
+                // Path centered in the new viewBox with a larger radius
+                d="M 60, 60 m -50, 0 a 50, 50, 0, 1, 1, 100, 0 a 50, 50, 0, 1, 1, -100, 0"
               />
             </defs>
             <text
-              className="fill-primary font-headline text-[10px] font-bold tracking-wider"
+              fill="currentColor" // Use currentColor for fill
+              // Apply theme color via text-* class and adjust font
+              className="text-primary font-headline text-[11px] font-bold tracking-wider"
             >
-              <textPath xlinkHref="#orbit-path">
+              <textPath href="#orbit-path"> {/* Use modern href attribute */}
                 24 X 7 SUPPORT • 24 X 7 SUPPORT •
               </textPath>
             </text>
