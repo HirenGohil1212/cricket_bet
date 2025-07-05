@@ -35,6 +35,9 @@ export async function createDepositRequest({ userId, userName, amount, screensho
     if (amount < 100) {
         return { error: 'Minimum deposit amount is INR 100.' };
     }
+     if (!screenshotDataUri) {
+        return { error: 'A payment screenshot is required.' };
+    }
 
     try {
         let screenshotUrl = "";

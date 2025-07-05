@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Banknote, Copy, QrCode } from "lucide-react";
+import { Banknote, Copy, QrCode, UploadCloud, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
   const router = useRouter();
   const { user, userProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [screenshotPreview, setScreenshotPreview] = React.useState<string | null>(null);
 
   const form = useForm<DepositRequestFormValues>({
     resolver: zodResolver(depositRequestSchema),
@@ -39,6 +40,26 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied to clipboard!", description: `${field} has been copied.` });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        form.setValue("screenshotDataUri", result, { shouldValidate: true });
+        form.setValue("screenshot", file, { shouldValidate: true });
+        setScreenshotPreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearScreenshot = () => {
+    form.resetField("screenshot");
+    form.resetField("screenshotDataUri");
+    setScreenshotPreview(null);
   };
   
   async function onSubmit(data: DepositRequestFormValues) {
@@ -58,7 +79,8 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
       toast({ variant: "destructive", title: "Submission Failed", description: result.error });
     } else {
       toast({ title: "Request Submitted", description: result.success });
-      form.reset();
+      form.reset({ amount: 100 });
+      setScreenshotPreview(null);
       router.refresh(); // Refresh to show new entry in history
     }
 
@@ -126,6 +148,37 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                             <Input type="number" placeholder="Enter amount" className="pl-10" {...field} />
                         </div>
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="screenshot"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Payment Screenshot</FormLabel>
+                    {screenshotPreview ? (
+                      <div className="relative">
+                        <Image src={screenshotPreview} alt="Screenshot preview" width={200} height={200} className="rounded-md border object-contain w-full h-auto max-h-48" />
+                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={clearScreenshot}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <FormControl>
+                        <div className="flex items-center justify-center w-full">
+                          <label htmlFor="screenshot-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted">
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                  <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
+                                  <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
+                                  <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP (MAX. 5MB)</p>
+                              </div>
+                              <Input id="screenshot-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} />
+                          </label>
+                        </div>
+                      </FormControl>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
