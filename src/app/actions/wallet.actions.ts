@@ -43,22 +43,22 @@ export async function createDepositRequest({ userId, userName, amount, screensho
 
     try {
         let screenshotUrl = "";
-        if (screenshotDataUri) {
-            const matches = screenshotDataUri.match(/^data:(.+);base64,(.*)$/);
-            if (!matches || matches.length !== 3) {
-                return { error: 'Invalid screenshot format. Please re-upload the image.' };
-            }
-            const mimeType = matches[1];
-            const base64Data = matches[2];
         
-            if (!ACCEPTED_SCREENSHOT_TYPES.includes(mimeType)) {
-                return { error: 'Invalid file type. Only PNG, JPG, or WEBP are allowed.' };
-            }
-            
-            const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
-            await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
-            screenshotUrl = await getDownloadURL(storageRef);
+        const matches = screenshotDataUri.match(/^data:(.+);base64,(.*)$/);
+        if (!matches || matches.length !== 3) {
+            return { error: 'Invalid screenshot format. Please re-upload the image.' };
         }
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+    
+        if (!ACCEPTED_SCREENSHOT_TYPES.includes(mimeType)) {
+            return { error: 'Invalid file type. Only PNG, JPG, or WEBP are allowed.' };
+        }
+        
+        const storageRef = ref(storage, `deposits/${userId}/${uuidv4()}`);
+        await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
+        screenshotUrl = await getDownloadURL(storageRef);
+        
 
         await addDoc(collection(db, "deposits"), {
             userId,
@@ -76,7 +76,10 @@ export async function createDepositRequest({ userId, userName, amount, screensho
 
     } catch (error: any) {
         console.error("Error creating deposit request: ", error);
-        return { error: 'Failed to submit deposit request.' };
+        if (error.code && error.code.startsWith('storage/')) {
+            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
+        }
+        return { error: 'An unknown error occurred while submitting your deposit.' };
     }
 }
 

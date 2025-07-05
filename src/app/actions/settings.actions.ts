@@ -77,7 +77,10 @@ export async function updateBankDetails(data: BankDetailsFormValues) {
 
     } catch (error: any) {
         console.error("Error updating bank details: ", error);
-        return { error: error.message || 'Failed to update bank details.' };
+        if (error.code && error.code.startsWith('storage/')) {
+            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
+        }
+        return { error: 'An unknown error occurred while updating bank details.' };
     }
 }
 

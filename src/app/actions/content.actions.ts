@@ -115,6 +115,9 @@ export async function updateContent(data: ContentManagementFormValues) {
 
     } catch (error: any) {
         console.error("Error updating content: ", error);
-        return { error: error.message || 'Failed to update content.' };
+        if (error.code && error.code.startsWith('storage/')) {
+            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
+        }
+        return { error: error.message || 'An unknown error occurred while updating content.' };
     }
 }

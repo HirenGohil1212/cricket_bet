@@ -140,9 +140,12 @@ export async function createMatch(values: MatchFormValues) {
         revalidatePath('/admin/q-and-a');
         revalidatePath('/');
         return { success: 'Match created successfully and questions applied!' };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating match: ", error);
-        return { error: 'Failed to create match.' };
+        if (error.code && error.code.startsWith('storage/')) {
+            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
+        }
+        return { error: 'An unknown error occurred while creating the match.' };
     }
 }
 
@@ -358,8 +361,11 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
         revalidatePath('/');
         return { success: 'Match updated successfully!' };
         
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating match: ", error);
-        return { error: 'Failed to update match.' };
+        if (error.code && error.code.startsWith('storage/')) {
+            return { error: `Storage Error: ${error.code}. Please check your Firebase Storage rules and configuration.` };
+        }
+        return { error: 'An unknown error occurred while updating the match.' };
     }
 }
