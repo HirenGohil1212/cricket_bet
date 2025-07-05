@@ -44,7 +44,7 @@ export async function updateContent(data: ContentManagementFormValues) {
 
         // If a new banner is uploaded, upload it to storage and delete the old one
         if (bannerImageDataUri) {
-            if (currentContent?.bannerImageUrl) {
+            if (currentContent?.bannerImageUrl && currentContent.bannerImageUrl.includes('firebasestorage.googleapis.com')) {
                 try {
                     const oldFileRef = ref(storage, currentContent.bannerImageUrl);
                     await deleteObject(oldFileRef);
@@ -62,7 +62,7 @@ export async function updateContent(data: ContentManagementFormValues) {
 
         // If a new video is uploaded, upload it to storage and delete the old one
         if (smallVideoDataUri) {
-             if (currentContent?.smallVideoUrl) {
+             if (currentContent?.smallVideoUrl && currentContent.smallVideoUrl.includes('firebasestorage.googleapis.com')) {
                 try {
                     const oldFileRef = ref(storage, currentContent.smallVideoUrl);
                     await deleteObject(oldFileRef);

@@ -306,7 +306,7 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         // Handle Team A Logo Update
         if (teamALogoDataUri) {
-            if (teamALogoUrl && !teamALogoUrl.includes('flagpedia.net')) {
+            if (teamALogoUrl && teamALogoUrl.includes('firebasestorage.googleapis.com')) {
                  try {
                     const oldFileRef = ref(storage, teamALogoUrl);
                     await deleteObject(oldFileRef);
@@ -324,7 +324,7 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
 
         // Handle Team B Logo Update
         if (teamBLogoDataUri) {
-             if (teamBLogoUrl && !teamBLogoUrl.includes('flagpedia.net')) {
+             if (teamBLogoUrl && teamBLogoUrl.includes('firebasestorage.googleapis.com')) {
                  try {
                     const oldFileRef = ref(storage, teamBLogoUrl);
                     await deleteObject(oldFileRef);
@@ -356,7 +356,7 @@ export async function updateMatch(matchId: string, values: MatchFormValues) {
                     updatedPlayers.push({ name: player.name, imageUrl: newImageUrl });
                     
                     const originalPlayer = existingPlayers.find(p => p.name === player.name);
-                    if (originalPlayer?.imageUrl) {
+                    if (originalPlayer?.imageUrl && originalPlayer.imageUrl.includes('firebasestorage.googleapis.com')) {
                          try {
                             const oldFileRef = ref(storage, originalPlayer.imageUrl);
                             await deleteObject(oldFileRef);
