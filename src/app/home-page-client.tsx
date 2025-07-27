@@ -13,6 +13,7 @@ import type { ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 import { BannerAd } from "@/components/banner-ad";
 import { Loader2 } from "lucide-react";
+import { InstallPwaDialog } from "@/components/install-pwa-dialog";
 
 interface HomePageClientProps {
   children: React.ReactNode;
@@ -45,10 +46,44 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
 
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
   // This effect will run when a new page has finished loading, turning off the loader.
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
+
+  // Effect to handle PWA install prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the PWA installation');
+      } else {
+        console.log('User dismissed the PWA installation');
+      }
+      // We can only use the prompt once, so clear it.
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !initialAuthCheckComplete) {
@@ -129,6 +164,11 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
                 onOpenChange={setIsPromoOpen}
             />
         )}
+        <InstallPwaDialog
+            isOpen={isInstallable}
+            onOpenChange={setIsInstallable}
+            onInstall={handleInstallClick}
+        />
       </SidebarInset>
     </SidebarProvider>
   );
