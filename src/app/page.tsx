@@ -1,8 +1,9 @@
+
 import { MatchTabs } from "@/components/matches/match-tabs";
 import { HomePageClient } from "@/app/home-page-client";
 import { getContent } from "@/app/actions/content.actions";
 import type { ContentSettings } from "@/lib/types";
-import { sports } from "@/lib/types";
+import { sports } from "@/lib/data";
 import { TabsContent } from "@/components/ui/tabs";
 import { Suspense } from "react";
 import { SportMatchListLoader } from "@/components/matches/sport-match-list-loader";

@@ -1,3 +1,4 @@
+
 import type {Metadata, Viewport} from 'next';
 import { PT_Sans, Poppins } from 'next/font/google';
 import './globals.css';
@@ -20,13 +21,13 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'Guess and Win',
+  title: 'ScoreCast',
   description: 'Predict scores and win!',
   manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2E7D32',
+  themeColor: '#32CD32',
 };
 
 export default function RootLayout({
