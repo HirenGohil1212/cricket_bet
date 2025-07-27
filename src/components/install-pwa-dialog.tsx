@@ -36,7 +36,7 @@ export function InstallPwaDialog({ isOpen, onOpenChange, onInstall }: InstallPwa
           </div>
           <AlertDialogTitle className="text-center">Install Guess & Win App</AlertDialogTitle>
           <AlertDialogDescription className="text-center">
-            For a better experience, install our app on your device. It's fast, uses less data, and you'll get notifications for new matches!
+            For a better experience, install our app on your device. It's fast, uses less data, and gives you easy one-tap access from your home screen.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center">
