@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import { PT_Sans, Poppins } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -22,6 +22,11 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: 'Guess and Win',
   description: 'Predict scores and win!',
+  manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#2E7D32',
 };
 
 export default function RootLayout({
