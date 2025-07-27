@@ -9,6 +9,8 @@ import { Suspense } from "react";
 import { SportMatchListLoader } from "@/components/matches/sport-match-list-loader";
 import { SportMatchList } from "@/components/matches/sport-match-list";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const content: ContentSettings | null = await getContent();
   
