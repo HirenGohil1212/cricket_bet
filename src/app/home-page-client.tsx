@@ -34,7 +34,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Logic to protect the route, moved from useRequireAuth hook
+  // Logic to protect the route
   useEffect(() => {
     if (!loading && !user) {
         router.push('/login');
@@ -49,18 +49,27 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+
 
   // This effect will run when a new page has finished loading, turning off the loader.
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
 
-  // Effect to handle PWA install prompt
+  // Effect to handle PWA install prompt and check for iOS
   useEffect(() => {
+    // Check for iOS
+    const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIos(isIosDevice);
+
     const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
+      // Don't show the prompt on iOS as it's handled manually
+      if (!isIosDevice) {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setIsInstallable(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -166,6 +175,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
         )}
         <InstallPwaDialog
             isOpen={isInstallable}
+            isIos={isIos}
             onOpenChange={setIsInstallable}
             onInstall={handleInstallClick}
         />
