@@ -45,24 +45,27 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    // This effect runs only once on mount to set up PWA listeners.
+    if (typeof window !== "undefined") {
       const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
       const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
-      
+
       setIsIos(isIosDevice);
 
-      const handleBeforeInstallPrompt = (e: Event) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        if (!isIosDevice) {
-           setShowInstallDialog(true);
-        }
-      };
-
-      // Show iOS instructions if it's an iOS device and not already installed
+      // For iOS, we show the instructions if it's on an iOS device and not already installed.
       if (isIosDevice && !isInStandaloneMode) {
         setShowInstallDialog(true);
       }
+
+      // For other platforms (Android/Desktop), we listen for the event.
+      const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        // Only show prompt if not on iOS
+        if (!isIosDevice) {
+          setShowInstallDialog(true);
+        }
+      };
 
       window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
@@ -73,6 +76,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   }, []);
 
   const handleInstallClick = async () => {
+    // This handles the install click for Android/Desktop
     if (!deferredPrompt) {
       return;
     }

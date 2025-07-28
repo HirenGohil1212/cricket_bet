@@ -24,18 +24,18 @@ interface InstallPwaDialogProps {
 
 const IosInstructions = () => (
   <div className="text-center text-sm space-y-4">
-    <p>To install this web app on your device, tap the button below and then choose <span className="font-bold">Add to Home Screen</span>.</p>
+    <p>To install this app on your iPhone or iPad, tap the button below and then choose <span className="font-bold">Add to Home Screen</span>.</p>
     <div className="flex justify-center items-center gap-2 text-muted-foreground p-2 rounded-lg bg-muted">
        <div className="border rounded-md p-2 bg-background">
-        <ArrowUpSquare className="h-8 w-8" />
+        <ArrowUpSquare className="h-10 w-10" />
        </div>
-       <span>&larr; Tap the 'Share' icon</span>
+       <span className="font-semibold text-lg">&larr; Tap the 'Share' icon</span>
     </div>
   </div>
 );
 
 const DefaultInstructions = () => (
-    <div className="text-center">
+    <div className="text-center text-sm">
       For the best experience, install our app on your device. It's fast, uses less data, and gives you one-tap access from your home screen.
     </div>
 );
