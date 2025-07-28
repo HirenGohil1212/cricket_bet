@@ -118,22 +118,6 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {isMobile ? <MobileHeader /> : <DesktopHeader />}
         
         <SidebarContent className="p-2">
-            {userProfile && (
-                <div className="p-2 mb-2">
-                    <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
-                       <Avatar>
-                         <AvatarImage src={user?.photoURL || ''} alt={userProfile.name || 'User'}/>
-                         <AvatarFallback>
-                           <UserIcon />
-                         </AvatarFallback>
-                       </Avatar>
-                       <div className="flex flex-col truncate">
-                         <span className="font-semibold text-sm truncate">{userProfile.name || 'Welcome'}</span>
-                         <span className="text-xs text-muted-foreground truncate">{userProfile.phoneNumber}</span>
-                       </div>
-                    </div>
-                </div>
-            )}
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => handleLinkClick('/')} asChild isActive={pathname === '/'}>
