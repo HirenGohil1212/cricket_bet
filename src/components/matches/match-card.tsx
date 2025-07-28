@@ -6,7 +6,6 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
-import { SportIcon } from '@/components/icons';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Flame, CheckCircle, Clock, Trophy, Star, Users } from 'lucide-react';
@@ -79,22 +78,20 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         currentUserWon && "border-accent ring-2 ring-accent",
         status === 'Finished' ? "bg-muted/40" : "bg-card"
       )}>
-        <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
-            backgroundImage: `
-              radial-gradient(ellipse at top, hsl(0 0% 15%), transparent),
-              radial-gradient(ellipse at bottom, hsl(0 0% 5%), transparent)
-            `,
+        <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 border-b-2 border-primary/50" style={{
             boxShadow: 'inset 0px -10px 20px -10px rgba(0,0,0,0.7)',
         }}>
-            <div className="relative flex justify-between items-center p-3 w-full">
-                <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
-                    <SportIcon sport={sport} className="w-4 h-4" />
-                    <span>{sport}</span>
+            <div className="absolute top-0 left-0 w-full h-full bg-no-repeat bg-center" style={{backgroundImage: 'radial-gradient(circle at 50% 0, hsla(0, 0%, 100%, 0.1), transparent 50%)'}}/>
+            <div className="relative flex justify-between items-start p-3 w-full">
+                <Badge variant="secondary" className="bg-accent text-accent-foreground font-semibold">
+                    {sport}
+                </Badge>
+                <div className="flex items-center gap-2">
+                  {isSpecialMatch && <Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge>}
                 </div>
-                {isSpecialMatch && <Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge>}
             </div>
 
-            <div className="flex items-center justify-around w-full px-4 pb-4 gap-2">
+            <div className="relative flex items-center justify-around w-full px-4 pb-4 gap-2">
                 <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamA.name}</p>
                 <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
                 <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
