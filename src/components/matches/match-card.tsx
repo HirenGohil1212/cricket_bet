@@ -81,17 +81,11 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
       )}>
         <CardHeader className="p-0 relative flex items-center justify-center overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
             backgroundImage: `
-              radial-gradient(ellipse at top, #00000030, transparent),
-              radial-gradient(ellipse at bottom, #00000090, transparent),
-              linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.2)),
-              url('https://placehold.co/600x400.png')
+              radial-gradient(ellipse at top, hsl(0 0% 15%), transparent),
+              radial-gradient(ellipse at bottom, hsl(0 0% 5%), transparent)
             `,
-            backgroundSize: 'cover, cover, cover, cover',
-            backgroundPosition: 'center, center, center, center',
             boxShadow: 'inset 0px -10px 20px -10px rgba(0,0,0,0.7)',
-        }}
-        data-ai-hint="stadium lights"
-        >
+        }}>
             <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
                 <SportIcon sport={sport} className="w-4 h-4" />
                 <span>{sport}</span>
