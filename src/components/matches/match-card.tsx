@@ -79,26 +79,26 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         currentUserWon && "border-accent ring-2 ring-accent",
         status === 'Finished' ? "bg-muted/40" : "bg-card"
       )}>
-        <CardHeader className="p-0 relative flex items-center justify-center overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
+        <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
             backgroundImage: `
               radial-gradient(ellipse at top, hsl(0 0% 15%), transparent),
               radial-gradient(ellipse at bottom, hsl(0 0% 5%), transparent)
             `,
             boxShadow: 'inset 0px -10px 20px -10px rgba(0,0,0,0.7)',
         }}>
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
-                <SportIcon sport={sport} className="w-4 h-4" />
-                <span>{sport}</span>
+            <div className="relative flex justify-between items-center p-3 w-full">
+                <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+                    <SportIcon sport={sport} className="w-4 h-4" />
+                    <span>{sport}</span>
+                </div>
+                {isSpecialMatch && <Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge>}
             </div>
 
-            <div className="flex items-center justify-around w-full px-4 py-6 gap-2 min-h-[7rem]">
+            <div className="flex items-center justify-around w-full px-4 pb-4 gap-2">
                 <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamA.name}</p>
                 <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
                 <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
             </div>
-            
-            {isSpecialMatch && <div className="absolute top-3 right-3"><Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge></div>}
-
         </CardHeader>
         
         <CardContent className="p-4 space-y-4 flex-grow">
