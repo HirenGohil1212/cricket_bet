@@ -41,51 +41,57 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
 
   // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [isIos, setIsIos] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+      
+      setIsIos(isIosDevice);
+
+      const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        if (!isIosDevice) {
+           setShowInstallDialog(true);
+        }
+      };
+
+      // Show iOS instructions if it's an iOS device and not already installed
+      if (isIosDevice && !isInStandaloneMode) {
+        setShowInstallDialog(true);
+      }
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
+    }
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the PWA installation');
+    } else {
+      console.log('User dismissed the PWA installation');
+    }
+    setDeferredPrompt(null);
+    setShowInstallDialog(false);
+  };
 
 
   // This effect will run when a new page has finished loading, turning off the loader.
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
-
-  // Effect to handle PWA install prompt and check for iOS
-  useEffect(() => {
-    // Check for iOS
-    const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIos(isIosDevice);
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      // Don't show the prompt on iOS as it's handled manually
-      // but we might want to show a custom prompt for it
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    // This function will only be called for non-iOS devices
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('User accepted the PWA installation');
-      } else {
-        console.log('User dismissed the PWA installation');
-      }
-      // We can only use the prompt once, so clear it.
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-    }
-  };
 
   useEffect(() => {
     // This logic handles route protection
@@ -173,9 +179,9 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
             />
         )}
         <InstallPwaDialog
-            isOpen={isInstallable}
+            isOpen={showInstallDialog}
             isIos={isIos}
-            onOpenChange={setIsInstallable}
+            onOpenChange={setShowInstallDialog}
             onInstall={handleInstallClick}
         />
       </SidebarInset>

@@ -24,23 +24,19 @@ interface InstallPwaDialogProps {
 
 const IosInstructions = () => (
   <div className="text-center text-sm space-y-4">
-    <p>To install the app on your iOS device, please follow these steps:</p>
-    <ol className="text-left list-decimal list-inside space-y-2">
-      <li>Tap the <span className="font-bold">Share</span> button in the Safari toolbar.</li>
-      <li>Scroll down and tap on <span className="font-bold">Add to Home Screen</span>.</li>
-      <li>Confirm by tapping <span className="font-bold">Add</span> in the top right.</li>
-    </ol>
-     <div className="flex justify-center items-center gap-2 text-muted-foreground">
-        <ArrowUpSquare className="h-8 w-8 border rounded-md p-1" />
-        <span>&larr; Tap this icon</span>
-     </div>
+    <p>To install this web app on your device, tap the button below and then choose <span className="font-bold">Add to Home Screen</span>.</p>
+    <div className="flex justify-center items-center gap-2 text-muted-foreground p-2 rounded-lg bg-muted">
+       <div className="border rounded-md p-2 bg-background">
+        <ArrowUpSquare className="h-8 w-8" />
+       </div>
+       <span>&larr; Tap the 'Share' icon</span>
+    </div>
   </div>
 );
 
-
 const DefaultInstructions = () => (
     <div className="text-center">
-      For a better experience, install our app on your device. It's fast, uses less data, and gives you easy one-tap access from your home screen.
+      For the best experience, install our app on your device. It's fast, uses less data, and gives you one-tap access from your home screen.
     </div>
 );
 
@@ -69,7 +65,7 @@ export function InstallPwaDialog({ isOpen, onOpenChange, onInstall, isIos }: Ins
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center">
-          <AlertDialogCancel>Not Now</AlertDialogCancel>
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>Not Now</AlertDialogCancel>
            {!isIos && (
               <AlertDialogAction onClick={handleInstall} asChild>
                 <Button>Install</Button>
