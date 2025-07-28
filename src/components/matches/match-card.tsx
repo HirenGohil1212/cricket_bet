@@ -79,10 +79,12 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         status === 'Finished' ? "bg-muted/40" : "bg-card"
       )}>
         <CardHeader className="p-0 relative h-24 flex items-center justify-center overflow-hidden bg-zinc-800" style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://placehold.co/600x400/000000/FFFFFF.png?text=%E2%9A%BD')`,
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://placehold.co/600x400.png')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-        }}>
+        }}
+        data-ai-hint="stadium lights"
+        >
             <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
                 <SportIcon sport={sport} className="w-4 h-4" />
                 <span>{sport}</span>
