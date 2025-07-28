@@ -39,71 +39,53 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
 
-  // PWA Install Prompt State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    // This effect runs only once on mount to set up PWA listeners.
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+      const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
 
       setIsIos(isIosDevice);
-
-      // For iOS, we show the instructions if it's on an iOS device and not already installed.
+      
       if (isIosDevice && !isInStandaloneMode) {
         setShowInstallDialog(true);
-      }
-
-      // For other platforms (Android/Desktop), we listen for the event.
-      const handleBeforeInstallPrompt = (e: Event) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        // Only show prompt if not on iOS and not already installed
-        if (!isIosDevice && !isInStandaloneMode) {
+      } else {
+        const handleBeforeInstallPrompt = (e: Event) => {
+          e.preventDefault();
+          setDeferredPrompt(e);
           setShowInstallDialog(true);
-        }
-      };
-
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-      return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      };
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => {
+          window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+      }
     }
   }, []);
 
   const handleInstallClick = async () => {
-    // This handles the install click for Android/Desktop
     if (!deferredPrompt) {
       return;
     }
     setShowInstallDialog(false);
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the PWA installation');
-    } else {
-      console.log('User dismissed the PWA installation');
-    }
+    await deferredPrompt.userChoice;
     setDeferredPrompt(null);
   };
 
 
-  // This effect will run when a new page has finished loading, turning off the loader.
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
 
   useEffect(() => {
-    // This logic handles route protection
     if (!loading && !user) {
         router.push('/login');
     }
     
-    // This logic handles showing the promotional video
     if (!loading && !initialAuthCheckComplete) {
       setInitialAuthCheckComplete(true);
       if (user && content?.youtubeUrl) {
