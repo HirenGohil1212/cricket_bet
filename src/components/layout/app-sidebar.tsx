@@ -93,7 +93,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const HeaderContent = () => (
     <div className="flex items-center gap-2">
       <Award className="w-8 h-8 text-primary" />
-      <h1 className="font-headline text-2xl font-bold">Guess and Win</h1>
+      <h1 className="font-headline text-2xl font-bold">ScoreCast</h1>
     </div>
   );
 
@@ -101,7 +101,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     <SheetHeader className="p-4 border-b">
         <SheetTitle className={cn("flex items-center gap-2 font-headline text-2xl font-bold")}>
             <Award className="w-8 h-8 text-primary" />
-            <span>Guess and Win</span>
+            <span>ScoreCast</span>
         </SheetTitle>
     </SheetHeader>
   )
@@ -114,7 +114,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar className="bg-gradient-to-b from-background to-muted/50">
         {isMobile ? <MobileHeader /> : <DesktopHeader />}
         
         <SidebarContent className="p-2">
@@ -136,7 +136,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             )}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => handleLinkClick('/')} asChild>
+              <SidebarMenuButton onClick={() => handleLinkClick('/')} asChild isActive={pathname === '/'}>
                 <Link href="/">
                     <Ticket />
                     Matches
@@ -144,7 +144,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => handleLinkClick('/wallet')} asChild>
+              <SidebarMenuButton onClick={() => handleLinkClick('/wallet')} asChild isActive={pathname === '/wallet'}>
                 <Link href="/wallet">
                     <Wallet />
                     My Wallet
@@ -158,7 +158,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => handleLinkClick('/profile')} asChild>
+              <SidebarMenuButton onClick={() => handleLinkClick('/profile')} asChild isActive={pathname === '/profile'}>
                 <Link href="/profile">
                     <UserIcon />
                     My Profile
@@ -174,7 +174,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                     <p className="text-xs font-semibold text-muted-foreground px-2 mb-1">Admin</p>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton onClick={() => handleLinkClick('/admin/dashboard')} asChild>
+                            <SidebarMenuButton onClick={() => handleLinkClick('/admin/dashboard')} asChild isActive={pathname.startsWith('/admin')}>
                                 <Link href="/admin/dashboard">
                                     <Shield />
                                     Admin Panel

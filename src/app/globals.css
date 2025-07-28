@@ -14,25 +14,25 @@ body {
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 120 61% 40%; /* Adjusted for better contrast */
-    --primary-foreground: 0 0% 98%;
+    --primary: 120 61% 50%; /* #32CD32 - Vibrant Green */
+    --primary-foreground: 240 5.9% 10%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 51 100% 50%; /* #FFD700 */
+    --accent: 51 100% 50%; /* #FFD700 - Bright Yellow */
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 120 61% 40%;
+    --ring: 120 61% 50%;
     --chart-1: 120 61% 40%;
     --chart-2: 51 100% 50%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Slightly larger radius for a softer look */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 120 61% 40%;
@@ -67,6 +67,7 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --radius: 0.75rem;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 120 61% 50%;

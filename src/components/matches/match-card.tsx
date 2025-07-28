@@ -23,23 +23,18 @@ interface MatchCardProps {
   onCountdownEnd: (matchId: string) => void;
 }
 
-
-const StatusIndicator = ({ status }: { status: Match['status'] }) => {
-  const statusConfig = {
-    Live: { icon: Flame, color: 'bg-red-500', text: 'Live' },
-    Upcoming: { icon: Clock, color: 'bg-yellow-500', text: 'Upcoming' },
-    Finished: { icon: CheckCircle, color: 'bg-green-500', text: 'Finished' },
-  };
-
-  const { icon: Icon, color, text } = statusConfig[status];
-
+const StatusIndicator = ({ status, isLive }: { status: Match['status'], isLive: boolean }) => {
   return (
-    <div className="flex items-center gap-2">
-      <span className={cn('h-2 w-2 rounded-full', color)} />
-      <span className="text-xs font-semibold text-muted-foreground">{text}</span>
+    <div className={cn(
+        "flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded-full",
+        isLive ? "bg-red-500/10 text-red-500" : "bg-foreground/10 text-foreground"
+    )}>
+      {isLive ? <Flame className="h-3 w-3 animate-pulse" /> : <Clock className="h-3 w-3" />}
+      <span>{status}</span>
     </div>
   );
 };
+
 
 const PlayerList = ({ team }: { team: Team }) => {
     if (!team.players || team.players.length === 0) {
@@ -78,112 +73,93 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
 
   return (
-    <>
-      <Card className={cn(
-        "overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col",
-        currentUserWon && "border-accent ring-2 ring-accent"
+    <Card className={cn(
+        "overflow-hidden transition-all duration-300 ease-in-out flex flex-col group hover:shadow-2xl hover:border-primary/50",
+        currentUserWon && "border-accent ring-2 ring-accent",
+        status === 'Finished' ? "bg-muted/40" : "bg-card"
       )}>
-        <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-              <SportIcon sport={sport} className="w-5 h-5 text-primary" />
-              <p className="text-sm font-semibold">{sport}</p>
-          </div>
-          <StatusIndicator status={status} />
+        <CardHeader className="p-0 relative h-24 flex items-center justify-center overflow-hidden bg-zinc-800" style={{
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://placehold.co/600x400/000000/FFFFFF.png?text=%E2%9A%BD')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+        }}>
+            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+                <SportIcon sport={sport} className="w-4 h-4" />
+                <span>{sport}</span>
+            </div>
+
+            <div className="flex justify-around items-center w-full px-4">
+                <p className="font-headline font-bold text-lg text-white text-center truncate">{teamA.name}</p>
+                <div className="mx-4 text-3xl font-bold text-white/50">vs</div>
+                <p className="font-headline font-bold text-lg text-white text-center truncate">{teamB.name}</p>
+            </div>
+            
+            {isSpecialMatch && <div className="absolute top-3 right-3"><Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse">SPECIAL</Badge></div>}
+
         </CardHeader>
         
         <CardContent className="p-4 space-y-4 flex-grow">
-          <div className="flex justify-between items-center text-center">
+           <div className="flex justify-between items-center text-center">
               {/* Team A Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center">
-                    <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="object-cover" data-ai-hint="logo" />
+                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-2 border-card shadow-lg bg-background">
+                    <Image src={teamA.logoUrl} alt={teamA.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
                   </div>
-                  <div className="flex items-center gap-1.5">
-                      {status === 'Finished' && winner === teamA.name && <Trophy className="h-4 w-4 text-primary" />}
-                      <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamA.name && "font-bold text-primary")}>{teamA.name}</p>
-                  </div>
+                  {status === 'Finished' && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                        {winner === teamA.name && <Trophy className="h-4 w-4 text-amber-400" />}
+                        <p className={cn("font-bold text-sm", winner === teamA.name ? "text-primary" : "text-muted-foreground")}>{winner === teamA.name ? 'Winner' : 'Lost'}</p>
+                    </div>
+                  )}
               </div>
               
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center px-2">
                 {status === 'Live' && <Badge variant="destructive" className="animate-pulse mb-1">LIVE</Badge>}
-                <p className="text-xl sm:text-2xl font-bold text-muted-foreground font-headline">
-                  {score ? score : 'vs'}
+                <p className="text-3xl font-bold text-foreground font-headline">
+                  {score ? score : <span className="text-muted-foreground">-</span>}
                 </p>
+                <p className="text-xs text-muted-foreground">{status === 'Finished' ? 'Final Score' : 'Score'}</p>
               </div>
 
               {/* Team B Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center">
-                    <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="object-cover" data-ai-hint="logo" />
+                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-2 border-card shadow-lg bg-background">
+                    <Image src={teamB.logoUrl} alt={teamB.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
                   </div>
-                  <div className="flex items-center gap-1.5">
-                      {status === 'Finished' && winner === teamB.name && <Trophy className="h-4 w-4 text-primary" />}
-                      <p className={cn("font-semibold text-sm leading-tight", status === 'Finished' && winner === teamB.name && "font-bold text-primary")}>{teamB.name}</p>
-                  </div>
+                   {status === 'Finished' && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                        {winner === teamB.name && <Trophy className="h-4 w-4 text-amber-400" />}
+                        <p className={cn("font-bold text-sm", winner === teamB.name ? "text-primary" : "text-muted-foreground")}>{winner === teamB.name ? 'Winner' : 'Lost'}</p>
+                    </div>
+                  )}
               </div>
           </div>
-
-          {isSpecialMatch && (teamA.players?.length || teamB.players?.length) ? (
-              <Accordion type="single" collapsible className="w-full !mt-6">
-                  <AccordionItem value="players" className="border rounded-md">
-                      <AccordionTrigger className="text-xs font-medium hover:no-underline justify-center py-2 px-3">
-                          <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              <span>View Players</span>
-                          </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="p-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <PlayerList team={teamA} />
-                              <PlayerList team={teamB} />
-                          </div>
-                      </AccordionContent>
-                  </AccordionItem>
-              </Accordion>
-          ) : null}
         </CardContent>
 
         {status === 'Upcoming' && (
-          <CardFooter className="p-4 pt-0 flex-col items-stretch gap-2">
+          <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
             <div className="text-center bg-accent/10 text-accent-foreground p-2 rounded-md w-full">
-                <p className="text-xs">Betting closes in:</p>
+                <p className="text-xs font-semibold">Betting closes in:</p>
                 <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
             </div>
             <Button
-              className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90"
+              className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90 transform-gpu group-hover:scale-105 transition-transform duration-300"
               onClick={() => onBetNow(match)}
+              size="lg"
             >
-              Bet Now
+              Place Your Bet
             </Button>
           </CardFooter>
         )}
 
         {status === 'Live' && (
-          <CardFooter className="p-4 pt-0 flex-col items-stretch gap-2">
+          <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
             <Button
               className="w-full font-bold"
               onClick={() => onViewMyBets(match)}
             >
               View My Bets
             </Button>
-            {isSpecialMatch && (
-              <Accordion type="single" collapsible className="w-full !mt-2">
-                <AccordionItem value="players" className="border rounded-md">
-                  <AccordionTrigger className="text-xs font-medium hover:no-underline justify-center py-2 px-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>View Teams</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <PlayerList team={teamA} />
-                      <PlayerList team={teamB} />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
           </CardFooter>
         )}
 
@@ -193,8 +169,9 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
               <AccordionItem value="winners" className="border-b-0">
                 <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
                   <div className="flex items-center gap-2 mx-auto">
+                    <Trophy className="h-4 w-4 text-amber-500" />
                     <span>
-                      {winners && winners.length > 0 ? `${winners.length} Winner(s) Found` : "No Winners"}
+                      {winners && winners.length > 0 ? `${winners.length} Winner(s)` : "No Winners"}
                     </span>
                   </div>
                 </AccordionTrigger>
@@ -205,7 +182,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                         {winners.map((win, index) => (
                           <div key={index} className={cn(
                             "flex justify-between items-center text-xs p-2 rounded-md",
-                            win.userId === user?.uid ? "bg-accent/20" : "bg-muted"
+                            win.userId === user?.uid ? "bg-accent/20" : "bg-background"
                           )}>
                             <span className="font-medium truncate">{win.name}</span>
                             <div className="flex items-center gap-2">
@@ -227,6 +204,5 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
           </CardFooter>
         )}
       </Card>
-    </>
   );
 }
