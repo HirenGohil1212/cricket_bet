@@ -61,8 +61,8 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
       const handleBeforeInstallPrompt = (e: Event) => {
         e.preventDefault();
         setDeferredPrompt(e);
-        // Only show prompt if not on iOS
-        if (!isIosDevice) {
+        // Only show prompt if not on iOS and not already installed
+        if (!isIosDevice && !isInStandaloneMode) {
           setShowInstallDialog(true);
         }
       };
@@ -80,6 +80,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
     if (!deferredPrompt) {
       return;
     }
+    setShowInstallDialog(false);
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
@@ -88,7 +89,6 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
       console.log('User dismissed the PWA installation');
     }
     setDeferredPrompt(null);
-    setShowInstallDialog(false);
   };
 
 
