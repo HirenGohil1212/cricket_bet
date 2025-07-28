@@ -98,9 +98,9 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
             </div>
 
             <div className="flex items-center justify-around w-full px-4 py-6 gap-2 min-h-[7rem]">
-                <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)] break-words">{teamA.name}</p>
+                <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]" style={{ overflowWrap: 'anywhere' }}>{teamA.name}</p>
                 <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
-                <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)] break-words">{teamB.name}</p>
+                <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
             </div>
             
             {isSpecialMatch && <div className="absolute top-3 right-3"><Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge></div>}
