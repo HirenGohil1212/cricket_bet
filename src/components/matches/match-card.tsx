@@ -79,7 +79,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         currentUserWon && "border-accent ring-2 ring-accent",
         status === 'Finished' ? "bg-muted/40" : "bg-card"
       )}>
-        <CardHeader className="p-0 relative h-28 flex items-end justify-center overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
+        <CardHeader className="p-0 relative flex items-center justify-center overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
             backgroundImage: `
               radial-gradient(ellipse at top, #00000030, transparent),
               radial-gradient(ellipse at bottom, #00000090, transparent),
@@ -97,10 +97,10 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                 <span>{sport}</span>
             </div>
 
-            <div className="grid grid-cols-[1fr_auto_1fr] justify-around items-center w-full px-4 mb-2 gap-2">
-                <p className="font-headline font-black text-2xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">{teamA.name}</p>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full px-4 py-6 gap-2 min-h-[7rem]">
+                <p className="font-headline font-black text-xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">{teamA.name}</p>
                 <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
-                <p className="font-headline font-black text-2xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">{teamB.name}</p>
+                <p className="font-headline font-black text-xl text-white text-center tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">{teamB.name}</p>
             </div>
             
             {isSpecialMatch && <div className="absolute top-3 right-3"><Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge></div>}
