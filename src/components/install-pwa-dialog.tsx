@@ -38,6 +38,13 @@ const IosInstructions = () => (
 );
 
 
+const DefaultInstructions = () => (
+    <div className="text-center">
+      For a better experience, install our app on your device. It's fast, uses less data, and gives you easy one-tap access from your home screen.
+    </div>
+);
+
+
 export function InstallPwaDialog({ isOpen, onOpenChange, onInstall, isIos }: InstallPwaDialogProps) {
 
   const handleInstall = () => {
@@ -57,9 +64,7 @@ export function InstallPwaDialog({ isOpen, onOpenChange, onInstall, isIos }: Ins
              {isIos ? (
               <IosInstructions />
             ) : (
-              <div className="text-center">
-                For a better experience, install our app on your device. It's fast, uses less data, and gives you easy one-tap access from your home screen.
-              </div>
+              <DefaultInstructions />
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>

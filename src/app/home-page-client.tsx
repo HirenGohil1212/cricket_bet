@@ -33,13 +33,6 @@ function PageLoader() {
 export function HomePageClient({ children, content }: HomePageClientProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
-
-  // Logic to protect the route
-  useEffect(() => {
-    if (!loading && !user) {
-        router.push('/login');
-    }
-  }, [user, loading, router]);
   
   const [isPromoOpen, setIsPromoOpen] = useState(false);
   const [initialAuthCheckComplete, setInitialAuthCheckComplete] = useState(false);
@@ -65,11 +58,10 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
 
     const handleBeforeInstallPrompt = (e: Event) => {
       // Don't show the prompt on iOS as it's handled manually
-      if (!isIosDevice) {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        setIsInstallable(true);
-      }
+      // but we might want to show a custom prompt for it
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -80,6 +72,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   }, []);
 
   const handleInstallClick = async () => {
+    // This function will only be called for non-iOS devices
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -95,6 +88,12 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
   };
 
   useEffect(() => {
+    // This logic handles route protection
+    if (!loading && !user) {
+        router.push('/login');
+    }
+    
+    // This logic handles showing the promotional video
     if (!loading && !initialAuthCheckComplete) {
       setInitialAuthCheckComplete(true);
       if (user && content?.youtubeUrl) {
@@ -109,7 +108,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
         }
       }
     }
-  }, [loading, initialAuthCheckComplete, user, content]);
+  }, [loading, initialAuthCheckComplete, user, content, router]);
 
 
   if (loading || !user) {
