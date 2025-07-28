@@ -23,7 +23,8 @@ interface MatchCardProps {
   onCountdownEnd: (matchId: string) => void;
 }
 
-const StatusIndicator = ({ status, isLive }: { status: Match['status'], isLive: boolean }) => {
+const StatusIndicator = ({ status }: { status: Match['status'] }) => {
+  const isLive = status === 'Live';
   return (
     <div className={cn(
         "flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded-full",
@@ -75,13 +76,20 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
   return (
     <Card className={cn(
         "overflow-hidden transition-all duration-300 ease-in-out flex flex-col group hover:shadow-2xl hover:border-primary/50",
+        "bg-gradient-to-b from-card to-muted/30",
         currentUserWon && "border-accent ring-2 ring-accent",
-        status === 'Finished' ? "bg-muted/40" : "bg-card"
+        status === 'Finished' ? "opacity-80 hover:opacity-100" : ""
       )}>
-        <CardHeader className="p-0 relative h-24 flex items-center justify-center overflow-hidden bg-zinc-800" style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://placehold.co/600x400.png')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+        <CardHeader className="p-0 relative h-28 flex items-end justify-center overflow-hidden bg-zinc-900 border-b-2 border-primary/50" style={{
+            backgroundImage: `
+              radial-gradient(ellipse at top, #00000030, transparent),
+              radial-gradient(ellipse at bottom, #00000090, transparent),
+              linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.2)),
+              url('https://placehold.co/600x400/000000/000000.png')
+            `,
+            backgroundSize: 'cover, cover, cover, cover',
+            backgroundPosition: 'center, center, center, center',
+            boxShadow: 'inset 0px -10px 20px -10px rgba(0,0,0,0.7)',
         }}
         data-ai-hint="stadium lights"
         >
@@ -90,13 +98,13 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                 <span>{sport}</span>
             </div>
 
-            <div className="flex justify-around items-center w-full px-4">
-                <p className="font-headline font-bold text-lg text-white text-center truncate">{teamA.name}</p>
-                <div className="mx-4 text-3xl font-bold text-white/50">vs</div>
-                <p className="font-headline font-bold text-lg text-white text-center truncate">{teamB.name}</p>
+            <div className="flex justify-around items-center w-full px-4 mb-2">
+                <p className="font-headline font-black text-2xl text-white text-center truncate tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">{teamA.name}</p>
+                <div className="mx-2 text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
+                <p className="font-headline font-black text-2xl text-white text-center truncate tracking-wide [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">{teamB.name}</p>
             </div>
             
-            {isSpecialMatch && <div className="absolute top-3 right-3"><Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse">SPECIAL</Badge></div>}
+            {isSpecialMatch && <div className="absolute top-3 right-3"><Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge></div>}
 
         </CardHeader>
         
@@ -104,7 +112,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
            <div className="flex justify-between items-center text-center">
               {/* Team A Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-2 border-card shadow-lg bg-background">
+                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-4 border-card shadow-lg bg-background group-hover:scale-110 transition-transform duration-300">
                     <Image src={teamA.logoUrl} alt={teamA.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
                   </div>
                   {status === 'Finished' && (
@@ -125,7 +133,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
 
               {/* Team B Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-2 border-card shadow-lg bg-background">
+                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-4 border-card shadow-lg bg-background group-hover:scale-110 transition-transform duration-300">
                     <Image src={teamB.logoUrl} alt={teamB.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
                   </div>
                    {status === 'Finished' && (
@@ -145,7 +153,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                 <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
             </div>
             <Button
-              className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90 transform-gpu group-hover:scale-105 transition-transform duration-300"
+              className="w-full font-bold bg-gradient-to-r from-accent to-yellow-400 text-accent-foreground hover:from-accent/90 hover:to-yellow-400/90 transform-gpu group-hover:scale-105 transition-transform duration-300 shadow-lg"
               onClick={() => onBetNow(match)}
               size="lg"
             >
