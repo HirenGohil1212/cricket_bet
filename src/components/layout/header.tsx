@@ -3,7 +3,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Wallet, Bell, User as UserIcon, LogOut } from "lucide-react";
+import { Wallet, User as UserIcon, LogOut } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -72,10 +72,6 @@ export function Header() {
               <span><span className="hidden sm:inline">INR </span>{userProfile.walletBalance.toFixed(2)}</span>
             </div>
         )}
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Notifications</span>
-        </Button>
         {user && userProfile && (
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
