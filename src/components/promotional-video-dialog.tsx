@@ -44,7 +44,7 @@ export function PromotionalVideoDialog({ youtubeUrl, isOpen, onOpenChange }: Pro
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl p-0 gap-0 overflow-hidden border-0 bg-transparent shadow-none">
+      <DialogContent className="sm:max-w-3xl p-2">
         <DialogHeader className="sr-only">
             <DialogTitle>Promotional Video</DialogTitle>
         </DialogHeader>
@@ -57,6 +57,7 @@ export function PromotionalVideoDialog({ youtubeUrl, isOpen, onOpenChange }: Pro
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
+            className="rounded-md"
           ></iframe>
         </div>
       </DialogContent>
