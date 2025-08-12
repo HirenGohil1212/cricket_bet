@@ -1,52 +1,24 @@
 
 'use client';
 
-import { getMatches } from "@/app/actions/match.actions";
-import { getBettingSettings } from "@/app/actions/settings.actions";
-import type { Sport } from "@/lib/types";
+import type { Match, Sport, BetOption } from "@/lib/types";
 import { MatchList } from "./match-list";
-import { Suspense, useState, useEffect } from "react";
-import { FinishedMatchesList } from "./finished-matches-list";
-import { FinishedMatchesLoader } from "./finished-matches-loader";
+import { useState } from "react";
+import { PaginatedFinishedMatches } from "./paginated-finished-matches";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 interface SportMatchListProps {
   sport: Sport;
+  upcomingAndLiveMatches: Match[];
+  finishedMatches: Match[];
+  betOptions: BetOption[];
 }
 
-export function SportMatchList({ sport }: SportMatchListProps) {
+export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches, betOptions }: SportMatchListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  // We manage the matches in state to provide a more responsive filtering experience
-  const [allMatches, setAllMatches] = useState<any[]>([]);
-  const [settings, setSettings] = useState<any>({ betOptions: [] });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setIsLoading(true);
-    Promise.all([
-        getMatches(),
-        getBettingSettings(),
-    ]).then(([matches, bettingSettings]) => {
-        setAllMatches(matches);
-        setSettings(bettingSettings);
-        setIsLoading(false);
-    });
-  }, [sport]);
-
-  const upcomingAndLiveMatches = allMatches.filter(
-    (m) => m.sport === sport && (m.status === "Upcoming" || m.status === "Live")
-  );
-
-  const finishedMatches = allMatches.filter(
-    (m) => m.sport === sport && m.status === "Finished"
-  );
   
   const noMatchesExistForSport = upcomingAndLiveMatches.length === 0 && finishedMatches.length === 0;
-
-  if (isLoading) {
-    return <FinishedMatchesLoader />;
-  }
 
   return (
     <div className="space-y-8">
@@ -65,13 +37,13 @@ export function SportMatchList({ sport }: SportMatchListProps) {
       <MatchList
         matches={upcomingAndLiveMatches}
         sport={sport}
-        betOptions={settings.betOptions}
+        betOptions={betOptions}
         searchTerm={searchTerm}
       />
       
-      <FinishedMatchesList
+      <PaginatedFinishedMatches
         matches={finishedMatches}
-        betOptions={settings.betOptions}
+        betOptions={betOptions}
         searchTerm={searchTerm}
       />
       
