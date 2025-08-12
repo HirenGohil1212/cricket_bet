@@ -12,8 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 import { BannerAd } from "@/components/banner-ad";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { InstallPwaDialog } from "@/components/install-pwa-dialog";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface HomePageClientProps {
   children: React.ReactNode;
@@ -153,6 +155,18 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
       <SidebarInset className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col">
+          <div className="mb-4 flex flex-wrap gap-2">
+              <Button asChild className="flex-1 sm:flex-none bg-green-500 hover:bg-green-600 text-white">
+                <Link href="/wallet">
+                  <ArrowUpCircle className="mr-2 h-4 w-4" /> Deposit
+                </Link>
+              </Button>
+              <Button asChild variant="destructive" className="flex-1 sm:flex-none">
+                <Link href="/wallet">
+                  <ArrowDownCircle className="mr-2 h-4 w-4" /> Withdraw
+                </Link>
+              </Button>
+          </div>
           <BannerAd imageUrl={content?.bannerImageUrl} />
           {isNavigating ? <PageLoader /> : children}
         </main>

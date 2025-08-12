@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Match, Sport, BetOption } from '@/lib/types';
 import { MatchCard } from './match-card';
 import { BettingHistoryDialog } from '../dashboard/betting-history-dialog';
@@ -10,11 +11,12 @@ import { GuessDialog } from './guess-dialog';
 interface PaginatedFinishedMatchesProps {
   matches: Match[];
   betOptions: BetOption[];
+  searchTerm: string;
 }
 
 const FINISHED_MATCHES_PER_PAGE = 8;
 
-export function PaginatedFinishedMatches({ matches, betOptions }: PaginatedFinishedMatchesProps) {
+export function PaginatedFinishedMatches({ matches, betOptions, searchTerm }: PaginatedFinishedMatchesProps) {
   // State for dialogs, needed because MatchCard actions are here
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
@@ -47,9 +49,25 @@ export function PaginatedFinishedMatches({ matches, betOptions }: PaginatedFinis
   // The countdown end handler doesn't apply to finished matches, so we pass a no-op function.
   const handleCountdownEnd = () => {};
 
-  const paginatedFinishedMatches = matches.slice(0, visibleFinishedCount);
+  const filteredMatches = useMemo(() => {
+    if (!searchTerm) {
+      return matches;
+    }
+    return matches.filter(match =>
+      match.teamA.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      match.teamB.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [matches, searchTerm]);
 
+  const paginatedFinishedMatches = filteredMatches.slice(0, visibleFinishedCount);
+  
   if (matches.length === 0) {
+    return null;
+  }
+  
+  if (filteredMatches.length === 0 && searchTerm) {
+    // If there's a search term but no results in finished matches, don't show anything.
+    // The main MatchList component will show the "No results" message if it also has no results.
     return null;
   }
 
@@ -68,7 +86,7 @@ export function PaginatedFinishedMatches({ matches, betOptions }: PaginatedFinis
             />
           ))}
         </div>
-        {matches.length > paginatedFinishedMatches.length && (
+        {filteredMatches.length > paginatedFinishedMatches.length && (
           <div className="mt-6 flex justify-center">
             <Button
               variant="outline"

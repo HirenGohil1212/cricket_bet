@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Match, Sport, BetOption } from '@/lib/types';
 import { MatchCard } from './match-card';
 import { GuessDialog } from './guess-dialog';
@@ -11,9 +11,10 @@ interface MatchListProps {
   matches: Match[];
   sport: Sport;
   betOptions: BetOption[];
+  searchTerm: string;
 }
 
-export function MatchList({ matches, sport, betOptions }: MatchListProps) {
+export function MatchList({ matches, sport, betOptions, searchTerm }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
   const [localMatches, setLocalMatches] = useState(matches);
@@ -56,14 +57,31 @@ export function MatchList({ matches, sport, betOptions }: MatchListProps) {
     }
   }
 
-  const upcomingMatches = localMatches
+  const filteredMatches = useMemo(() => {
+    if (!searchTerm) {
+      return localMatches;
+    }
+    return localMatches.filter(match =>
+      match.teamA.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      match.teamB.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [localMatches, searchTerm]);
+
+
+  const upcomingMatches = filteredMatches
     .filter((m) => m.status === 'Upcoming')
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
-  const liveMatches = localMatches.filter((m) => m.status === 'Live');
+  const liveMatches = filteredMatches.filter((m) => m.status === 'Live');
+  
+  // This is used to show the "no results for search" message
+  const noFilteredMatchesExist = filteredMatches.length === 0 && searchTerm;
+  
+  // This is used to hide the sections if there are no matches at all (pre-search)
+  const noMatchesInitially = localMatches.length === 0;
 
-  if (localMatches.length === 0) {
-    return null; // The parent component will now handle the "No matches" message
+  if (noMatchesInitially) {
+    return null;
   }
 
   return (
@@ -80,7 +98,7 @@ export function MatchList({ matches, sport, betOptions }: MatchListProps) {
       )}
 
       {liveMatches.length > 0 && (
-        <section>
+        <section className={upcomingMatches.length > 0 ? "mt-8" : ""}>
           <h2 className="font-headline text-2xl font-bold mb-4">Live Matches</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {liveMatches.map((match) => (
@@ -88,6 +106,13 @@ export function MatchList({ matches, sport, betOptions }: MatchListProps) {
             ))}
           </div>
         </section>
+      )}
+
+      {noFilteredMatchesExist && (
+         <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
+            <p className="text-lg font-semibold">No matches found for "{searchTerm}"</p>
+            <p className="text-sm">Try searching for another team.</p>
+        </div>
       )}
       
       <GuessDialog 

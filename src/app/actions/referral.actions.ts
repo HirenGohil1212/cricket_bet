@@ -73,13 +73,17 @@ export async function processReferral(newUserId: string, referrerId: string) {
         if (!newUserDoc.exists() || newUserDoc.data()?.referralBonusAwarded) {
             return; // Already processed or user not found
         }
-
-        // 3. Check for at least one completed deposit
+        
+        // ** NEW LOGIC **
+        // 3. We already check if it's the user's first bet in the bet creation action.
+        // Now, we only need to ensure the user who placed their first bet also has a completed deposit.
         const depositsRef = collection(db, 'deposits');
         const depositQuery = query(depositsRef, where('userId', '==', newUserId), where('status', '==', 'Completed'));
         const depositSnapshot = await getDocs(depositQuery);
         if (depositSnapshot.empty) {
-            return; // No completed deposit yet, so not a successful referral
+            // User placed their first bet, but hasn't made a successful deposit yet.
+            // The referral is not yet complete. We'll exit and this function will be called again on their next bet.
+            return;
         }
 
         // 4. Perform transaction to award bonuses and log everything
