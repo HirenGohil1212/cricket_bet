@@ -155,13 +155,13 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
       <SidebarInset className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col">
-          <div className="mb-4 flex flex-wrap gap-2">
-              <Button asChild className="flex-1 sm:flex-none bg-green-500 hover:bg-green-600 text-white">
+          <div className="mb-4 flex gap-2">
+              <Button asChild className="w-1/2 bg-green-500 hover:bg-green-600 text-white">
                 <Link href="/wallet">
                   <ArrowUpCircle className="mr-2 h-4 w-4" /> Deposit
                 </Link>
               </Button>
-              <Button asChild variant="destructive" className="flex-1 sm:flex-none">
+              <Button asChild variant="destructive" className="w-1/2">
                 <Link href="/wallet">
                   <ArrowDownCircle className="mr-2 h-4 w-4" /> Withdraw
                 </Link>
