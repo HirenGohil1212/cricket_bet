@@ -233,7 +233,7 @@ export function AddMatchForm() {
                                    key={player.id}
                                    value={player.name}
                                    onSelect={(currentValue) => {
-                                      const selectedPlayer = availablePlayers.find(p => p.name.toLowerCase() === currentValue);
+                                      const selectedPlayer = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
                                       if(selectedPlayer) {
                                         append({ name: selectedPlayer.name, playerImageUrl: selectedPlayer.imageUrl });
                                       }
