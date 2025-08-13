@@ -326,42 +326,44 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                         {bettingMode === 'qna' ? (
                             questions.map((q) => (
                                 <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                                    <p className="text-sm font-semibold text-center block text-muted-foreground">{q.question}</p>
-                                    <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
-                                      {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                           <FormField
-                                            control={form.control}
-                                            name={`predictions.${q.id}.teamA`}
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
-                                                <FormControl>
-                                                  <Input placeholder="Team A prediction..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                      )}
-                                       {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                           <FormField
-                                            control={form.control}
-                                            name={`predictions.${q.id}.teamB`}
-                                            render={({ field }) => (
-                                              <FormItem>
-                                                <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
-                                                <FormControl>
-                                                  <Input placeholder="Team B prediction..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                       )}
+                                    <div className={cn("flex items-center justify-around gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'flex-col' : 'flex-col sm:flex-row')}>
+                                        {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                            <FormField
+                                                control={form.control}
+                                                name={`predictions.${q.id}.teamA`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-full">
+                                                        <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Team A prediction..." {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
+                                        <p className="text-sm font-semibold text-center block text-muted-foreground shrink-0 my-2 sm:my-0">
+                                            {q.question}
+                                        </p>
+                                        {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                            <FormField
+                                                control={form.control}
+                                                name={`predictions.${q.id}.teamB`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-full">
+                                                        <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Team B prediction..." {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
                                     </div>
                                     <FormMessage>{form.formState.errors.predictions?.[q.id]?.root?.message}</FormMessage>
                                 </div>
-                             ))
+                            ))
                         ) : (
                              <div className="p-4 border rounded-lg space-y-3">
                                 <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
