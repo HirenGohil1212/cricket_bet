@@ -29,9 +29,9 @@ export function AdminWithdrawalsTable({ withdrawals }: AdminWithdrawalsTableProp
     
     const getStatusClass = (status: WithdrawalRequest['status']) => {
         switch (status) {
-          case 'Completed': return 'bg-green-500/80 text-white';
-          case 'Failed': return 'bg-red-500/80 text-white';
-          case 'Pending': return 'bg-yellow-500/80 text-black';
+          case 'Approved': return 'bg-green-500/80 text-white';
+          case 'Rejected': return 'bg-red-500/80 text-white';
+          case 'Processing': return 'bg-yellow-500/80 text-black';
           default: return 'bg-gray-500/80 text-white';
         }
     };
@@ -63,7 +63,7 @@ export function AdminWithdrawalsTable({ withdrawals }: AdminWithdrawalsTableProp
                             {new Date(withdrawal.createdAt).toLocaleString()}
                         </div>
                         <div className="pt-3 mt-3 border-t">
-                             {withdrawal.status === 'Pending' ? (
+                             {withdrawal.status === 'Processing' ? (
                                 <Button size="sm" onClick={() => handleReview(withdrawal)} className="w-full">Review</Button>
                             ) : (
                                  <Button size="sm" variant="outline" disabled className="w-full">Reviewed</Button>
@@ -96,7 +96,7 @@ export function AdminWithdrawalsTable({ withdrawals }: AdminWithdrawalsTableProp
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                {withdrawal.status === 'Pending' ? (
+                                {withdrawal.status === 'Processing' ? (
                                     <Button size="sm" onClick={() => handleReview(withdrawal)}>Review</Button>
                                 ) : (
                                      <Button size="sm" variant="outline" disabled>Reviewed</Button>

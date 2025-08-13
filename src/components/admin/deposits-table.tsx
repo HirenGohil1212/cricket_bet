@@ -37,9 +37,9 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
     
     const getStatusClass = (status: DepositRequest['status']) => {
         switch (status) {
-          case 'Completed': return 'bg-green-500/80 text-white';
-          case 'Failed': return 'bg-red-500/80 text-white';
-          case 'Pending': return 'bg-yellow-500/80 text-black';
+          case 'Approved': return 'bg-green-500/80 text-white';
+          case 'Rejected': return 'bg-red-500/80 text-white';
+          case 'Processing': return 'bg-yellow-500/80 text-black';
           default: return 'bg-gray-500/80 text-white';
         }
     };
@@ -72,7 +72,7 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
                             {new Date(deposit.createdAt).toLocaleString()}
                         </div>
                         <div className="pt-3 mt-3 border-t">
-                             {deposit.status === 'Pending' ? (
+                             {deposit.status === 'Processing' ? (
                                 <Button size="sm" onClick={() => handleReview(deposit)} className="w-full">Review</Button>
                             ) : (
                                  <Button size="sm" variant="outline" disabled className="w-full">Reviewed</Button>
@@ -105,7 +105,7 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                {deposit.status === 'Pending' ? (
+                                {deposit.status === 'Processing' ? (
                                     <Button size="sm" onClick={() => handleReview(deposit)}>Review</Button>
                                 ) : (
                                      <Button size="sm" variant="outline" disabled>Reviewed</Button>

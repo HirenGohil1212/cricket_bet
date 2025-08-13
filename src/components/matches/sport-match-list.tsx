@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 interface SportMatchListProps {
-  sport: Sport;
+  sport?: Sport;
   upcomingAndLiveMatches: Match[];
   finishedMatches: Match[];
   betOptions: BetOption[];
@@ -26,7 +26,7 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches,
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={`Search for a team in ${sport}...`}
+            placeholder={sport ? `Search for a team in ${sport}...` : 'Search for any team...'}
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -49,7 +49,7 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches,
       
       {noMatchesExistForSport && !searchTerm && (
         <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
-            <p className="text-lg font-semibold">No matches found for {sport}.</p>
+            <p className="text-lg font-semibold">No matches found for {sport || 'any sport'}.</p>
             <p className="text-sm">Check back later for updates!</p>
         </div>
       )}

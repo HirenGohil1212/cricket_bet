@@ -85,7 +85,7 @@ export type DepositRequest = {
   userName:string;
   amount: number;
   screenshotUrl: string;
-  status: 'Pending' | 'Completed' | 'Failed';
+  status: 'Processing' | 'Approved' | 'Rejected';
   createdAt: string;
   updatedAt: string;
 };
@@ -95,7 +95,7 @@ export type WithdrawalRequest = {
   userId: string;
   userName: string;
   amount: number;
-  status: 'Pending' | 'Completed' | 'Failed';
+  status: 'Processing' | 'Approved' | 'Rejected';
   createdAt: string;
   updatedAt: string;
   userBankAccount: UserBankAccount;
@@ -160,5 +160,5 @@ export type BetOption = {
 };
 
 export type BettingSettings = {
-    betOptions: BetOption[];
+    betOptions: Record<Sport, BetOption[]>;
 };

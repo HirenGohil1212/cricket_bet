@@ -10,26 +10,26 @@ interface AdminDepositsTabsProps {
 }
 
 export function AdminDepositsTabs({ deposits }: AdminDepositsTabsProps) {
-  const pending = deposits.filter(d => d.status === 'Pending');
-  const completed = deposits.filter(d => d.status === 'Completed');
-  const failed = deposits.filter(d => d.status === 'Failed');
+  const processing = deposits.filter(d => d.status === 'Processing');
+  const approved = deposits.filter(d => d.status === 'Approved');
+  const rejected = deposits.filter(d => d.status === 'Rejected');
 
   return (
-    <Tabs defaultValue="pending" className="w-full">
+    <Tabs defaultValue="processing" className="w-full">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
-        <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
-        <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
-        <TabsTrigger value="failed">Failed ({failed.length})</TabsTrigger>
+        <TabsTrigger value="processing">Processing ({processing.length})</TabsTrigger>
+        <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
+        <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
         <TabsTrigger value="all">All ({deposits.length})</TabsTrigger>
       </TabsList>
-      <TabsContent value="pending" className="mt-4">
-        <DepositsTable deposits={pending} />
+      <TabsContent value="processing" className="mt-4">
+        <DepositsTable deposits={processing} />
       </TabsContent>
-      <TabsContent value="completed" className="mt-4">
-        <DepositsTable deposits={completed} />
+      <TabsContent value="approved" className="mt-4">
+        <DepositsTable deposits={approved} />
       </TabsContent>
-      <TabsContent value="failed" className="mt-4">
-        <DepositsTable deposits={failed} />
+      <TabsContent value="rejected" className="mt-4">
+        <DepositsTable deposits={rejected} />
       </TabsContent>
       <TabsContent value="all" className="mt-4">
         <DepositsTable deposits={deposits} />

@@ -1,6 +1,6 @@
 
 import { z } from "zod";
-import { sports } from "@/lib/types";
+import { sports, type Sport } from "@/lib/types";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_LOGO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/svg+xml"];
@@ -150,8 +150,18 @@ export const betOptionSchema = z.object({
   payout: z.coerce.number().min(1, "Payout amount must be at least 1 INR."),
 });
 
+const sportBetOptionsSchema = z.array(betOptionSchema)
+  .min(1, "At least one bet option is required.")
+  .max(5, "You can add a maximum of 5 bet options.");
+
 export const bettingSettingsSchema = z.object({
-  betOptions: z.array(betOptionSchema).min(1, "At least one bet option is required.").max(5, "You can add a maximum of 5 bet options."),
+  betOptions: z.object({
+    Cricket: sportBetOptionsSchema,
+    Football: sportBetOptionsSchema,
+    Tennis: sportBetOptionsSchema,
+    "Table Tennis": sportBetOptionsSchema,
+    Badminton: sportBetOptionsSchema,
+  })
 });
 
 export type BettingSettingsFormValues = z.infer<typeof bettingSettingsSchema>;

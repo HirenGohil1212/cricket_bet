@@ -78,7 +78,7 @@ export async function processReferral(newUserId: string, referrerId: string) {
         // 3. We already check if it's the user's first bet in the bet creation action.
         // Now, we only need to ensure the user who placed their first bet also has a completed deposit.
         const depositsRef = collection(db, 'deposits');
-        const depositQuery = query(depositsRef, where('userId', '==', newUserId), where('status', '==', 'Completed'));
+        const depositQuery = query(depositsRef, where('userId', '==', newUserId), where('status', '==', 'Approved'));
         const depositSnapshot = await getDocs(depositQuery);
         if (depositSnapshot.empty) {
             // User placed their first bet, but hasn't made a successful deposit yet.

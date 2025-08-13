@@ -10,33 +10,32 @@ import { SportMatchListLoader } from "@/components/matches/sport-match-list-load
 import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
 import { getBettingSettings } from "@/app/actions/settings.actions";
-import { FinishedMatchesList } from "@/components/matches/finished-matches-list";
 
 export const dynamic = 'force-dynamic';
 
-async function MatchData({ sport }: { sport: Sport }) {
+async function MatchData({ sport }: { sport?: Sport }) {
   const [matches, settings] = await Promise.all([
     getMatches(),
     getBettingSettings()
   ]);
+  
+  const filteredMatches = sport ? matches.filter(m => m.sport === sport) : matches;
 
-  const upcomingAndLiveMatches = matches.filter(
-    (m) => m.sport === sport && (m.status === "Upcoming" || m.status === "Live")
+  const upcomingAndLiveMatches = filteredMatches.filter(
+    (m) => (m.status === "Upcoming" || m.status === "Live")
   );
 
-  const finishedMatches = matches.filter(
-    (m) => m.sport === sport && m.status === "Finished"
+  const finishedMatches = filteredMatches.filter(
+    (m) => m.status === "Finished"
   );
 
   return (
-    <>
-      <SportMatchList
-        upcomingAndLiveMatches={upcomingAndLiveMatches}
-        finishedMatches={finishedMatches}
-        sport={sport}
-        betOptions={settings.betOptions}
-      />
-    </>
+    <SportMatchList
+      upcomingAndLiveMatches={upcomingAndLiveMatches}
+      finishedMatches={finishedMatches}
+      sport={sport}
+      betOptions={settings.betOptions}
+    />
   )
 }
 
@@ -46,6 +45,11 @@ export default async function Home() {
   return (
     <HomePageClient content={content}>
       <MatchTabs>
+        <TabsContent key="All" value="All" className="mt-6">
+          <Suspense fallback={<SportMatchListLoader />}>
+            <MatchData />
+          </Suspense>
+        </TabsContent>
         {sports.map((sport) => (
           <TabsContent key={sport} value={sport} className="mt-6">
             <Suspense fallback={<SportMatchListLoader />}>

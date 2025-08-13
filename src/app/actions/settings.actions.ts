@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { BankAccount, BettingSettings } from '@/lib/types';
 import { bettingSettingsSchema, type BettingSettingsFormValues } from '@/lib/schemas';
+import { sports } from '@/lib/data';
 
 
 // Function to get existing bank details
@@ -48,31 +49,45 @@ export async function updateBankDetails(accounts: BankAccount[]) {
 
 // Function to get betting settings
 export async function getBettingSettings(): Promise<BettingSettings> {
+    const defaultBetOptions = [
+        { amount: 9, payout: 18 },
+        { amount: 19, payout: 40 },
+        { amount: 29, payout: 60 },
+    ];
+    
+    const defaultSettings: BettingSettings = {
+        betOptions: sports.reduce((acc, sport) => {
+            acc[sport] = [...defaultBetOptions];
+            return acc;
+        }, {} as Record<Sport, typeof defaultBetOptions>)
+    };
+
     try {
         const docRef = doc(db, 'adminSettings', 'betting');
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && docSnap.data().betOptions) {
-            return docSnap.data() as BettingSettings;
+             const data = docSnap.data() as BettingSettings;
+             // Ensure all sports have settings, if not, populate with default
+             let allSportsHaveSettings = true;
+             for (const sport of sports) {
+                if (!data.betOptions[sport]) {
+                    allSportsHaveSettings = false;
+                    data.betOptions[sport] = [...defaultBetOptions];
+                }
+             }
+             if (!allSportsHaveSettings) {
+                // If we had to add a default, we should probably save it back
+                await setDoc(docRef, data, { merge: true });
+             }
+             return data;
         }
-        // Return default settings if not found or if the structure is old
-        return { 
-            betOptions: [
-                { amount: 9, payout: 18 },
-                { amount: 19, payout: 40 },
-                { amount: 29, payout: 60 },
-            ]
-        };
+        // Return default settings if not found or if the structure is old/incomplete
+        return defaultSettings;
     } catch (error) {
         console.error("Error fetching betting settings:", error);
          // Default on error
-        return { 
-            betOptions: [
-                { amount: 9, payout: 18 },
-                { amount: 19, payout: 40 },
-                { amount: 29, payout: 60 },
-            ]
-        };
+        return defaultSettings;
     }
 }
 
@@ -85,7 +100,7 @@ export async function updateBettingSettings(data: BettingSettingsFormValues) {
 
     try {
         const docRef = doc(db, 'adminSettings', 'betting');
-        await setDoc(docRef, validatedFields.data, { merge: true });
+        await setDoc(docRef, { betOptions: validatedFields.data.betOptions });
         
         revalidatePath('/admin/betting-settings');
         revalidatePath('/');

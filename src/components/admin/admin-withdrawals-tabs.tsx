@@ -10,26 +10,26 @@ interface AdminWithdrawalsTabsProps {
 }
 
 export function AdminWithdrawalsTabs({ withdrawals }: AdminWithdrawalsTabsProps) {
-  const pending = withdrawals.filter(d => d.status === 'Pending');
-  const completed = withdrawals.filter(d => d.status === 'Completed');
-  const failed = withdrawals.filter(d => d.status === 'Failed');
+  const processing = withdrawals.filter(d => d.status === 'Processing');
+  const approved = withdrawals.filter(d => d.status === 'Approved');
+  const rejected = withdrawals.filter(d => d.status === 'Rejected');
 
   return (
-    <Tabs defaultValue="pending" className="w-full">
+    <Tabs defaultValue="processing" className="w-full">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
-        <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
-        <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
-        <TabsTrigger value="failed">Failed ({failed.length})</TabsTrigger>
+        <TabsTrigger value="processing">Processing ({processing.length})</TabsTrigger>
+        <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
+        <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
         <TabsTrigger value="all">All ({withdrawals.length})</TabsTrigger>
       </TabsList>
-      <TabsContent value="pending" className="mt-4">
-        <AdminWithdrawalsTable withdrawals={pending} />
+      <TabsContent value="processing" className="mt-4">
+        <AdminWithdrawalsTable withdrawals={processing} />
       </TabsContent>
-      <TabsContent value="completed" className="mt-4">
-        <AdminWithdrawalsTable withdrawals={completed} />
+      <TabsContent value="approved" className="mt-4">
+        <AdminWithdrawalsTable withdrawals={approved} />
       </TabsContent>
-      <TabsContent value="failed" className="mt-4">
-        <AdminWithdrawalsTable withdrawals={failed} />
+      <TabsContent value="rejected" className="mt-4">
+        <AdminWithdrawalsTable withdrawals={rejected} />
       </TabsContent>
       <TabsContent value="all" className="mt-4">
         <AdminWithdrawalsTable withdrawals={withdrawals} />

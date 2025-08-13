@@ -55,7 +55,7 @@ export async function createWithdrawalRequest({ userId, userName, amount }: { us
                 userName,
                 amount,
                 userBankAccount: bankAccount, // Copy bank details for historical record
-                status: 'Pending',
+                status: 'Processing',
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             });
@@ -124,7 +124,7 @@ export async function approveWithdrawal(withdrawalId: string, userId: string, am
 
             transaction.update(userRef, { walletBalance: newBalance });
             transaction.update(withdrawalRef, { 
-                status: 'Completed',
+                status: 'Approved',
                 updatedAt: Timestamp.now(),
             });
         });
@@ -147,7 +147,7 @@ export async function rejectWithdrawal(withdrawalId: string) {
     try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
         await updateDoc(withdrawalRef, {
-            status: 'Failed',
+            status: 'Rejected',
             updatedAt: Timestamp.now()
         });
 

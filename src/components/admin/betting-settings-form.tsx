@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2 } from "lucide-react";
@@ -19,16 +19,97 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { BettingSettings } from "@/lib/types";
+import type { BettingSettings, Sport } from "@/lib/types";
+import { sports } from "@/lib/data";
 import { bettingSettingsSchema, type BettingSettingsFormValues } from "@/lib/schemas";
 import { updateBettingSettings } from "@/app/actions/settings.actions";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { SportIcon } from "../icons";
 
 interface BettingSettingsFormProps {
     initialData: BettingSettings;
 }
 
 const defaultOption = { amount: 10, payout: 20 };
+
+function SportBettingForm({ sport }: { sport: Sport }) {
+    const { control, formState: { isSubmitting } } = useForm<BettingSettingsFormValues>();
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `betOptions.${sport}`,
+    });
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <SportIcon sport={sport} className="w-5 h-5" />
+                    {sport} Settings
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="relative p-4 border rounded-md">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                    control={control}
+                                    name={`betOptions.${sport}.${index}.amount`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Bet Amount (INR)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="e.g. 9" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={control}
+                                    name={`betOptions.${sport}.${index}.payout`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Payout Amount (INR)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="e.g. 20" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            {fields.length > 1 && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    onClick={() => remove(index)}
+                                    disabled={isSubmitting}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Remove Option</span>
+                                </Button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                 <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => append(defaultOption)}
+                    disabled={fields.length >= 5 || isSubmitting}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Option
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
   const { toast } = useToast();
@@ -38,13 +119,8 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
   const form = useForm<BettingSettingsFormValues>({
     resolver: zodResolver(bettingSettingsSchema),
     defaultValues: {
-      betOptions: initialData.betOptions.length > 0 ? initialData.betOptions : [defaultOption],
-    }
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "betOptions",
+        betOptions: initialData.betOptions
+    },
   });
 
   async function onSubmit(data: BettingSettingsFormValues) {
@@ -61,74 +137,24 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg">
-        <div>
-          {fields.map((field, index) => (
-             <Card key={field.id} className="relative mb-4 p-4">
-               <CardContent className="p-0 grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name={`betOptions.${index}.amount`}
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Bet Amount (INR)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="e.g. 9" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                <FormField
-                    control={form.control}
-                    name={`betOptions.${index}.payout`}
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Payout Amount (INR)</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="e.g. 20" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-               </CardContent>
-                {fields.length > 1 && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => remove(index)}
-                        disabled={isSubmitting}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remove Option</span>
-                    </Button>
-                )}
-             </Card>
-          ))}
-           <FormDescription>
-            Define the fixed bet amounts available to users and the corresponding payout if they win.
-          </FormDescription>
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormDescription>
+          Define the fixed bet amounts available to users and the corresponding payout if they win for each sport.
+        </FormDescription>
+
+        <div className="space-y-6">
+            {sports.map((sport) => (
+                <SportBettingForm key={sport} sport={sport} />
+            ))}
         </div>
         
-        <div className="flex items-center justify-between">
-            <Button
-                type="button"
-                variant="outline"
-                onClick={() => append(defaultOption)}
-                disabled={fields.length >= 5 || isSubmitting}
-            >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Bet Option
-            </Button>
+        <div className="flex items-center justify-end">
             <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Settings"}
+                {isSubmitting ? "Saving..." : "Save All Settings"}
             </Button>
         </div>
       </form>
-    </Form>
+    </FormProvider>
   )
 }

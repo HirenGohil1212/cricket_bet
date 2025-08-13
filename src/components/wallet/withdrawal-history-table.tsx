@@ -57,9 +57,9 @@ export function WithdrawalHistoryTable() {
 
   const getStatusClass = (status: WithdrawalRequest['status']) => {
     switch (status) {
-      case 'Completed': return 'bg-green-500/80 text-white';
-      case 'Failed': return 'bg-red-500/80 text-white';
-      case 'Pending': return 'bg-yellow-500/80 text-black';
+      case 'Approved': return 'bg-green-500/80 text-white';
+      case 'Rejected': return 'bg-red-500/80 text-white';
+      case 'Processing': return 'bg-yellow-500/80 text-black';
       default: return 'bg-gray-500/80 text-white';
     }
   };

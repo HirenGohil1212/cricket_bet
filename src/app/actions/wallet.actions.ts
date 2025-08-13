@@ -43,7 +43,7 @@ export async function createDepositRequest({ userId, userName, amount, screensho
             userName,
             amount,
             screenshotUrl,
-            status: 'Pending',
+            status: 'Processing',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         });
@@ -127,7 +127,7 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
 
             transaction.update(userRef, { walletBalance: newBalance });
             transaction.update(depositRef, { 
-                status: 'Completed',
+                status: 'Approved',
                 updatedAt: Timestamp.now(),
                 amount: amount // Update amount if admin changed it
             });
@@ -151,7 +151,7 @@ export async function rejectDeposit(depositId: string) {
     try {
         const depositRef = doc(db, 'deposits', depositId);
         await updateDoc(depositRef, {
-            status: 'Failed',
+            status: 'Rejected',
             updatedAt: Timestamp.now()
         });
 

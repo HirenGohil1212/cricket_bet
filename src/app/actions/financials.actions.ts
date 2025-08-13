@@ -11,13 +11,13 @@ export async function getFinancialSummary() {
         // Deposits - Fetch all and filter in code to avoid needing an index
         const depositsSnapshot = await getDocs(collection(db, 'deposits'));
         const totalDeposits = depositsSnapshot.docs
-            .filter(doc => doc.data().status === 'Completed')
+            .filter(doc => doc.data().status === 'Approved')
             .reduce((sum, doc) => sum + doc.data().amount, 0);
 
         // Withdrawals - Fetch all and filter in code to avoid needing an index
         const withdrawalsSnapshot = await getDocs(collection(db, 'withdrawals'));
         const totalWithdrawals = withdrawalsSnapshot.docs
-            .filter(doc => doc.data().status === 'Completed')
+            .filter(doc => doc.data().status === 'Approved')
             .reduce((sum, doc) => sum + doc.data().amount, 0);
 
         // Bets
@@ -78,7 +78,7 @@ export async function getDailyFinancialActivity(days: number = 30): Promise<Dail
         const depositsSnapshot = await getDocs(depositsQuery);
         depositsSnapshot.forEach(doc => {
             const data = doc.data();
-            if (data.status === 'Completed') {
+            if (data.status === 'Approved') {
                 const date = format((data.updatedAt as Timestamp).toDate(), 'yyyy-MM-dd');
                 if (activityMap.has(date)) {
                     activityMap.get(date)!.deposits += data.amount;
@@ -91,7 +91,7 @@ export async function getDailyFinancialActivity(days: number = 30): Promise<Dail
         const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
         withdrawalsSnapshot.forEach(doc => {
             const data = doc.data();
-            if (data.status === 'Completed') {
+            if (data.status === 'Approved') {
                 const date = format((data.updatedAt as Timestamp).toDate(), 'yyyy-MM-dd');
                 if (activityMap.has(date)) {
                     activityMap.get(date)!.withdrawals += data.amount;
