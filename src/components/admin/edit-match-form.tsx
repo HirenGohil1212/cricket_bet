@@ -258,11 +258,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                <CommandItem
                                    key={player.id}
                                    value={player.name}
-                                   onSelect={(currentValue) => {
-                                      const selectedPlayer = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
-                                      if(selectedPlayer) {
-                                        append({ name: selectedPlayer.name, playerImageUrl: selectedPlayer.imageUrl });
-                                      }
+                                   onSelect={() => {
+                                      append({ name: player.name, playerImageUrl: player.imageUrl });
                                       setPopoverOpen(false);
                                    }}
                                >
@@ -587,7 +584,3 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     </Form>
   )
 }
-
-    
-
-    
