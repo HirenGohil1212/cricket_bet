@@ -6,8 +6,10 @@ export type Sport = typeof sports[number];
 export type MatchStatus = "Upcoming" | "Live" | "Finished" | "Cancelled";
 
 export type Player = {
+  id?: string; // Player ID from the 'players' collection
   name: string;
   imageUrl: string;
+  sport?: Sport;
 };
 
 export type Team = {
