@@ -55,6 +55,7 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         { amount: 29, payout: 60 },
     ];
     
+    // Ensure the default structure includes all sports defined in `lib/data`
     const defaultSettings: BettingSettings = {
         betOptions: sports.reduce((acc, sport) => {
             acc[sport] = [...defaultBetOptions];
@@ -67,22 +68,22 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && docSnap.data().betOptions) {
-             const data = docSnap.data() as BettingSettings;
-             // Ensure all sports have settings, if not, populate with default
-             let allSportsHaveSettings = true;
-             for (const sport of sports) {
-                if (!data.betOptions[sport]) {
-                    allSportsHaveSettings = false;
-                    data.betOptions[sport] = [...defaultBetOptions];
-                }
-             }
-             if (!allSportsHaveSettings) {
-                // If we had to add a default, we should probably save it back
-                await setDoc(docRef, data, { merge: true });
-             }
-             return data;
+             const dataFromDb = docSnap.data() as BettingSettings;
+             
+             // Merge DB data with defaults to ensure all sports are present
+             const finalSettings: BettingSettings = {
+                 betOptions: sports.reduce((acc, sport) => {
+                     // Use data from DB if available, otherwise fall back to default
+                     acc[sport] = dataFromDb.betOptions[sport] && dataFromDb.betOptions[sport].length > 0 
+                                  ? dataFromDb.betOptions[sport]
+                                  : [...defaultBetOptions];
+                     return acc;
+                 }, {} as Record<Sport, typeof defaultBetOptions>)
+             };
+
+             return finalSettings;
         }
-        // Return default settings if not found or if the structure is old/incomplete
+        // Return default settings if document doesn't exist or is malformed
         return defaultSettings;
     } catch (error) {
         console.error("Error fetching betting settings:", error);
@@ -91,19 +92,25 @@ export async function getBettingSettings(): Promise<BettingSettings> {
     }
 }
 
+
 // Server action to update betting settings
 export async function updateBettingSettings(data: BettingSettingsFormValues) {
     const validatedFields = bettingSettingsSchema.safeParse(data);
     if (!validatedFields.success) {
-      return { error: 'Invalid data provided.' };
+      // Create a detailed error message from Zod issues
+      const errorDetails = validatedFields.error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ');
+      return { error: `Invalid data provided: ${errorDetails}` };
     }
 
     try {
         const docRef = doc(db, 'adminSettings', 'betting');
+        // The data is already in the correct format { betOptions: { ... } }
         await setDoc(docRef, validatedFields.data);
         
+        // Revalidate paths where these settings are used
         revalidatePath('/admin/betting-settings');
-        revalidatePath('/');
+        revalidatePath('/'); // Home page uses betting settings
+        
         return { success: 'Betting settings updated successfully!' };
 
     } catch (error: any) {
