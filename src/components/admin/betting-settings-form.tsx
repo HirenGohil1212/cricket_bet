@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, FormProvider } from "react-hook-form";
+import { useFieldArray, useForm, FormProvider, useFormContext } from "react-hook-form";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2 } from "lucide-react";
@@ -33,7 +33,9 @@ interface BettingSettingsFormProps {
 const defaultOption = { amount: 10, payout: 20 };
 
 function SportBettingForm({ sport }: { sport: Sport }) {
-    const { control, formState: { isSubmitting } } = useForm<BettingSettingsFormValues>();
+    // Correctly use context from the parent FormProvider
+    const { control, formState: { isSubmitting } } = useFormContext<BettingSettingsFormValues>();
+    
     const { fields, append, remove } = useFieldArray({
         control,
         name: `betOptions.${sport}`,
@@ -59,7 +61,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                                         <FormItem>
                                             <FormLabel>Bet Amount (INR)</FormLabel>
                                             <FormControl>
-                                                <Input type="number" placeholder="e.g. 9" {...field} />
+                                                <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(Number(e.target.value))}/>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -72,7 +74,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                                         <FormItem>
                                             <FormLabel>Payout Amount (INR)</FormLabel>
                                             <FormControl>
-                                                <Input type="number" placeholder="e.g. 20" {...field} />
+                                                <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(Number(e.target.value))}/>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
