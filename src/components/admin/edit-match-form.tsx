@@ -3,9 +3,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import Image from "next/image";
@@ -41,6 +41,8 @@ import { CountrySelect } from "./country-select";
 import { Separator } from "../ui/separator";
 import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
+import { getPlayersBySport } from "@/app/actions/player.actions";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 
 interface EditMatchFormProps {
     match: Match;
@@ -54,6 +56,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   const [teamAPreview, setTeamAPreview] = React.useState<string | null>(match.teamA.logoUrl);
   const [teamBPreview, setTeamBPreview] = React.useState<string | null>(match.teamB.logoUrl);
   const [playerPreviews, setPlayerPreviews] = React.useState<{ teamA: Record<number, string>; teamB: Record<number, string> }>({ teamA: {}, teamB: {} });
+  const [availablePlayers, setAvailablePlayers] = React.useState<Player[]>([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = React.useState(false);
   
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
@@ -70,6 +74,20 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [],
     }
   });
+
+  const selectedSport = useWatch({ control: form.control, name: 'sport' });
+
+  React.useEffect(() => {
+    const fetchPlayers = async () => {
+        if(selectedSport) {
+            setIsLoadingPlayers(true);
+            const players = await getPlayersBySport(selectedSport);
+            setAvailablePlayers(players);
+            setIsLoadingPlayers(false);
+        }
+    }
+    fetchPlayers();
+  }, [selectedSport])
   
   React.useEffect(() => {
     const defaultTeamAPlayers = match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [];
@@ -105,16 +123,6 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
 
   }, [match, form]);
 
-  const { fields: teamAPlayerFields, append: appendTeamAPlayer, remove: removeTeamAPlayer } = useFieldArray({
-    control: form.control,
-    name: "teamAPlayers"
-  });
-
-  const { fields: teamBPlayerFields, append: appendTeamBPlayer, remove: removeTeamBPlayer } = useFieldArray({
-      control: form.control,
-      name: "teamBPlayers"
-  });
-
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: 'teamALogoFile' | 'teamBLogoFile' | `teamAPlayers.${number}.playerImageFile` | `teamBPlayers.${number}.playerImageFile`
@@ -135,7 +143,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         }
       };
       reader.readAsDataURL(file);
-      form.setValue(field, file, { shouldValidate: true });
+      form.setValue(field as any, file, { shouldValidate: true });
     }
   };
 
@@ -205,6 +213,116 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     } finally {
         setIsSubmitting(false);
     }
+  }
+
+  const PlayerManager = ({ teamLetter }: { teamLetter: 'A' | 'B' }) => {
+    const fieldName = teamLetter === 'A' ? 'teamAPlayers' : 'teamBPlayers';
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: fieldName });
+    const currentPlayers = useWatch({ control: form.control, name: fieldName }) || [];
+    
+    const unselectedPlayers = availablePlayers.filter(p => !currentPlayers.some(cp => cp.name === p.name));
+    
+    return (
+      <div className="space-y-4">
+        <Separator />
+        <FormLabel>Team {teamLetter} Players</FormLabel>
+        
+        {/* Render selected players */}
+        <div className="space-y-2">
+            {fields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-3 p-2 border rounded-md">
+                     <Image src={field.playerImageUrl || playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB']?.[index] || `https://placehold.co/40x40.png`} alt="Player" width={40} height={40} className="rounded-full w-10 h-10 object-cover" />
+                     <span className="font-medium flex-1 truncate">{field.name}</span>
+                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
+                         <Trash2 className="h-4 w-4 text-muted-foreground" />
+                     </Button>
+                </div>
+            ))}
+        </div>
+
+        {/* Combobox to select existing players */}
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                    <Search className="mr-2 h-4 w-4" /> Select Existing Player
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                    <CommandInput placeholder="Search players..." />
+                    <CommandList>
+                        <CommandEmpty>No players found.</CommandEmpty>
+                        <CommandGroup>
+                           {unselectedPlayers.map(player => (
+                               <CommandItem
+                                   key={player.id}
+                                   onSelect={() => append({ name: player.name, playerImageUrl: player.imageUrl })}
+                               >
+                                   <Image src={player.imageUrl} alt={player.name} width={24} height={24} className="mr-2 rounded-full h-6 w-6 object-cover" />
+                                   {player.name}
+                               </CommandItem>
+                           ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+
+        {/* Button to add new player fields */}
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined })}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Player Manually
+        </Button>
+        <FormMessage>{(form.formState.errors as any)[fieldName]?.message}</FormMessage>
+        
+        {/* Fields for manually adding new players */}
+         <div className="space-y-4">
+            {fields.map((field, index) => {
+                // Only show inputs for players that don't have an existing image URL (i.e., new players)
+                if (field.playerImageUrl) return null; 
+                return (
+                    <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative border-dashed">
+                        <FormField
+                            control={form.control}
+                            name={`${fieldName}.${index}.playerImageFile`}
+                            render={() => (
+                                <FormItem className="flex flex-col items-center gap-2">
+                                    <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
+                                        {playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB']?.[index] ? (
+                                            <Image src={playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB'][index]} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
+                                        ) : (
+                                            <User className="h-8 w-8 text-muted-foreground" />
+                                        )}
+                                    </div>
+                                    <FormControl>
+                                      <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `${fieldName}.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <div className="flex-1 space-y-2">
+                          <FormField
+                              control={form.control}
+                              name={`${fieldName}.${index}.name`}
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-xs">New Player Name</FormLabel>
+                                      <FormControl>
+                                          <Input placeholder="Enter name" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                    </div>
+                )
+            })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -393,50 +511,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                             </FormItem>
                         )}
                     />
-                     <Separator />
-                     <div className="space-y-4">
-                        <FormLabel>Players</FormLabel>
-                        {teamAPlayerFields.map((field, index) => (
-                           <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative">
-                               <FormField
-                                  control={form.control}
-                                  name={`teamAPlayers.${index}.playerImageFile`}
-                                  render={() => (
-                                      <FormItem className="flex flex-col items-center gap-2">
-                                          <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
-                                            <Image src={playerPreviews.teamA?.[index] || field.playerImageUrl || `https://placehold.co/64x64.png`} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
-                                          </div>
-                                          <FormControl>
-                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `teamAPlayers.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
-                                          </FormControl>
-                                      </FormItem>
-                                  )}
-                              />
-                               <div className="flex-1 space-y-2">
-                                <FormField
-                                    control={form.control}
-                                    name={`teamAPlayers.${index}.name`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs">Player Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Enter name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                               </div>
-                               <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => removeTeamAPlayer(index)}>
-                                   <Trash2 className="h-4 w-4 text-muted-foreground" />
-                               </Button>
-                           </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendTeamAPlayer({ name: '' })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Player
-                        </Button>
-                        <FormMessage>{form.formState.errors.teamAPlayers?.message}</FormMessage>
-                    </div>
+                    <PlayerManager teamLetter="A" />
                 </CardContent>
             </Card>
 
@@ -492,50 +567,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                             </FormItem>
                         )}
                     />
-                    <Separator />
-                    <div className="space-y-4">
-                        <FormLabel>Players</FormLabel>
-                        {teamBPlayerFields.map((field, index) => (
-                           <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative">
-                               <FormField
-                                  control={form.control}
-                                  name={`teamBPlayers.${index}.playerImageFile`}
-                                  render={() => (
-                                      <FormItem className="flex flex-col items-center gap-2">
-                                          <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
-                                            <Image src={playerPreviews.teamB?.[index] || field.playerImageUrl || `https://placehold.co/64x64.png`} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
-                                          </div>
-                                          <FormControl>
-                                            <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `teamBPlayers.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
-                                          </FormControl>
-                                      </FormItem>
-                                  )}
-                              />
-                               <div className="flex-1 space-y-2">
-                                <FormField
-                                    control={form.control}
-                                    name={`teamBPlayers.${index}.name`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs">Player Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Enter name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                               </div>
-                               <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => removeTeamBPlayer(index)}>
-                                   <Trash2 className="h-4 w-4 text-muted-foreground" />
-                               </Button>
-                           </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendTeamBPlayer({ name: '' })}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Player
-                        </Button>
-                        <FormMessage>{form.formState.errors.teamBPlayers?.message}</FormMessage>
-                    </div>
+                    <PlayerManager teamLetter="B" />
                 </CardContent>
             </Card>
         </div>
@@ -547,3 +579,4 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     </Form>
   )
 }
+
