@@ -42,7 +42,7 @@ import { Separator } from "../ui/separator";
 import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
 import { getPlayersBySport } from "@/app/actions/player.actions";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
+import { PlayerSelect } from "../matches/player-select";
 
 interface EditMatchFormProps {
     match: Match;
@@ -216,7 +216,6 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   }
 
   const PlayerManager = ({ teamLetter }: { teamLetter: 'A' | 'B' }) => {
-    const [popoverOpen, setPopoverOpen] = React.useState(false);
     const fieldName = teamLetter === 'A' ? 'teamAPlayers' : 'teamBPlayers';
     const { fields, append, remove } = useFieldArray({ control: form.control, name: fieldName });
     const currentPlayers = useWatch({ control: form.control, name: fieldName }) || [];
@@ -241,37 +240,16 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             ))}
         </div>
 
-        {/* Combobox to select existing players */}
-        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
-                    <Search className="mr-2 h-4 w-4" /> Select Existing Player
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                    <CommandInput placeholder="Search players..." />
-                    <CommandList>
-                        <CommandEmpty>No players found.</CommandEmpty>
-                        <CommandGroup>
-                           {unselectedPlayers.map(player => (
-                               <CommandItem
-                                   key={player.id}
-                                   value={player.name}
-                                   onSelect={() => {
-                                      append({ name: player.name, playerImageUrl: player.imageUrl });
-                                      setPopoverOpen(false);
-                                   }}
-                               >
-                                   <Image src={player.imageUrl} alt={player.name} width={24} height={24} className="mr-2 rounded-full h-6 w-6 object-cover" />
-                                   {player.name}
-                               </CommandItem>
-                           ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
+        <PlayerSelect
+            players={unselectedPlayers}
+            onValueChange={(playerName) => {
+                const player = availablePlayers.find(p => p.name === playerName);
+                if (player) {
+                    append({ name: player.name, playerImageUrl: player.imageUrl });
+                }
+            }}
+            placeholder={isLoadingPlayers ? "Loading players..." : "Select Existing Player"}
+        />
 
         {/* Button to add new player fields */}
         <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined })}>
