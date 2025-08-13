@@ -256,6 +256,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                            {unselectedPlayers.map(player => (
                                <CommandItem
                                    key={player.id}
+                                   value={player.name}
                                    onSelect={() => append({ name: player.name, playerImageUrl: player.imageUrl })}
                                >
                                    <Image src={player.imageUrl} alt={player.name} width={24} height={24} className="mr-2 rounded-full h-6 w-6 object-cover" />
@@ -579,4 +580,3 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     </Form>
   )
 }
-
