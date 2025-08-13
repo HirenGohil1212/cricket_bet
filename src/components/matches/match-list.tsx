@@ -9,7 +9,7 @@ import { BettingHistoryDialog } from '../dashboard/betting-history-dialog';
 
 interface MatchListProps {
   matches: Match[];
-  sport: Sport;
+  sport?: Sport;
   betOptions: BetOption[];
   searchTerm: string;
 }

@@ -16,6 +16,7 @@ import { revalidatePath } from 'next/cache';
 import type { Bet, Prediction } from '@/lib/types';
 import { processReferral } from './referral.actions';
 import { getBettingSettings } from './settings.actions';
+import { getMatchById } from './match.actions';
 
 interface CreateBetParams {
     userId: string;
@@ -36,14 +37,23 @@ export async function createBet({ userId, matchId, predictions, amount, betType 
 
     try {
         const userRef = doc(db, 'users', userId);
-        const matchRef = doc(db, 'matches', matchId);
+        const matchDocRef = doc(db, 'matches', matchId);
         
-        // Get the current betting options
-        const bettingSettings = await getBettingSettings();
-        const selectedOption = bettingSettings.betOptions.find(opt => opt.amount === amount);
+        // Get the current betting options and the match details in parallel
+        const [bettingSettings, match] = await Promise.all([
+            getBettingSettings(),
+            getMatchById(matchId)
+        ]);
+        
+        if (!match) {
+             return { error: 'Match not found. Please try again.' };
+        }
+
+        const sportBetOptions = bettingSettings.betOptions[match.sport];
+        const selectedOption = sportBetOptions.find(opt => opt.amount === amount);
 
         if (!selectedOption) {
-            return { error: 'The selected bet amount is not valid. Please refresh and try again.' };
+            return { error: 'The selected bet amount is not valid for this sport. Please refresh and try again.' };
         }
         
         const potentialWin = selectedOption.payout;
@@ -51,7 +61,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType 
         const result = await runTransaction(db, async (transaction) => {
             // All reads must come before writes in a transaction
             const userDoc = await transaction.get(userRef);
-            const matchDoc = await transaction.get(matchRef);
+            const matchDoc = await transaction.get(matchDocRef); // Re-read inside transaction
 
             if (!userDoc.exists()) {
                 throw new Error("User document not found.");

@@ -28,13 +28,16 @@ async function MatchData({ sport }: { sport?: Sport }) {
   const finishedMatches = filteredMatches.filter(
     (m) => m.status === "Finished"
   );
+  
+  // If a specific sport is selected, use its settings. Otherwise, default to Cricket for the "All" tab.
+  const betOptionsForSport = sport ? settings.betOptions[sport] : settings.betOptions["Cricket"];
 
   return (
     <SportMatchList
       upcomingAndLiveMatches={upcomingAndLiveMatches}
       finishedMatches={finishedMatches}
       sport={sport}
-      betOptions={settings.betOptions}
+      betOptions={betOptionsForSport}
     />
   )
 }
