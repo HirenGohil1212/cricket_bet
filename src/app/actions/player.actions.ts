@@ -9,12 +9,12 @@ import type { Player, Sport } from '@/lib/types';
 // Server action to create a new player
 export async function createPlayer(playerData: { name: string; imageUrl: string; sport: Sport }) {
     try {
-        await addDoc(collection(db, "players"), {
+        const docRef = await addDoc(collection(db, "players"), {
             ...playerData,
             createdAt: Timestamp.now(),
         });
         revalidatePath('/admin/players');
-        return { success: 'Player created successfully!' };
+        return { success: 'Player created successfully!', id: docRef.id };
     } catch (error: any) {
         console.error("Error creating player: ", error);
         return { error: 'An unknown error occurred while creating the player.' };

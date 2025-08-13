@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Player, Sport } from "@/lib/types";
 import { sports } from "@/lib/data";
@@ -24,12 +24,17 @@ import { deletePlayer } from "@/app/actions/player.actions";
 
 interface PlayersListProps {
   initialPlayers: Player[];
+  onPlayerDeleted: (playerId: string) => void;
 }
 
-export function PlayersList({ initialPlayers }: PlayersListProps) {
+export function PlayersList({ initialPlayers, onPlayerDeleted }: PlayersListProps) {
   const { toast } = useToast();
   const [players, setPlayers] = useState(initialPlayers);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  useEffect(() => {
+    setPlayers(initialPlayers);
+  }, [initialPlayers]);
 
   const handleDelete = async (playerId: string) => {
     setIsDeleting(true);
@@ -38,7 +43,7 @@ export function PlayersList({ initialPlayers }: PlayersListProps) {
       toast({ variant: "destructive", title: "Error", description: result.error });
     } else {
       toast({ title: "Player Deleted", description: result.success });
-      setPlayers(prev => prev.filter(p => p.id !== playerId));
+      onPlayerDeleted(playerId);
     }
     setIsDeleting(false);
   };

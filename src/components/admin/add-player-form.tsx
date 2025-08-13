@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { sports } from "@/lib/types";
+import { sports, type Player } from "@/lib/types";
 import { createPlayer } from "@/app/actions/player.actions";
 import { uploadFile } from "@/lib/storage";
 import { z } from "zod";
@@ -28,7 +28,11 @@ const playerFormSchema = z.object({
 
 type PlayerFormValues = z.infer<typeof playerFormSchema>;
 
-export function AddPlayerForm() {
+interface AddPlayerFormProps {
+    onPlayerAdded: (newPlayer: Player) => void;
+}
+
+export function AddPlayerForm({ onPlayerAdded }: AddPlayerFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [preview, setPreview] = React.useState<string | null>(null);
@@ -63,6 +67,7 @@ export function AddPlayerForm() {
         toast({ variant: "destructive", title: "Error", description: result.error });
       } else {
         toast({ title: "Player Added", description: `${data.name} has been added to the list.` });
+        onPlayerAdded({ ...data, imageUrl, id: result.id }); // Notify parent component
         form.reset();
         setPreview(null);
       }
