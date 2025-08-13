@@ -48,7 +48,8 @@ export async function getPlayers(): Promise<Player[]> {
 export async function getPlayersBySport(sport: Sport): Promise<Player[]> {
     try {
         const playersCol = collection(db, 'players');
-        const q = query(playersCol, where('sport', '==', sport), orderBy('name', 'asc'));
+        // The orderBy was causing a composite index error. Removing it to fix the query.
+        const q = query(playersCol, where('sport', '==', sport));
         const playerSnapshot = await getDocs(q);
 
         const playerList = playerSnapshot.docs.map(doc => {
