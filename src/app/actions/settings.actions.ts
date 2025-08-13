@@ -4,7 +4,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import type { BankAccount, BettingSettings } from '@/lib/types';
+import type { BankAccount, BettingSettings, Sport } from '@/lib/types';
 import { bettingSettingsSchema, type BettingSettingsFormValues } from '@/lib/schemas';
 import { sports } from '@/lib/data';
 
@@ -100,7 +100,7 @@ export async function updateBettingSettings(data: BettingSettingsFormValues) {
 
     try {
         const docRef = doc(db, 'adminSettings', 'betting');
-        await setDoc(docRef, { betOptions: validatedFields.data.betOptions });
+        await setDoc(docRef, validatedFields.data);
         
         revalidatePath('/admin/betting-settings');
         revalidatePath('/');

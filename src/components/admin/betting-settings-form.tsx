@@ -33,7 +33,6 @@ interface BettingSettingsFormProps {
 const defaultOption = { amount: 10, payout: 20 };
 
 function SportBettingForm({ sport }: { sport: Sport }) {
-    // Correctly use context from the parent FormProvider
     const { control, formState: { isSubmitting } } = useFormContext<BettingSettingsFormValues>();
     
     const { fields, append, remove } = useFieldArray({
@@ -116,8 +115,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
 export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-
+  
   const form = useForm<BettingSettingsFormValues>({
     resolver: zodResolver(bettingSettingsSchema),
     defaultValues: {
@@ -125,8 +123,9 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
     },
   });
 
+  const { isSubmitting } = form.formState;
+
   async function onSubmit(data: BettingSettingsFormValues) {
-    setIsSubmitting(true);
     const result = await updateBettingSettings(data);
     
     if (result.error) {
@@ -135,7 +134,6 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
         toast({ title: "Settings Saved", description: result.success });
         router.refresh();
     }
-    setIsSubmitting(false);
   }
 
   return (
