@@ -5,7 +5,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search } from "lucide-react";
+import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import Image from "next/image";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +43,6 @@ import { Separator } from "../ui/separator";
 import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
 import { getPlayersBySport } from "@/app/actions/player.actions";
-import { PlayerSelect } from "../matches/player-select";
 
 interface EditMatchFormProps {
     match: Match;
@@ -219,6 +219,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     const fieldName = teamLetter === 'A' ? 'teamAPlayers' : 'teamBPlayers';
     const { fields, append, remove } = useFieldArray({ control: form.control, name: fieldName });
     const currentPlayers = useWatch({ control: form.control, name: fieldName }) || [];
+    const [open, setOpen] = React.useState(false);
     
     const unselectedPlayers = availablePlayers.filter(p => !currentPlayers.some(cp => cp.name === p.name));
     
@@ -240,16 +241,49 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             ))}
         </div>
 
-        <PlayerSelect
-            players={unselectedPlayers}
-            onValueChange={(playerName) => {
-                const player = availablePlayers.find(p => p.name === playerName);
-                if (player) {
-                    append({ name: player.name, playerImageUrl: player.imageUrl });
-                }
-            }}
-            placeholder={isLoadingPlayers ? "Loading players..." : "Select Existing Player"}
-        />
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                    disabled={isLoadingPlayers}
+                >
+                    {isLoadingPlayers ? "Loading players..." : "Select Existing Player"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                    <CommandInput placeholder="Search player..." />
+                    <CommandList>
+                        <CommandEmpty>No player found.</CommandEmpty>
+                        <CommandGroup>
+                            {unselectedPlayers.map((player) => (
+                                <CommandItem
+                                    key={player.name}
+                                    value={player.name}
+                                    onSelect={(currentValue) => {
+                                        const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
+                                        if (selected) {
+                                            append({ name: selected.name, playerImageUrl: selected.imageUrl });
+                                        }
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Check className={cn("mr-2 h-4 w-4", "opacity-0")} />
+                                     <div className="flex items-center gap-2">
+                                        <Image src={player.imageUrl} alt={player.name} width={24} height={24} className="rounded-full h-6 w-6 object-cover" />
+                                        <span>{player.name}</span>
+                                    </div>
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
 
         {/* Button to add new player fields */}
         <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined })}>
