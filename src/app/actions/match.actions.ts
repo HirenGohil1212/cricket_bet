@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Match, Player } from '@/lib/types';
@@ -218,5 +218,76 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
     } catch (error: any) {
         console.error("Error updating match: ", error);
         return { error: 'An unknown error occurred while updating the match.' };
+    }
+}
+
+export async function cancelMatch(matchId: string) {
+    if (!matchId) {
+        return { error: 'Match ID is required.' };
+    }
+
+    const matchRef = doc(db, 'matches', matchId);
+    const betsRef = collection(db, 'bets');
+    const betsToRefundQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
+
+    try {
+        const matchDoc = await getDoc(matchRef);
+        if (!matchDoc.exists()) {
+            return { error: 'Match not found.' };
+        }
+        if (['Finished', 'Cancelled'].includes(matchDoc.data().status)) {
+            return { error: 'Match is already finished or cancelled.' };
+        }
+
+        const betsSnapshot = await getDocs(betsToRefundQuery);
+        
+        // Use a transaction for all writes to ensure atomicity
+        await runTransaction(db, async (transaction) => {
+            // All reads must be done before writes in a transaction
+            const userDocs = new Map<string, any>();
+            const userRefs: { [key: string]: any } = {};
+
+            // Collect all user documents that need updating
+            for (const betDoc of betsSnapshot.docs) {
+                const userId = betDoc.data().userId;
+                if (!userDocs.has(userId)) {
+                    const userRef = doc(db, 'users', userId);
+                    userRefs[userId] = userRef;
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists()) {
+                        throw new Error(`User with ID ${userId} not found.`);
+                    }
+                    userDocs.set(userId, userDoc);
+                }
+            }
+
+            // Perform all writes
+            for (const betDoc of betsSnapshot.docs) {
+                const betData = betDoc.data();
+                const userId = betData.userId;
+                const userRef = userRefs[userId];
+                const userDoc = userDocs.get(userId);
+                
+                const currentBalance = userDoc.data().walletBalance || 0;
+                const newBalance = currentBalance + betData.amount;
+                
+                // Refund user
+                transaction.update(userRef, { walletBalance: newBalance });
+                // Update bet status
+                transaction.update(betDoc.ref, { status: 'Refunded' });
+            }
+
+            // Update match status to Cancelled
+            transaction.update(matchRef, { status: 'Cancelled' });
+        });
+
+        revalidatePath('/admin/matches');
+        revalidatePath('/admin/q-and-a');
+        revalidatePath('/');
+        revalidatePath('/wallet'); // Users need to see their refund
+        return { success: 'Match cancelled and all pending bets refunded successfully.' };
+    } catch (error: any) {
+        console.error("Error cancelling match:", error);
+        return { error: error.message || 'An unknown error occurred during cancellation.' };
     }
 }

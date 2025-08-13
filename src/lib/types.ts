@@ -3,7 +3,7 @@
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
-export type MatchStatus = "Upcoming" | "Live" | "Finished";
+export type MatchStatus = "Upcoming" | "Live" | "Finished" | "Cancelled";
 
 export type Player = {
   name: string;
@@ -44,7 +44,7 @@ export type Bet = {
   matchDescription: string;
   predictions: Prediction[];
   amount: number;
-  status: "Won" | "Lost" | "Pending";
+  status: "Won" | "Lost" | "Pending" | "Refunded";
   timestamp: string; // Changed from Date to string
   potentialWin: number;
   betType?: 'qna' | 'player';

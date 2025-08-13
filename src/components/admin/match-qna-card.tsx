@@ -11,14 +11,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ManageQnaDialog } from './manage-qna-dialog';
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { SettlementResultsDialog } from './settlement-results-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { cancelMatch } from '@/app/actions/match.actions';
+import { useRouter } from 'next/navigation';
 
 interface MatchQnaCardProps {
     match: Match;
 }
 
 export function MatchQnaCard({ match }: MatchQnaCardProps) {
+    const { toast } = useToast();
+    const router = useRouter();
     const [questions, setQuestions] = React.useState<Question[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [isCancelling, setIsCancelling] = React.useState(false);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
 
     // New state for winners
@@ -42,6 +49,8 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
         setIsManageDialogOpen(false);
         if (shouldRefresh) {
             fetchAndSetQuestions();
+            // Also refresh the whole page to get latest match status
+            router.refresh();
         }
     }
 
@@ -52,6 +61,20 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
         setIsWinnersDialogOpen(true);
         setIsFetchingWinners(false);
     };
+
+    const handleCancelMatch = async () => {
+        setIsCancelling(true);
+        const result = await cancelMatch(match.id);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Cancellation Failed', description: result.error });
+        } else {
+            toast({ title: 'Match Cancelled', description: result.success });
+            router.refresh();
+        }
+        setIsCancelling(false);
+    }
+
+    const isActionable = match.status === 'Upcoming' || match.status === 'Live';
 
     return (
         <>
@@ -67,7 +90,7 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                         </div>
                     </div>
                     <CardDescription>
-                        {new Date(match.startTime).toLocaleString()} - {match.sport}
+                        {new Date(match.startTime).toLocaleString()} - {match.sport} - Status: <span className="font-bold">{match.status}</span>
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -95,8 +118,31 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
                             View Winners
                         </Button>
                     )}
+                    {isActionable && (
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={isCancelling}>
+                                    {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Cancel Match
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will cancel the match and refund all pending bets to the users' wallets.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Close</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleCancelMatch} className="bg-destructive hover:bg-destructive/90">Confirm & Refund</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                     <Button 
                         onClick={() => setIsManageDialogOpen(true)}
+                        disabled={!isActionable}
                     >
                         Manage Q&A
                     </Button>
