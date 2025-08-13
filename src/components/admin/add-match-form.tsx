@@ -236,7 +236,7 @@ export function AddMatchForm() {
                         <CommandGroup>
                             {unselectedPlayers.map((player) => (
                                 <CommandItem
-                                    key={player.name}
+                                    key={player.id}
                                     value={player.name}
                                     onSelect={(currentValue) => {
                                         const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
