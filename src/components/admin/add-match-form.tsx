@@ -190,6 +190,7 @@ export function AddMatchForm() {
   }
   
   const PlayerManager = ({ teamLetter }: { teamLetter: 'A' | 'B' }) => {
+    const [popoverOpen, setPopoverOpen] = React.useState(false);
     const fieldName = teamLetter === 'A' ? 'teamAPlayers' : 'teamBPlayers';
     const { fields, append, remove } = useFieldArray({ control: form.control, name: fieldName });
     const currentPlayers = useWatch({ control: form.control, name: fieldName }) || [];
@@ -215,7 +216,7 @@ export function AddMatchForm() {
         </div>
 
         {/* Combobox to select existing players */}
-        <Popover>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start">
                     <Search className="mr-2 h-4 w-4" /> Select Existing Player
@@ -231,7 +232,10 @@ export function AddMatchForm() {
                                <CommandItem
                                    key={player.id}
                                    value={player.name}
-                                   onSelect={() => append({ name: player.name, playerImageUrl: player.imageUrl })}
+                                   onSelect={() => {
+                                       append({ name: player.name, playerImageUrl: player.imageUrl });
+                                       setPopoverOpen(false);
+                                   }}
                                >
                                    <Image src={player.imageUrl} alt={player.name} width={24} height={24} className="mr-2 rounded-full h-6 w-6 object-cover" />
                                    {player.name}
@@ -564,4 +568,3 @@ export function AddMatchForm() {
     </Form>
   )
 }
-
