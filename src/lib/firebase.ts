@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAgPSd0JZuTg1LqgPz1uHY1j0dhsequr14",
   authDomain: "staffable-e2ebf.firebaseapp.com",
   projectId: "staffable-e2ebf",
-  storageBucket: "staffable-e2ebf.firebasestorage.app",
+  storageBucket: "staffable-e2ebf.appspot.com",
   messagingSenderId: "227110655537",
   appId: "1:227110655537:web:6618d8d7d2bdf5dcac2710",
   measurementId: "G-79F3LN8203"
