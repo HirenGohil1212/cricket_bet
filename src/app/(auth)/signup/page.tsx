@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { 
     updateProfile, 
     RecaptchaVerifier, 
@@ -39,12 +39,10 @@ export default function SignupPage() {
     const [step, setStep] = useState<'details' | 'otp'>('details');
     const [isLoading, setIsLoading] = useState(false);
     
-    const recaptchaButtonRef = useRef<HTMLButtonElement>(null);
-    
     // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
-         if (!window.recaptchaVerifier && recaptchaButtonRef.current) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaButtonRef.current, {
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
                 'callback': () => {
                   // reCAPTCHA solved, this callback is executed.
@@ -175,6 +173,7 @@ export default function SignupPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
+                <div id="recaptcha-container"></div>
                 {step === 'details' ? (
                     <form onSubmit={handleRequestOtp} className="space-y-4">
                        <div className="space-y-2">
@@ -207,7 +206,7 @@ export default function SignupPage() {
                             <Label htmlFor="referral">Referral Code (Optional)</Label>
                             <Input id="referral" placeholder="GUESSWIN123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} disabled={isLoading} />
                         </div>
-                        <Button ref={recaptchaButtonRef} type="submit" className="w-full" disabled={isLoading}>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? 'Sending OTP...' : 'Send OTP'}
                         </Button>
                     </form>

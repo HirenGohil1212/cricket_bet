@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber, updatePassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -30,12 +30,10 @@ export default function ForgotPasswordPage() {
     const [step, setStep] = useState<'mobile' | 'otp' | 'success'>('mobile');
     const [isLoading, setIsLoading] = useState(false);
     
-    const recaptchaButtonRef = useRef<HTMLButtonElement>(null);
-    
     // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
-         if (!window.recaptchaVerifier && recaptchaButtonRef.current) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaButtonRef.current, {
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
                 'callback': () => {
                   // reCAPTCHA solved, this callback is executed.
@@ -119,6 +117,7 @@ export default function ForgotPasswordPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
+                <div id="recaptcha-container"></div>
                 {step === 'mobile' && (
                     <form onSubmit={handleSendOtp} className="space-y-6">
                         <div className="space-y-2">
@@ -139,7 +138,7 @@ export default function ForgotPasswordPage() {
                                 />
                             </div>
                         </div>
-                        <Button ref={recaptchaButtonRef} type="submit" className="w-full" disabled={isLoading}>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? 'Sending OTP...' : 'Send OTP'}
                         </Button>
                     </form>
