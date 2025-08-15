@@ -39,6 +39,9 @@ export default function ForgotPasswordPage() {
                     // reCAPTCHA solved, allow signInWithPhoneNumber.
                 }
             });
+             window.recaptchaVerifier.render().catch((err: any) => {
+                console.error("reCAPTCHA render error", err);
+            });
         }
     }, []);
 
@@ -55,9 +58,13 @@ export default function ForgotPasswordPage() {
             window.confirmationResult = confirmationResult;
             toast({ title: "OTP Sent", description: "Please check your phone for the OTP." });
             setStep('otp');
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error sending OTP: ", error);
-            toast({ variant: "destructive", title: "Failed to send OTP", description: "Please try again." });
+            let description = "Please try again later.";
+            if (error.message.includes('reCAPTCHA')) {
+                description = "reCAPTCHA verification failed. Please refresh and try again."
+            }
+            toast({ variant: "destructive", title: "Failed to send OTP", description });
         } finally {
             setIsLoading(false);
         }
