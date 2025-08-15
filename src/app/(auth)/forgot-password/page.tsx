@@ -116,6 +116,7 @@ export default function ForgotPasswordPage() {
                 <CardDescription>
                     {step === 'mobile' && "Enter your mobile number to receive a reset OTP."}
                     {step === 'otp' && "Enter the OTP and your new password."}
+                    {step === 'success' && "Your password has been reset."}
                 </CardDescription>
             </CardHeader>
             <CardContent>
