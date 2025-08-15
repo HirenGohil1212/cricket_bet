@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
     updateProfile, 
     RecaptchaVerifier, 
@@ -38,11 +38,13 @@ export default function SignupPage() {
     const [otp, setOtp] = useState('');
     const [step, setStep] = useState<'details' | 'otp'>('details');
     const [isLoading, setIsLoading] = useState(false);
+    
+    const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
     // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        if (!window.recaptchaVerifier && recaptchaContainerRef.current) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
                 'size': 'invisible',
                 'callback': (response: any) => {
                     // reCAPTCHA solved, allow signInWithPhoneNumber.
@@ -51,6 +53,7 @@ export default function SignupPage() {
                     // Response expired. Ask user to solve reCAPTCHA again.
                 }
             });
+            window.recaptchaVerifier.render().catch(err => console.error("reCAPTCHA render error", err));
         }
     }, []);
     
@@ -176,7 +179,7 @@ export default function SignupPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                 <div id="recaptcha-container"></div>
+                <div ref={recaptchaContainerRef}></div>
                 {step === 'details' ? (
                     <form onSubmit={handleRequestOtp} className="space-y-4">
                        <div className="space-y-2">
