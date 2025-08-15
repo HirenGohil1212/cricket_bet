@@ -44,7 +44,8 @@ export default function ForgotPasswordPage() {
         }
     }, []);
 
-    const handleSendOtp = async () => {
+    const handleSendOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (phoneNumber.length !== 10) {
             toast({ variant: "destructive", title: "Invalid Number", description: "Please enter a valid 10-digit mobile number." });
             return;
@@ -119,7 +120,7 @@ export default function ForgotPasswordPage() {
             </CardHeader>
             <CardContent>
                 {step === 'mobile' && (
-                    <form onSubmit={(e) => { e.preventDefault(); handleSendOtp(); }} className="space-y-6">
+                    <form onSubmit={handleSendOtp} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="phone">Mobile Number</Label>
                              <div className="flex items-center">
@@ -170,5 +171,3 @@ export default function ForgotPasswordPage() {
         </Card>
     );
 }
-
-    

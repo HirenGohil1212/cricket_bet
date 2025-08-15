@@ -39,23 +39,22 @@ export default function SignupPage() {
     const [step, setStep] = useState<'details' | 'otp'>('details');
     const [isLoading, setIsLoading] = useState(false);
     
-    // We will use this ref to render the reCAPTCHA widget.
     const recaptchaButtonRef = useRef<HTMLButtonElement>(null);
     
     // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
-        if (!window.recaptchaVerifier && recaptchaButtonRef.current) {
+         if (!window.recaptchaVerifier && recaptchaButtonRef.current) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaButtonRef.current, {
                 'size': 'invisible',
                 'callback': () => {
                   // reCAPTCHA solved, this callback is executed.
-                  // We will handle the OTP sending from the button's onClick now.
                 }
             });
         }
     }, []);
 
-    const handleRequestOtp = async () => {
+    const handleRequestOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (name.length < 2) {
             toast({ variant: "destructive", title: "Invalid Name", description: "Name must be at least 2 characters." });
             return;
@@ -177,7 +176,7 @@ export default function SignupPage() {
             </CardHeader>
             <CardContent>
                 {step === 'details' ? (
-                    <form onSubmit={(e) => { e.preventDefault(); handleRequestOtp(); }} className="space-y-4">
+                    <form onSubmit={handleRequestOtp} className="space-y-4">
                        <div className="space-y-2">
                            <Label htmlFor="name">Full Name</Label>
                            <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading}/>
@@ -236,5 +235,3 @@ export default function SignupPage() {
         </Card>
     );
 }
-
-    
