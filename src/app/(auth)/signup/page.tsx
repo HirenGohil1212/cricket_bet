@@ -41,13 +41,10 @@ export default function SignupPage() {
     
     useEffect(() => {
         if (!window.recaptchaVerifier) {
-            // The container must be visible to the user for this to work.
-            // We use an empty div and the 'invisible' size.
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
                 'callback': (response: any) => {
                     // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    // This callback is often used for automatic form submission.
                 }
             });
         }
@@ -237,3 +234,5 @@ export default function SignupPage() {
         </Card>
     );
 }
+
+    

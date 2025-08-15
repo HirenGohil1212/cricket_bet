@@ -32,8 +32,6 @@ export default function ForgotPasswordPage() {
     
     useEffect(() => {
         if (!window.recaptchaVerifier) {
-            // The container must be visible to the user for this to work.
-            // We use an empty div and the 'invisible' size.
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
                 'callback': (response: any) => {
@@ -171,3 +169,5 @@ export default function ForgotPasswordPage() {
         </Card>
     );
 }
+
+    
