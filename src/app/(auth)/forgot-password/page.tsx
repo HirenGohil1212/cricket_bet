@@ -30,17 +30,29 @@ export default function ForgotPasswordPage() {
     const [step, setStep] = useState<'mobile' | 'otp' | 'success'>('mobile');
     const [isLoading, setIsLoading] = useState(false);
     
-    // Set up reCAPTCHA on component mount, and only once.
+    // This effect initializes the reCAPTCHA verifier and cleans it up.
+    // It runs only ONCE when the component mounts.
     useEffect(() => {
         if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                'size': 'invisible',
-                'callback': () => {
+            window.recaptchaVerifier = new RecaptchaVerifier(
+              auth,
+              'recaptcha-container',
+              {
+                size: 'invisible',
+                callback: () => {
                   // reCAPTCHA solved, this callback is executed.
-                }
-            });
+                },
+              }
+            );
         }
-    }, []);
+        
+        // Cleanup function to clear the reCAPTCHA instance when the component unmounts
+        return () => {
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+            }
+        };
+    }, []); // Empty dependency array ensures this runs only once.
 
     const handleSendOtp = async (e: React.FormEvent) => {
         e.preventDefault();
