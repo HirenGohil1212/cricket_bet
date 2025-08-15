@@ -30,26 +30,21 @@ export default function ForgotPasswordPage() {
     const [step, setStep] = useState<'mobile' | 'otp' | 'success'>('mobile');
     const [isLoading, setIsLoading] = useState(false);
     
-    const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+    const recaptchaButtonRef = useRef<HTMLButtonElement>(null);
     
     // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
-        if (!window.recaptchaVerifier && recaptchaContainerRef.current) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+         if (!window.recaptchaVerifier && recaptchaButtonRef.current) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaButtonRef.current, {
                 'size': 'invisible',
-                'callback': (response: any) => {
-                    // reCAPTCHA solved, allow signInWithPhoneNumber.
-                },
-                'expired-callback': () => {
-                    // Response expired. Ask user to solve reCAPTCHA again.
+                'callback': () => {
+                  // reCAPTCHA solved, this callback is executed.
                 }
             });
-            window.recaptchaVerifier.render().catch(err => console.error("reCAPTCHA render error", err));
         }
     }, []);
 
-    const handleSendOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSendOtp = async () => {
         if (phoneNumber.length !== 10) {
             toast({ variant: "destructive", title: "Invalid Number", description: "Please enter a valid 10-digit mobile number." });
             return;
@@ -123,9 +118,8 @@ export default function ForgotPasswordPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div ref={recaptchaContainerRef}></div>
                 {step === 'mobile' && (
-                    <form onSubmit={handleSendOtp} className="space-y-6">
+                    <form onSubmit={(e) => { e.preventDefault(); handleSendOtp(); }} className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="phone">Mobile Number</Label>
                              <div className="flex items-center">
@@ -144,7 +138,7 @@ export default function ForgotPasswordPage() {
                                 />
                             </div>
                         </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
+                        <Button ref={recaptchaButtonRef} type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? 'Sending OTP...' : 'Send OTP'}
                         </Button>
                     </form>
@@ -176,3 +170,5 @@ export default function ForgotPasswordPage() {
         </Card>
     );
 }
+
+    
