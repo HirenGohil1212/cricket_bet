@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 // Make recaptchaVerifier accessible to component functions
 declare global {
     interface Window {
-        recaptchaVerifier: any;
+        recaptchaVerifier: RecaptchaVerifier;
         confirmationResult: any;
     }
 }
@@ -30,29 +30,18 @@ export default function ForgotPasswordPage() {
     const [step, setStep] = useState<'mobile' | 'otp' | 'success'>('mobile');
     const [isLoading, setIsLoading] = useState(false);
     
-    // Set up reCAPTCHA on component mount
+    // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
         if (!window.recaptchaVerifier) {
-            auth.useDeviceLanguage();
-            // Use a dummy reCAPTCHA verifier for development to bypass hostname check
-            if (process.env.NODE_ENV === 'development') {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': (response: any) => {
-                        // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    },
-                    'expired-callback': () => {
-                        // Response expired. Ask user to solve reCAPTCHA again.
-                    },
-                });
-            } else {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': () => {
-                        // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    }
-                });
-            }
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response: any) => {
+                    // reCAPTCHA solved, allow signInWithPhoneNumber.
+                },
+                'expired-callback': () => {
+                    // Response expired. Ask user to solve reCAPTCHA again.
+                }
+            });
         }
     }, []);
 
@@ -74,6 +63,8 @@ export default function ForgotPasswordPage() {
             let description = "Please try again later.";
             if (error.code === 'auth/captcha-check-failed' || error.message.includes('reCAPTCHA')) {
                 description = "reCAPTCHA verification failed. Please refresh and try again."
+            } else if (error.code === 'auth/too-many-requests') {
+                 description = "Too many requests. Please try again later.";
             }
             toast({ variant: "destructive", title: "Failed to send OTP", description });
         } finally {

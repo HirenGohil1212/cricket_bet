@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 // Make recaptchaVerifier accessible to component functions
 declare global {
     interface Window {
-        recaptchaVerifier: any;
+        recaptchaVerifier: RecaptchaVerifier;
         confirmationResult: any;
     }
 }
@@ -39,29 +39,18 @@ export default function SignupPage() {
     const [step, setStep] = useState<'details' | 'otp'>('details');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Set up reCAPTCHA on component mount
+    // Set up reCAPTCHA on component mount, and only once.
     useEffect(() => {
         if (!window.recaptchaVerifier) {
-            auth.useDeviceLanguage();
-            // Use a dummy reCAPTCHA verifier for development to bypass hostname check
-            if (process.env.NODE_ENV === 'development') {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': (response: any) => {
-                        // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    },
-                    'expired-callback': () => {
-                        // Response expired. Ask user to solve reCAPTCHA again.
-                    },
-                });
-            } else {
-                 window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': () => {
-                        // reCAPTCHA solved, allow signInWithPhoneNumber.
-                    }
-                });
-            }
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response: any) => {
+                    // reCAPTCHA solved, allow signInWithPhoneNumber.
+                },
+                'expired-callback': () => {
+                    // Response expired. Ask user to solve reCAPTCHA again.
+                }
+            });
         }
     }, []);
     
