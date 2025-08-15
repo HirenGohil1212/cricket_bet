@@ -32,17 +32,13 @@ export default function ForgotPasswordPage() {
     
     // Set up reCAPTCHA on component mount
     useEffect(() => {
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                'size': 'invisible',
-                'callback': () => {
-                    // reCAPTCHA solved, allow signInWithPhoneNumber.
-                }
-            });
-             window.recaptchaVerifier.render().catch((err: any) => {
-                console.error("reCAPTCHA render error", err);
-            });
-        }
+        auth.useDeviceLanguage();
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => {
+                // reCAPTCHA solved, allow signInWithPhoneNumber.
+            }
+        });
     }, []);
 
     const handleSendOtp = async (e: React.FormEvent) => {
@@ -61,7 +57,7 @@ export default function ForgotPasswordPage() {
         } catch (error: any) {
             console.error("Error sending OTP: ", error);
             let description = "Please try again later.";
-            if (error.message.includes('reCAPTCHA')) {
+            if (error.code === 'auth/captcha-check-failed' || error.message.includes('reCAPTCHA')) {
                 description = "reCAPTCHA verification failed. Please refresh and try again."
             }
             toast({ variant: "destructive", title: "Failed to send OTP", description });
