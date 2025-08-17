@@ -55,48 +55,45 @@ const createPredictionSchema = (
         }),
     };
     
-    let playerPredictionSchema = z.object({
-        teamA: z.string().optional(),
-        teamB: z.string().optional(),
-    });
-    
-    const refinementOptions = {
-        message: "A prediction is required for the selected side.",
-        path: ['root'],
-    };
-
-    if (allowOneSidedBets) {
-         playerPredictionSchema = playerPredictionSchema.refine(data => {
-            if (betOnSide === 'both') return !!data.teamA && !!data.teamB;
-            if (betOnSide === 'teamA') return !!data.teamA;
-            if (betOnSide === 'teamB') return !!data.teamB;
-            return false;
-        }, refinementOptions);
-    } else {
-         playerPredictionSchema = z.object({
-            teamA: z.string({ required_error: 'Prediction is required' }).min(1, 'Prediction is required'),
-            teamB: z.string({ required_error: 'Prediction is required' }).min(1, 'Prediction is required'),
-        });
-    }
-    
     const qnaSchemaObject = questions.reduce((acc, q) => {
-        let questionFieldSchema = z.object({
-            teamA: z.string().optional(),
-            teamB: z.string().optional(),
-        });
-
-        if (allowOneSidedBets) {
-            questionFieldSchema = questionFieldSchema.refine(data => {
-                if (betOnSide === 'both') return (data.teamA?.trim() ?? '') !== '' && (data.teamB?.trim() ?? '') !== '';
-                if (betOnSide === 'teamA') return (data.teamA?.trim() ?? '') !== '';
-                if (betOnSide === 'teamB') return (data.teamB?.trim() ?? '') !== '';
-                return false;
-            }, { message: "A prediction is required for the selected side.", path: ['root'] });
-        } else {
-            questionFieldSchema = z.object({
-                teamA: z.string().min(1, 'Prediction is required'),
-                teamB: z.string().min(1, 'Prediction is required'),
+        let questionFieldSchema;
+        if (bettingMode === 'player') {
+             questionFieldSchema = z.object({
+                teamA: z.string().optional(),
+                teamB: z.string().optional(),
             });
+            if (allowOneSidedBets) {
+                questionFieldSchema = questionFieldSchema.refine(data => {
+                    if (betOnSide === 'both') return !!data.teamA && !!data.teamB;
+                    if (betOnSide === 'teamA') return !!data.teamA;
+                    if (betOnSide === 'teamB') return !!data.teamB;
+                    return false;
+                }, { message: "Please select a player for the chosen side.", path: ['root'] });
+            } else {
+                questionFieldSchema = z.object({
+                    teamA: z.string({ required_error: 'Player selection is required' }).min(1, 'Player selection is required'),
+                    teamB: z.string({ required_error: 'Player selection is required' }).min(1, 'Player selection is required'),
+                });
+            }
+        } else { // QnA mode
+            questionFieldSchema = z.object({
+                teamA: z.string().optional(),
+                teamB: z.string().optional(),
+            });
+
+            if (allowOneSidedBets) {
+                questionFieldSchema = questionFieldSchema.refine(data => {
+                    if (betOnSide === 'both') return (data.teamA?.trim() ?? '') !== '' && (data.teamB?.trim() ?? '') !== '';
+                    if (betOnSide === 'teamA') return (data.teamA?.trim() ?? '') !== '';
+                    if (betOnSide === 'teamB') return (data.teamB?.trim() ?? '') !== '';
+                    return false;
+                }, { message: "A prediction is required for the selected side.", path: ['root'] });
+            } else {
+                questionFieldSchema = z.object({
+                    teamA: z.string().min(1, 'Prediction is required'),
+                    teamB: z.string().min(1, 'Prediction is required'),
+                });
+            }
         }
         acc[q.id] = questionFieldSchema;
         return acc;
@@ -105,13 +102,9 @@ const createPredictionSchema = (
     const finalSchema = z.object({
         ...baseSchema,
         predictions: z.object(qnaSchemaObject),
-        playerPrediction: playerPredictionSchema,
     });
 
-    if (bettingMode === 'player') {
-        return finalSchema.omit({ predictions: true });
-    }
-    return finalSchema.omit({ playerPrediction: true });
+    return finalSchema;
 };
 
 
@@ -136,27 +129,17 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
   
   useEffect(() => {
     if (match?.allowOneSidedBets && open) {
-        if (bettingMode === 'qna') {
-            questions.forEach(q => {
-                const currentPrediction = form.getValues(`predictions.${q.id}`);
-                if (betOnSide === 'teamA' && currentPrediction?.teamB) {
-                    form.setValue(`predictions.${q.id}.teamB`, '');
-                } else if (betOnSide === 'teamB' && currentPrediction?.teamA) {
-                    form.setValue(`predictions.${q.id}.teamA`, '');
-                }
-            });
-            form.trigger('predictions');
-        } else { // player mode
-            const currentPlayerPrediction = form.getValues('playerPrediction');
-            if (betOnSide === 'teamA' && currentPlayerPrediction?.teamB) {
-                form.setValue('playerPrediction.teamB', '');
-            } else if (betOnSide === 'teamB' && currentPlayerPrediction?.teamA) {
-                form.setValue('playerPrediction.teamA', '');
+        questions.forEach(q => {
+            const currentPrediction = form.getValues(`predictions.${q.id}`);
+            if (betOnSide === 'teamA' && currentPrediction?.teamB) {
+                form.setValue(`predictions.${q.id}.teamB`, '');
+            } else if (betOnSide === 'teamB' && currentPrediction?.teamA) {
+                form.setValue(`predictions.${q.id}.teamA`, '');
             }
-             form.trigger('playerPrediction');
-        }
+        });
+        form.trigger('predictions');
     }
-  }, [betOnSide, questions, form, match?.allowOneSidedBets, open, bettingMode]);
+  }, [betOnSide, questions, form, match?.allowOneSidedBets, open]);
 
 
   useEffect(() => {
@@ -182,7 +165,6 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
         form.reset({
           amount: betOptions[0]?.amount || 0,
           predictions: defaultQnaPredictions,
-          playerPrediction: { teamA: '', teamB: '' }
         });
         
         setIsLoading(false);
@@ -200,16 +182,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
 
     let finalPredictions: Prediction[] = [];
     
-    if (bettingMode === 'player' && data.playerPrediction) {
-      finalPredictions = [{
-        questionId: 'player_bet', 
-        questionText: 'Player Prediction',
-        predictedAnswer: {
-          teamA: data.playerPrediction.teamA || '',
-          teamB: data.playerPrediction.teamB || '',
-        }
-      }];
-    } else if (bettingMode === 'qna' && data.predictions) {
+    if (data.predictions) {
         finalPredictions = Object.entries(data.predictions).map(([questionId, predictedAnswer]: [string, any]) => {
           const question = questions.find(q => q.id === questionId);
           return {
@@ -323,84 +296,69 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                             </div>
                         )}
                         
-                        {bettingMode === 'qna' ? (
-                            questions.map((q) => (
-                                <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                                    <div className={cn("flex items-center justify-around gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'flex-col' : 'flex-col sm:flex-row')}>
-                                        {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                            <FormField
-                                                control={form.control}
-                                                name={`predictions.${q.id}.teamA`}
-                                                render={({ field }) => (
-                                                    <FormItem className="w-full">
-                                                        <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="Team A prediction..." {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )}
-                                        <p className="text-sm font-semibold text-center block text-muted-foreground shrink-0 my-2 sm:my-0">
-                                            {q.question}
-                                        </p>
-                                        {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                            <FormField
-                                                control={form.control}
-                                                name={`predictions.${q.id}.teamB`}
-                                                render={({ field }) => (
-                                                    <FormItem className="w-full">
-                                                        <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="Team B prediction..." {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )}
-                                    </div>
-                                    <FormMessage>{form.formState.errors.predictions?.[q.id]?.root?.message}</FormMessage>
-                                </div>
-                            ))
-                        ) : (
-                             <div className="p-4 border rounded-lg space-y-3">
-                                <div className={cn("grid gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
+                        {questions.map((q) => (
+                          <div key={q.id} className="p-4 border rounded-lg space-y-3">
+                             <p className="text-sm font-semibold text-center block text-muted-foreground shrink-0 my-2 sm:my-0">
+                                {q.question}
+                            </p>
+                            {bettingMode === 'qna' ? (
+                                <div className={cn("flex items-center justify-around gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'flex-col' : 'flex-col sm:flex-row')}>
                                     {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                         <FormField
                                             control={form.control}
-                                            name={`playerPrediction.teamA`}
+                                            name={`predictions.${q.id}.teamA`}
                                             render={({ field }) => (
-                                                <FormItem className="space-y-3">
+                                                <FormItem className="w-full">
+                                                    <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Team A prediction..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                        <FormField
+                                            control={form.control}
+                                            name={`predictions.${q.id}.teamB`}
+                                            render={({ field }) => (
+                                                <FormItem className="w-full">
+                                                    <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Team B prediction..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                            ) : ( // Player betting mode
+                                <div className={cn("flex items-center justify-around gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'flex-col' : 'flex-col sm:flex-row')}>
+                                    {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                        <FormField
+                                            control={form.control}
+                                            name={`predictions.${q.id}.teamA`}
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-3 w-full">
                                                     <FormLabel className="text-sm font-semibold text-center block">{match.teamA.name}</FormLabel>
                                                     <FormControl>
-                                                        <RadioGroup
-                                                            onValueChange={field.onChange}
-                                                            value={field.value}
-                                                            className="flex flex-col space-y-1"
-                                                        >
+                                                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
                                                             <ScrollArea className="h-40 w-full rounded-md border p-2">
                                                                 {(match.teamA.players && match.teamA.players.length > 0) ? (
                                                                     match.teamA.players.map((player) => (
                                                                         <FormItem key={`${player.name}-a`} className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted cursor-pointer">
                                                                             <FormControl>
-                                                                                <RadioGroupItem value={player.name} id={`${player.name}-a`}/>
+                                                                                <RadioGroupItem value={player.name} id={`${q.id}-${player.name}-a`}/>
                                                                             </FormControl>
-                                                                            <Label htmlFor={`${player.name}-a`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
-                                                                                <Avatar className="h-8 w-8">
-                                                                                    <AvatarImage src={player.imageUrl} alt={player.name} />
-                                                                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                                                </Avatar>
+                                                                            <Label htmlFor={`${q.id}-${player.name}-a`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
+                                                                                <Avatar className="h-8 w-8"><AvatarImage src={player.imageUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
                                                                                 <span className="truncate">{player.name}</span>
                                                                             </Label>
                                                                         </FormItem>
                                                                     ))
-                                                                ) : (
-                                                                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                                                                        <p>No players listed.</p>
-                                                                    </div>
-                                                                )}
+                                                                ) : <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>No players listed.</p></div>}
                                                             </ScrollArea>
                                                         </RadioGroup>
                                                     </FormControl>
@@ -409,40 +367,29 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                             )}
                                         />
                                     )}
-                                     {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                         <FormField
                                             control={form.control}
-                                            name={`playerPrediction.teamB`}
+                                            name={`predictions.${q.id}.teamB`}
                                             render={({ field }) => (
-                                                <FormItem className="space-y-3">
+                                                <FormItem className="space-y-3 w-full">
                                                     <FormLabel className="text-sm font-semibold text-center block">{match.teamB.name}</FormLabel>
                                                     <FormControl>
-                                                         <RadioGroup
-                                                            onValueChange={field.onChange}
-                                                            value={field.value}
-                                                            className="flex flex-col space-y-1"
-                                                        >
+                                                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
                                                             <ScrollArea className="h-40 w-full rounded-md border p-2">
                                                                 {(match.teamB.players && match.teamB.players.length > 0) ? (
                                                                     match.teamB.players.map((player) => (
                                                                         <FormItem key={`${player.name}-b`} className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted cursor-pointer">
                                                                             <FormControl>
-                                                                                <RadioGroupItem value={player.name} id={`${player.name}-b`} />
+                                                                                <RadioGroupItem value={player.name} id={`${q.id}-${player.name}-b`}/>
                                                                             </FormControl>
-                                                                            <Label htmlFor={`${player.name}-b`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
-                                                                                <Avatar className="h-8 w-8">
-                                                                                    <AvatarImage src={player.imageUrl} alt={player.name} />
-                                                                                    <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                                                </Avatar>
+                                                                            <Label htmlFor={`${q.id}-${player.name}-b`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
+                                                                                <Avatar className="h-8 w-8"><AvatarImage src={player.imageUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
                                                                                 <span className="truncate">{player.name}</span>
                                                                             </Label>
                                                                         </FormItem>
                                                                     ))
-                                                                ) : (
-                                                                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                                                                        <p>No players listed.</p>
-                                                                    </div>
-                                                                )}
+                                                                ) : <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>No players listed.</p></div>}
                                                             </ScrollArea>
                                                         </RadioGroup>
                                                     </FormControl>
@@ -452,10 +399,10 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                         />
                                     )}
                                 </div>
-                                <FormMessage>{form.formState.errors.playerPrediction?.root?.message}</FormMessage>
-                            </div>
-                        )}
-
+                            )}
+                            <FormMessage>{form.formState.errors.predictions?.[q.id]?.root?.message}</FormMessage>
+                          </div>
+                        ))}
                        </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-12">
