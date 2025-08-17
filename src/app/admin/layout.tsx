@@ -23,6 +23,7 @@ import {
   Percent,
   Loader2,
   UsersRound,
+  DatabaseZap,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -91,6 +92,7 @@ export default function AdminLayout({
     { href: "/admin/betting-settings", label: "Betting Settings", icon: Percent },
     { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
     { href: "/admin/content", label: "Content", icon: GalleryHorizontal },
+    { href: "/admin/data-management", label: "Data Management", icon: DatabaseZap },
   ];
 
   const renderNavLinks = (isMobile = false) =>
