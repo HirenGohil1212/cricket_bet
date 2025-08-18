@@ -87,7 +87,7 @@ export async function updateBankDetails(accounts: BankAccount[]) {
 
         // --- CORRECTED DELETION LOGIC ---
 
-        // 1. Delete QR codes for accounts that are completely removed
+        // 1. Delete QR codes for accounts that are completely removed from the list
         const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
         for (const account of accountsToDelete) {
             if (account.qrCodePath) {
@@ -97,13 +97,12 @@ export async function updateBankDetails(accounts: BankAccount[]) {
 
         // 2. Delete old QR code if a new one is uploaded for an existing account
         for (const newAccount of accounts) {
+            if (!newAccount.id) continue;
             const oldAccount = currentAccountsMap.get(newAccount.id);
-            // Check if a new file is being uploaded (`qrCodeFile` is present) AND an old path exists
-            if (newAccount.qrCodeFile && oldAccount?.qrCodePath) {
-                 // Ensure we don't delete the same path if the file wasn't changed but submitted again
-                if (newAccount.qrCodePath !== oldAccount.qrCodePath) {
-                    await deleteFileByPath(oldAccount.qrCodePath);
-                }
+            // Check if a new QR code URL is present and it's different from the old one,
+            // and an old path exists to be deleted.
+            if (oldAccount?.qrCodePath && newAccount.qrCodeUrl !== oldAccount.qrCodeUrl) {
+                await deleteFileByPath(oldAccount.qrCodePath);
             }
         }
         
