@@ -85,26 +85,33 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
             
-            // Process deletions one by one for data integrity
+            const batch = writeBatch(db);
+
             for (const docSnapshot of snapshot.docs) {
                 // Special handling for deposits to delete associated storage file first
                 if (collectionName === 'deposits') {
                     const data = docSnapshot.data();
+                    // Use the direct path if available (new data), otherwise use the full URL (old data)
                     const pathToDelete = data.screenshotPath || data.screenshotUrl;
 
                     if (pathToDelete) {
                         try {
+                            // This function now robustly handles both paths and URLs
                             await deleteFileByPath(pathToDelete);
                         } catch (storageError) {
+                            // Log the error but continue to delete the Firestore record,
+                            // as the file might be non-existent, which is okay.
                             console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record.`, storageError);
                         }
                     }
                 }
                 
-                // Delete the Firestore document
-                await deleteDoc(docSnapshot.ref);
+                // Add the Firestore document deletion to the batch
+                batch.delete(docSnapshot.ref);
                 totalDeleted++;
             }
+             // Commit all deletions for the current collection
+            await batch.commit();
         }
         
         revalidatePath('/admin/data-management');
@@ -114,3 +121,4 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
         return { error: 'Failed to delete data history. Check server logs for details.' };
     }
 }
+
