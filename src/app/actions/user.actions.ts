@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
+import { deleteFileByUrl } from '@/lib/storage';
 
 // Function to get user's bank account
 export async function getUserBankAccount(userId: string): Promise<UserBankAccount | null> {
@@ -53,56 +54,72 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
 
 
 // Server action to delete user data history
-export async function deleteUserDataHistory({ startDate, endDate }: { startDate: Date; endDate: Date }) {
-  try {
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const userIds = usersSnapshot.docs.map(doc => doc.id);
+export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
+    if (collectionsToDelete.length === 0) {
+        return { error: 'Please select at least one data type to delete.' };
+    }
 
-    let totalDeleted = 0;
+    try {
+        let totalDeleted = 0;
+        const dateFieldMap: { [key: string]: string } = {
+            bets: 'timestamp',
+            deposits: 'createdAt',
+            withdrawals: 'createdAt',
+            matches: 'startTime',
+        };
 
-    const collectionsToDelete = ['bets', 'deposits', 'withdrawals'];
+        for (const collectionName of collectionsToDelete) {
+            const dateField = dateFieldMap[collectionName];
+            if (!dateField) continue;
+            
+            const q = query(
+                collection(db, collectionName),
+                where(dateField, '>=', Timestamp.fromDate(startDate)),
+                where(dateField, '<=', Timestamp.fromDate(endDate))
+            );
 
-    for (const collectionName of collectionsToDelete) {
-      // Firebase queries on `in` array have a limit of 30 items. Batch the userIds.
-      for (let i = 0; i < userIds.length; i += 30) {
-        const userIdChunk = userIds.slice(i, i + 30);
-        
-        const q = query(
-          collection(db, collectionName),
-          where('userId', 'in', userIdChunk),
-          where('timestamp', '>=', Timestamp.fromDate(startDate)),
-          where('timestamp', '<=', Timestamp.fromDate(endDate))
-        );
+            const snapshot = await getDocs(q);
 
-        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-            // Firestore batch writes have a limit of 500 operations.
-            let batch: WriteBatch = writeBatch(db);
-            let operationCount = 0;
+            if (!snapshot.empty) {
+                let batch: WriteBatch = writeBatch(db);
+                let operationCount = 0;
 
-            snapshot.docs.forEach((doc, index) => {
-                batch.delete(doc.ref);
-                operationCount++;
-                totalDeleted++;
+                for (const doc of snapshot.docs) {
+                    // Specific logic for deposits to delete screenshots from storage
+                    if (collectionName === 'deposits') {
+                        const data = doc.data();
+                        if (data.screenshotUrl) {
+                            try {
+                                await deleteFileByUrl(data.screenshotUrl);
+                            } catch (storageError) {
+                                console.error(`Failed to delete storage file ${data.screenshotUrl}:`, storageError);
+                                // Optionally, decide if you want to continue or stop if a file deletion fails
+                            }
+                        }
+                    }
+                    
+                    batch.delete(doc.ref);
+                    operationCount++;
+                    totalDeleted++;
 
-                if (operationCount === 499) {
-                    batch.commit();
-                    batch = writeBatch(db);
-                    operationCount = 0;
+                    // Firestore batch writes have a limit of 500 operations.
+                    if (operationCount === 499) {
+                        await batch.commit();
+                        batch = writeBatch(db);
+                        operationCount = 0;
+                    }
                 }
-            });
 
-            if (operationCount > 0) {
-                await batch.commit();
+                if (operationCount > 0) {
+                    await batch.commit();
+                }
             }
         }
-      }
+        
+        revalidatePath('/admin/data-management');
+        return { success: `Successfully deleted ${totalDeleted} historical records.` };
+    } catch (error: any) {
+        console.error("Error deleting data history: ", error);
+        return { error: 'Failed to delete data history. Check server logs for details.' };
     }
-    
-    return { success: `Successfully deleted ${totalDeleted} historical records.` };
-  } catch (error: any) {
-    console.error("Error deleting user data history: ", error);
-    return { error: 'Failed to delete user data history.' };
-  }
 }

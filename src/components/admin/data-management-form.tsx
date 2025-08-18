@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { deleteUserDataHistory } from "@/app/actions/user.actions";
+import { deleteDataHistory } from "@/app/actions/user.actions";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -33,9 +33,20 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "../ui/checkbox";
+
+const items = [
+  { id: "bets", label: "Bets Data" },
+  { id: "deposits", label: "Deposits Data (with images)" },
+  { id: "withdrawals", label: "Withdrawals Data" },
+  { id: "matches", label: "Matches Data" },
+] as const;
 
 
 const dataManagementFormSchema = z.object({
+  collectionsToDelete: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one item.",
+  }),
   dateRange: z.object({
     from: z.date({
       required_error: "A start date is required.",
@@ -60,6 +71,9 @@ export function DataManagementForm() {
 
   const form = useForm<DataManagementFormValues>({
     resolver: zodResolver(dataManagementFormSchema),
+    defaultValues: {
+      collectionsToDelete: [],
+    }
   });
 
   const onSubmit = (data: DataManagementFormValues) => {
@@ -74,9 +88,10 @@ export function DataManagementForm() {
     setIsAlertOpen(false);
 
     try {
-      const result = await deleteUserDataHistory({
+      const result = await deleteDataHistory({
         startDate: formData.dateRange.from,
         endDate: formData.dateRange.to,
+        collectionsToDelete: formData.collectionsToDelete,
       });
 
       if (result.error) {
@@ -96,12 +111,62 @@ export function DataManagementForm() {
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg">
+          <FormField
+              control={form.control}
+              name="collectionsToDelete"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">Data to Delete</FormLabel>
+                    <FormDescription>
+                      Select the types of data you want to permanently delete.
+                    </FormDescription>
+                  </div>
+                  <div className="space-y-2 rounded-lg border p-4">
+                    {items.map((item) => (
+                      <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="collectionsToDelete"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={item.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...field.value, item.id])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item.id
+                                          )
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {item.label}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
            <FormField
               control={form.control}
               name="dateRange"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date range</FormLabel>
+                  <FormLabel>Date Range for Deletion</FormLabel>
                    <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -139,14 +204,15 @@ export function DataManagementForm() {
                     </PopoverContent>
                   </Popover>
                   <FormDescription>
-                    Select the date range for deleting user history (bets, deposits, withdrawals).
+                    Select the date range for deleting the selected data types.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
           <Button type="submit" variant="destructive" disabled={isSubmitting}>
-            {isSubmitting ? "Deleting..." : "Delete User Data"}
+            <Trash2 className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Deleting..." : "Delete Selected Data"}
           </Button>
         </form>
       </Form>
@@ -155,7 +221,7 @@ export function DataManagementForm() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-                This action is irreversible. You are about to permanently delete all user bets, deposits, and withdrawal requests between <span className="font-bold">{formData?.dateRange.from ? format(formData.dateRange.from, 'PPP') : ''}</span> and <span className="font-bold">{formData?.dateRange.to ? format(formData.dateRange.to, 'PPP') : ''}</span>. This will not delete the user accounts themselves.
+                This action is irreversible. You are about to permanently delete all selected data between <span className="font-bold">{formData?.dateRange.from ? format(formData.dateRange.from, 'PPP') : ''}</span> and <span className="font-bold">{formData?.dateRange.to ? format(formData.dateRange.to, 'PPP') : ''}</span>. This will not delete user accounts.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
