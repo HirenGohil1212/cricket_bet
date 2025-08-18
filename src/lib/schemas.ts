@@ -57,6 +57,7 @@ export const bankAccountSchema = z.object({
     .refine((file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE), `Max file size is 5MB.`)
     .refine((file) => !file || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)), ".jpg, .jpeg, .png and .webp files are accepted."),
   qrCodeUrl: z.string().url().optional().or(z.literal('')),
+  qrCodePath: z.string().optional(),
 });
 
 export const bankDetailsFormSchema = z.object({

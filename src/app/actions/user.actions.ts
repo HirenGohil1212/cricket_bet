@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
-import { deleteFileByUrl } from '@/lib/storage';
+import { deleteFileByPath } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 
 // Function to get user's bank account
@@ -89,11 +89,11 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                 if (collectionName === 'deposits') {
                     for (const doc of snapshot.docs) {
                         const data = doc.data();
-                        if (data.screenshotUrl) {
+                        if (data.screenshotPath) {
                             try {
-                                await deleteFileByUrl(data.screenshotUrl);
+                                await deleteFileByPath(data.screenshotPath);
                             } catch (storageError) {
-                                console.error(`Failed to delete storage file ${data.screenshotUrl}:`, storageError);
+                                console.error(`Failed to delete storage file ${data.screenshotPath}:`, storageError);
                                 // We'll continue even if a single file deletion fails.
                             }
                         }

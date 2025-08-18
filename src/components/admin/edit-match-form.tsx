@@ -153,12 +153,12 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     try {
         let teamALogoUrl = match.teamA.logoUrl;
         if (data.teamALogoFile) {
-            teamALogoUrl = await uploadFile(data.teamALogoFile, 'logos');
+            teamALogoUrl = (await uploadFile(data.teamALogoFile, 'logos')).downloadUrl;
         }
 
         let teamBLogoUrl = match.teamB.logoUrl;
         if (data.teamBLogoFile) {
-            teamBLogoUrl = await uploadFile(data.teamBLogoFile, 'logos');
+            teamBLogoUrl = (await uploadFile(data.teamBLogoFile, 'logos')).downloadUrl;
         }
         
         const processPlayers = async (newPlayers: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
@@ -168,7 +168,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             for (const player of newPlayers) {
                 let imageUrl = player.playerImageUrl || '';
                 if (player.playerImageFile) {
-                    imageUrl = await uploadFile(player.playerImageFile, 'players');
+                    imageUrl = (await uploadFile(player.playerImageFile, 'players')).downloadUrl;
                 }
                 processedPlayers.push({ name: player.name, imageUrl });
             }

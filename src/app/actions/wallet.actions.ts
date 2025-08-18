@@ -22,11 +22,12 @@ interface CreateDepositRequestParams {
     userId: string;
     userName: string;
     amount: number;
-    screenshotUrl: string; // Changed from screenshotDataUri
+    screenshotUrl: string;
+    screenshotPath: string;
 }
 
 // User action to create a deposit request
-export async function createDepositRequest({ userId, userName, amount, screenshotUrl }: CreateDepositRequestParams) {
+export async function createDepositRequest({ userId, userName, amount, screenshotUrl, screenshotPath }: CreateDepositRequestParams) {
     if (!userId || !userName) {
         return { error: 'You must be logged in to make a deposit.' };
     }
@@ -43,6 +44,7 @@ export async function createDepositRequest({ userId, userName, amount, screensho
             userName,
             amount,
             screenshotUrl,
+            screenshotPath,
             status: 'Processing',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),

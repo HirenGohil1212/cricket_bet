@@ -104,13 +104,14 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
             throw new Error("Screenshot is required.");
         }
         
-        const screenshotUrl = await uploadFile(data.screenshotFile, `deposits/${user.uid}`);
+        const { downloadUrl, storagePath } = await uploadFile(data.screenshotFile, `deposits/${user.uid}`);
         
         const result = await createDepositRequest({
             userId: user.uid,
             userName: userProfile.name,
             amount: data.amount,
-            screenshotUrl: screenshotUrl,
+            screenshotUrl: downloadUrl,
+            screenshotPath: storagePath,
         });
 
         if (result.error) {

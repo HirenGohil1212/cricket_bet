@@ -60,14 +60,14 @@ export function AddPlayerForm({ onPlayerAdded }: AddPlayerFormProps) {
   async function onSubmit(data: PlayerFormValues) {
     setIsSubmitting(true);
     try {
-      const imageUrl = await uploadFile(data.playerImageFile, 'players');
-      const result = await createPlayer({ name: data.name, sport: data.sport, imageUrl });
+      const { downloadUrl } = await uploadFile(data.playerImageFile, 'players');
+      const result = await createPlayer({ name: data.name, sport: data.sport, imageUrl: downloadUrl });
 
       if (result.error) {
         toast({ variant: "destructive", title: "Error", description: result.error });
       } else {
         toast({ title: "Player Added", description: `${data.name} has been added to the list.` });
-        onPlayerAdded({ ...data, imageUrl, id: result.id }); // Notify parent component
+        onPlayerAdded({ ...data, imageUrl: downloadUrl, id: result.id }); // Notify parent component
         form.reset();
         setPreview(null);
       }

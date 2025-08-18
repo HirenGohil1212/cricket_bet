@@ -76,6 +76,7 @@ export type UserProfile = {
 export type BankAccount = {
   id?: string;
   qrCodeUrl: string;
+  qrCodePath?: string; // Add storage path for the QR code
   upiId: string;
   accountHolderName: string;
   accountNumber: string;
@@ -88,6 +89,7 @@ export type DepositRequest = {
   userName:string;
   amount: number;
   screenshotUrl: string;
+  screenshotPath: string; // Add storage path for the screenshot
   status: 'Processing' | 'Approved' | 'Rejected';
   createdAt: string;
   updatedAt: string;
@@ -145,7 +147,9 @@ export type AppSettings = {
 export type ContentSettings = {
     youtubeUrl: string;
     bannerImageUrl: string;
+    bannerImagePath?: string;
     smallVideoUrl: string;
+    smallVideoPath?: string;
 };
 
 export type DailyFinancialActivity = {

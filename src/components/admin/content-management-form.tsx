@@ -66,19 +66,27 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
     
     try {
         let bannerImageUrl = initialData?.bannerImageUrl || '';
+        let bannerImagePath = initialData?.bannerImagePath || '';
         if (data.bannerImageFile) {
-            bannerImageUrl = await uploadFile(data.bannerImageFile, 'content');
+            const uploadResult = await uploadFile(data.bannerImageFile, 'content');
+            bannerImageUrl = uploadResult.downloadUrl;
+            bannerImagePath = uploadResult.storagePath;
         }
 
         let smallVideoUrl = initialData?.smallVideoUrl || '';
+        let smallVideoPath = initialData?.smallVideoPath || '';
         if (data.smallVideoFile) {
-            smallVideoUrl = await uploadFile(data.smallVideoFile, 'content');
+            const uploadResult = await uploadFile(data.smallVideoFile, 'content');
+            smallVideoUrl = uploadResult.downloadUrl;
+            smallVideoPath = uploadResult.storagePath;
         }
 
         const payload = {
             youtubeUrl: data.youtubeUrl || '',
             bannerImageUrl,
+            bannerImagePath,
             smallVideoUrl,
+            smallVideoPath,
         };
 
         const result = await updateContent(payload);

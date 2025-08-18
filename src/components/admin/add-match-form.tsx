@@ -124,12 +124,12 @@ export function AddMatchForm() {
     try {
         let teamALogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamACountry.toLowerCase()}.webp`;
         if (data.teamALogoFile) {
-            teamALogoUrl = await uploadFile(data.teamALogoFile, 'logos');
+            teamALogoUrl = (await uploadFile(data.teamALogoFile, 'logos')).downloadUrl;
         }
 
         let teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamBCountry.toLowerCase()}.webp`;
         if (data.teamBLogoFile) {
-            teamBLogoUrl = await uploadFile(data.teamBLogoFile, 'logos');
+            teamBLogoUrl = (await uploadFile(data.teamBLogoFile, 'logos')).downloadUrl;
         }
 
         const processPlayers = async (players: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
@@ -141,7 +141,7 @@ export function AddMatchForm() {
                 // If not, it's a new player, upload image if it exists.
                 let imageUrl = player.playerImageUrl || '';
                 if (player.playerImageFile) {
-                    imageUrl = await uploadFile(player.playerImageFile, 'players');
+                    imageUrl = (await uploadFile(player.playerImageFile, 'players')).downloadUrl;
                 }
                 processedPlayers.push({ name: player.name, imageUrl });
             }

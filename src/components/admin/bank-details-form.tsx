@@ -81,10 +81,12 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
 
         for (const account of data.accounts) {
             let qrCodeUrl = account.qrCodeUrl || '';
+            let qrCodePath = account.qrCodePath || '';
 
             if (account.qrCodeFile instanceof File) {
-                // Just upload the new file. No deletion of the old one as requested.
-                qrCodeUrl = await uploadFile(account.qrCodeFile, 'qrcodes');
+                const uploadResult = await uploadFile(account.qrCodeFile, 'qrcodes');
+                qrCodeUrl = uploadResult.downloadUrl;
+                qrCodePath = uploadResult.storagePath;
             }
 
             finalAccounts.push({
@@ -94,6 +96,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                 accountNumber: account.accountNumber,
                 ifscCode: account.ifscCode,
                 qrCodeUrl: qrCodeUrl,
+                qrCodePath: qrCodePath,
             });
         }
 
