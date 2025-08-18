@@ -81,25 +81,33 @@ export async function updateBankDetails(accounts: BankAccount[]) {
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        // Get the current accounts to compare and find deletions
         const currentAccounts = await getBankDetails();
+        const currentAccountsMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
         const newAccountIds = new Set(accounts.map(acc => acc.id));
 
-        // Find accounts that are in the current list but not in the new list
-        const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
+        // --- CORRECTED DELETION LOGIC ---
 
-        // Delete the QR code from storage for each deleted account
+        // 1. Delete QR codes for accounts that are completely removed
+        const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
         for (const account of accountsToDelete) {
             if (account.qrCodePath) {
-                try {
-                    await deleteFileByPath(account.qrCodePath);
-                } catch (storageError) {
-                    // Log the error but don't block the Firestore update.
-                    // The QR code might have been manually deleted, which is okay.
-                    console.error(`Could not delete QR code for account ${account.id}. Path: ${account.qrCodePath}`, storageError);
+                await deleteFileByPath(account.qrCodePath);
+            }
+        }
+
+        // 2. Delete old QR code if a new one is uploaded for an existing account
+        for (const newAccount of accounts) {
+            const oldAccount = currentAccountsMap.get(newAccount.id);
+            // Check if a new file is being uploaded (`qrCodeFile` is present) AND an old path exists
+            if (newAccount.qrCodeFile && oldAccount?.qrCodePath) {
+                 // Ensure we don't delete the same path if the file wasn't changed but submitted again
+                if (newAccount.qrCodePath !== oldAccount.qrCodePath) {
+                    await deleteFileByPath(oldAccount.qrCodePath);
                 }
             }
         }
+        
+        // --- END CORRECTED DELETION LOGIC ---
         
         // Save the new list of accounts
         await setDoc(docRef, { accounts });
@@ -109,6 +117,10 @@ export async function updateBankDetails(accounts: BankAccount[]) {
 
     } catch (error: any) {
         console.error("Error updating bank details: ", error);
+        // It's better to return a specific error message if possible
+        if (error.code && error.code.startsWith('storage/')) {
+            return { error: 'A problem occurred with file storage. Please try again.' };
+        }
         return { error: 'An unknown error occurred while updating bank details.' };
     }
 }

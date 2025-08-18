@@ -36,6 +36,7 @@ const createDefaultAccount = (): BankAccount => ({
   accountNumber: '',
   ifscCode: '',
   qrCodeUrl: '',
+  qrCodePath: '',
 });
 
 export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
@@ -47,7 +48,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const form = useForm<BankDetailsFormValues>({
     resolver: zodResolver(bankDetailsFormSchema),
     defaultValues: {
-      accounts: initialData.length > 0 ? initialData : [createDefaultAccount()],
+      accounts: initialData.length > 0 ? initialData.map(acc => ({ ...acc, id: acc.id || uuidv4() })) : [createDefaultAccount()],
     },
   });
 
@@ -77,9 +78,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     setIsSubmitting(true);
 
     try {
-        const finalAccounts: BankAccount[] = [];
-
-        for (const account of data.accounts) {
+        const accountsWithUploads = data.accounts.map(async (account) => {
             let qrCodeUrl = account.qrCodeUrl || '';
             let qrCodePath = account.qrCodePath || '';
 
@@ -89,24 +88,29 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                 qrCodePath = uploadResult.storagePath;
             }
 
-            finalAccounts.push({
+            return {
                 id: account.id,
                 upiId: account.upiId,
                 accountHolderName: account.accountHolderName,
                 accountNumber: account.accountNumber,
                 ifscCode: account.ifscCode,
-                qrCodeUrl: qrCodeUrl,
-                qrCodePath: qrCodePath,
-            });
-        }
-
+                qrCodeUrl,
+                qrCodePath,
+            };
+        });
+        
+        const finalAccounts = await Promise.all(accountsWithUploads);
+        
+        // Pass a clean version of the accounts without the file object to the server action
         const result = await updateBankDetails(finalAccounts);
         
         if (result.error) {
             toast({ variant: "destructive", title: "Error", description: result.error });
         } else {
             toast({ title: "Success!", description: result.success });
-            form.reset({ accounts: finalAccounts }); // Reset form with new data including URLs
+            // Reset form with new data including URLs, and remove the file object
+            const resetData = finalAccounts.map(({ ...rest }) => ({ ...rest, qrCodeFile: undefined }));
+            form.reset({ accounts: resetData });
             setPreviews({});
         }
 
