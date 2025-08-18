@@ -78,27 +78,43 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             
             const q = query(
                 collection(db, collectionName),
-                where(dateField, '>=', finalStartDate),
-                where(dateField, '<=', finalEndDate)
+                where(dateField, '>=', Timestamp.fromDate(finalStartDate)),
+                where(dateField, '<=', Timestamp.fromDate(finalEndDate))
             );
 
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                // Use a single batch for all deletions in this collection
                 let batch: WriteBatch = writeBatch(db);
                 let operationCount = 0;
 
                 for (const doc of snapshot.docs) {
-                     // For deposit records, we need to delete files from storage first.
                     if (collectionName === 'deposits') {
                         const data = doc.data();
-                        if (data.screenshotPath) {
+                        let pathToDelete = data.screenshotPath;
+                        
+                        // Fallback for older documents that only have screenshotUrl
+                        if (!pathToDelete && data.screenshotUrl) {
                             try {
-                                await deleteFileByPath(data.screenshotPath);
+                                const url = new URL(data.screenshotUrl);
+                                const pathName = url.pathname;
+                                // The path is encoded, so we need to decode it. e.g., /v0/b/bucket-name.appspot.com/o/path%2Fto%2Ffile.jpg -> /v0/b/bucket-name.appspot.com/o/path/to/file.jpg
+                                const decodedPath = decodeURIComponent(pathName);
+                                // Extract the path after the bucket name and '/o/' prefix
+                                const pathPrefix = `/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || storage.app.options.storageBucket}/o/`;
+                                if (decodedPath.startsWith(pathPrefix)) {
+                                    pathToDelete = decodedPath.substring(pathPrefix.length);
+                                }
+                            } catch (e) {
+                                console.error("Could not parse screenshot URL for deletion:", data.screenshotUrl, e);
+                            }
+                        }
+
+                        if (pathToDelete) {
+                            try {
+                                await deleteFileByPath(pathToDelete);
                             } catch (storageError) {
-                                console.error(`Failed to delete storage file ${data.screenshotPath}:`, storageError);
-                                // We'll continue even if a single file deletion fails.
+                                console.error(`Failed to delete storage file ${pathToDelete}:`, storageError);
                             }
                         }
                     }
@@ -107,16 +123,13 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     operationCount++;
                     totalDeleted++;
 
-                    // Firestore batch writes have a limit of 500 operations.
-                    // We commit the batch and start a new one if the limit is reached.
-                    if (operationCount === 499) {
+                    if (operationCount >= 499) {
                         await batch.commit();
                         batch = writeBatch(db);
                         operationCount = 0;
                     }
                 }
 
-                // Commit any remaining operations in the last batch.
                 if (operationCount > 0) {
                     await batch.commit();
                 }
