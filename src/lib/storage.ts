@@ -43,7 +43,7 @@ export const deleteFileByUrl = async (url: string): Promise<void> => {
     if (!url) return;
 
     try {
-        // ref() is the correct Firebase SDK method to get a reference from a URL
+        // ref() can take an HTTPS URL and create a valid reference from it.
         const fileRef = ref(storage, url);
         await deleteObject(fileRef);
     } catch (error: any) {

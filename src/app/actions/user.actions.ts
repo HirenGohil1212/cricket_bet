@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
-import { deleteFileByPath } from '@/lib/storage';
+import { deleteFileByPath, deleteFileByUrl } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 
 // Function to get user's bank account
@@ -53,32 +53,6 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
     }
 }
 
-
-// ** NEW RELIABLE HELPER **
-// This function reliably extracts the storage path from a Firebase Storage URL.
-function getPathFromUrl(url: string): string | null {
-    try {
-        if (!url.startsWith('https://firebasestorage.googleapis.com')) {
-            console.warn("URL does not seem to be a Firebase Storage URL:", url);
-            return null;
-        }
-        // Split the URL at the '/o/' part which separates the bucket info from the file path
-        const urlParts = url.split('/o/');
-        if (urlParts.length < 2) return null;
-
-        // The file path is the part after '/o/' but before the query parameters
-        const pathEncoded = urlParts[1].split('?')[0];
-        if (!pathEncoded) return null;
-        
-        // URL Decode the path to handle special characters like '/' (%2F)
-        return decodeURIComponent(pathEncoded);
-    } catch (error) {
-        console.error("Could not parse URL to get storage path:", error);
-        return null;
-    }
-}
-
-
 // Server action to delete user data history
 export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
     if (collectionsToDelete.length === 0) {
@@ -118,24 +92,17 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                      if (collectionName === 'deposits') {
                         const data = docSnapshot.data();
                         
-                        let pathToDelete: string | null = null;
-                        
-                        // **ROBUST DELETION LOGIC**
-                        // 1. Prioritize the direct path if it exists (for new data)
-                        if (data.screenshotPath) {
-                            pathToDelete = data.screenshotPath;
-                        } 
-                        // 2. Fallback to parsing the URL for older data
-                        else if (data.screenshotUrl) {
-                            pathToDelete = getPathFromUrl(data.screenshotUrl);
-                        }
-
-                        if (pathToDelete) {
-                            try {
-                                await deleteFileByPath(pathToDelete);
-                            } catch (storageError) {
-                                console.error(`Failed to delete storage file for deposit ${docSnapshot.id}. Path: ${pathToDelete}`, storageError);
+                        try {
+                            if (data.screenshotPath) {
+                                // For new data with a direct path, use it.
+                                await deleteFileByPath(data.screenshotPath);
+                            } else if (data.screenshotUrl) {
+                                // Fallback for old data: use the full URL.
+                                await deleteFileByUrl(data.screenshotUrl);
                             }
+                        } catch (storageError) {
+                            console.error(`Failed to delete storage file for deposit ${docSnapshot.id}.`, storageError);
+                            // Decide if you want to continue or stop. For now, we'll log and continue.
                         }
                     }
 
