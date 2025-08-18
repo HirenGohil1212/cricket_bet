@@ -1,7 +1,21 @@
+
 import { Button } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/icons";
+import type { AppSettings } from "@/lib/types";
 
-export function WhatsAppSupportButton() {
+interface WhatsAppSupportButtonProps {
+  appSettings?: AppSettings | null;
+}
+
+export function WhatsAppSupportButton({ appSettings }: WhatsAppSupportButtonProps) {
+  const whatsappNumber = appSettings?.whatsappNumber;
+
+  if (!whatsappNumber) {
+    return null; // Don't render the button if no number is set
+  }
+
+  const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}`;
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <div className="relative flex h-28 w-28 items-center justify-center">
@@ -37,7 +51,7 @@ export function WhatsAppSupportButton() {
           className="absolute h-16 w-16 rounded-full bg-[#25D366] hover:bg-[#128C7E] shadow-lg"
           aria-label="WhatsApp Support"
         >
-          <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
+          <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
             <WhatsAppIcon className="h-8 w-8 text-white" />
           </a>
         </Button>

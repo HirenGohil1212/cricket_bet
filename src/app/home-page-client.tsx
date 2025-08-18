@@ -9,7 +9,7 @@ import { Header } from "@/components/layout/header";
 import { WhatsAppSupportButton } from "@/components/whatsapp-support-button";
 import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ContentSettings } from "@/lib/types";
+import type { AppSettings, ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 import { BannerAd } from "@/components/banner-ad";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
@@ -20,6 +20,7 @@ import Link from "next/link";
 interface HomePageClientProps {
   children: React.ReactNode;
   content?: ContentSettings | null;
+  appSettings?: AppSettings | null;
 }
 
 const PROMO_VIDEO_SESSION_KEY = 'promoVideoShown';
@@ -32,7 +33,7 @@ function PageLoader() {
   );
 }
 
-export function HomePageClient({ children, content }: HomePageClientProps) {
+export function HomePageClient({ children, content, appSettings }: HomePageClientProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
   
@@ -170,7 +171,7 @@ export function HomePageClient({ children, content }: HomePageClientProps) {
           <BannerAd imageUrl={content?.bannerImageUrl} />
           {isNavigating ? <PageLoader /> : children}
         </main>
-        <WhatsAppSupportButton />
+        <WhatsAppSupportButton appSettings={appSettings} />
         {content?.youtubeUrl && (
             <PromotionalVideoDialog 
                 youtubeUrl={content.youtubeUrl}

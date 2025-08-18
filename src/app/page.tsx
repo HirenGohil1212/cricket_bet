@@ -2,14 +2,14 @@
 import { MatchTabs } from "@/components/matches/match-tabs";
 import { HomePageClient } from "@/app/home-page-client";
 import { getContent } from "@/app/actions/content.actions";
-import type { ContentSettings, Sport } from "@/lib/types";
+import type { AppSettings, ContentSettings, Sport } from "@/lib/types";
 import { sports } from "@/lib/data";
 import { TabsContent } from "@/components/ui/tabs";
 import { Suspense } from "react";
 import { SportMatchListLoader } from "@/components/matches/sport-match-list-loader";
 import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
-import { getBettingSettings } from "@/app/actions/settings.actions";
+import { getBettingSettings, getAppSettings } from "@/app/actions/settings.actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -43,10 +43,13 @@ async function MatchData({ sport }: { sport?: Sport }) {
 }
 
 export default async function Home() {
-  const content: ContentSettings | null = await getContent();
+  const [content, appSettings] = await Promise.all([
+    getContent(),
+    getAppSettings()
+  ]);
   
   return (
-    <HomePageClient content={content}>
+    <HomePageClient content={content} appSettings={appSettings}>
       <MatchTabs>
         <TabsContent key="All" value="All" className="mt-6">
           <Suspense fallback={<SportMatchListLoader />}>
