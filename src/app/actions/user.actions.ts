@@ -53,6 +53,21 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
     }
 }
 
+// ** NEW RELIABLE HELPER **
+function getPathFromUrl(url: string): string | null {
+    try {
+        const urlObject = new URL(url);
+        // The path we need is after the /o/ part and before the query params.
+        const pathWithQuery = urlObject.pathname.split('/o/')[1];
+        if (!pathWithQuery) return null;
+        
+        // URL Decode the path to handle special characters like '/' (%2F)
+        return decodeURIComponent(pathWithQuery);
+    } catch (error) {
+        console.error("Could not parse URL to get storage path:", error);
+        return null;
+    }
+}
 
 // Server action to delete user data history
 export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
@@ -90,18 +105,33 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                 let currentBatch = writeBatch(db);
                 let operationCount = 0;
 
-                for (const doc of snapshot.docs) {
+                for (const docSnapshot of snapshot.docs) {
                      if (collectionName === 'deposits') {
-                        const data = doc.data();
-                        // ** STABLE DELETION LOGIC **
-                        // Only try to delete from storage if the direct path exists.
-                        // This prevents errors on older data that only has a URL.
+                        const data = docSnapshot.data();
+                        
+                        let pathToDelete: string | null = null;
+                        
+                        // **ROBUST DELETION LOGIC**
+                        // 1. Prioritize the direct path if it exists (for new data)
                         if (data.screenshotPath) {
-                            await deleteFileByPath(data.screenshotPath);
+                            pathToDelete = data.screenshotPath;
+                        } 
+                        // 2. Fallback to parsing the URL for older data
+                        else if (data.screenshotUrl) {
+                            pathToDelete = getPathFromUrl(data.screenshotUrl);
+                        }
+
+                        if (pathToDelete) {
+                            try {
+                                await deleteFileByPath(pathToDelete);
+                            } catch (storageError) {
+                                console.error(`Failed to delete storage file for deposit ${docSnapshot.id}. Path: ${pathToDelete}`, storageError);
+                                // Decide if you want to continue or stop. For now, we'll log and continue.
+                            }
                         }
                     }
 
-                    currentBatch.delete(doc.ref);
+                    currentBatch.delete(docSnapshot.ref);
                     operationCount++;
                     totalDeleted++;
 
