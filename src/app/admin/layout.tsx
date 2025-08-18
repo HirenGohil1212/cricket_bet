@@ -24,6 +24,7 @@ import {
   Loader2,
   UsersRound,
   DatabaseZap,
+  Settings,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -93,6 +94,7 @@ export default function AdminLayout({
     { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
     { href: "/admin/content", label: "Content", icon: GalleryHorizontal },
     { href: "/admin/data-management", label: "Data Management", icon: DatabaseZap },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   const renderNavLinks = (isMobile = false) =>
