@@ -81,28 +81,33 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                let batch: WriteBatch = writeBatch(db);
-                let operationCount = 0;
-
-                for (const doc of snapshot.docs) {
-                    // Specific logic for deposits to delete screenshots from storage
-                    if (collectionName === 'deposits') {
+                // For deposit records, we need to delete files from storage first.
+                // This can't be done in a batch write, so we do it separately.
+                if (collectionName === 'deposits') {
+                    for (const doc of snapshot.docs) {
                         const data = doc.data();
                         if (data.screenshotUrl) {
                             try {
                                 await deleteFileByUrl(data.screenshotUrl);
                             } catch (storageError) {
                                 console.error(`Failed to delete storage file ${data.screenshotUrl}:`, storageError);
-                                // Optionally, decide if you want to continue or stop if a file deletion fails
+                                // We'll continue even if a single file deletion fails.
                             }
                         }
                     }
-                    
+                }
+
+                // Now, batch delete the Firestore documents.
+                let batch: WriteBatch = writeBatch(db);
+                let operationCount = 0;
+
+                for (const doc of snapshot.docs) {
                     batch.delete(doc.ref);
                     operationCount++;
                     totalDeleted++;
 
                     // Firestore batch writes have a limit of 500 operations.
+                    // We commit the batch and start a new one if the limit is reached.
                     if (operationCount === 499) {
                         await batch.commit();
                         batch = writeBatch(db);
@@ -110,6 +115,7 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     }
                 }
 
+                // Commit any remaining operations in the last batch.
                 if (operationCount > 0) {
                     await batch.commit();
                 }
