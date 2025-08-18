@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
-import { deleteFileByPath, deleteFileByUrl } from '@/lib/storage';
+import { deleteFileByPath } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 
 // Function to get user's bank account
@@ -93,14 +93,11 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                 for (const doc of snapshot.docs) {
                      if (collectionName === 'deposits') {
                         const data = doc.data();
-                        // ** RELIABLE DELETION LOGIC **
-                        // 1. Prioritize the direct storage path if it exists (for new data)
+                        // ** STABLE DELETION LOGIC **
+                        // Only try to delete from storage if the direct path exists.
+                        // This prevents errors on older data that only has a URL.
                         if (data.screenshotPath) {
                             await deleteFileByPath(data.screenshotPath);
-                        } 
-                        // 2. Fallback to deleting from URL for older data
-                        else if (data.screenshotUrl) {
-                           await deleteFileByUrl(data.screenshotUrl);
                         }
                     }
 
