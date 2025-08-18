@@ -2,12 +2,12 @@
 
 'use server';
 
-import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, WriteBatch } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
-import { deleteFileByPath, deleteFileByUrl } from '@/lib/storage';
+import { deleteFileByPath } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 
 // Function to get user's bank account
@@ -60,18 +60,15 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
  * E.g., "https://.../o/deposits%2Fimage.png?alt=media..." -> "deposits/image.png"
  */
 function getPathFromUrl(url: string): string | null {
-    if (!url) return null;
+    if (!url || !url.includes('/o/')) return null;
     try {
         // Find the start of the path. It's everything after `/o/`.
         const pathStartIndex = url.indexOf('/o/');
-        if (pathStartIndex === -1) {
-            return null;
-        }
         
         // Find the end of the path. It's everything before `?alt=media`.
-        const pathEndIndex = url.indexOf('?alt=media');
+        let pathEndIndex = url.indexOf('?alt=media');
         if (pathEndIndex === -1) {
-            return null;
+            pathEndIndex = url.length;
         }
 
         // Extract the URL-encoded path.
@@ -103,6 +100,8 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
         const finalStartDate = startOfDay(startDate);
         const finalEndDate = endOfDay(endDate);
 
+        const batch = writeBatch(db);
+
         for (const collectionName of collectionsToDelete) {
             const dateField = dateFieldMap[collectionName];
             if (!dateField) continue;
@@ -115,8 +114,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
 
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
-
-            const batch = writeBatch(db);
 
             for (const docSnapshot of snapshot.docs) {
                 if (collectionName === 'deposits') {
@@ -142,10 +139,10 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                 batch.delete(docSnapshot.ref);
                 totalDeleted++;
             }
-            
-            // Commit the batched Firestore deletions
-            await batch.commit();
         }
+        
+        // Commit the batched Firestore deletions
+        await batch.commit();
         
         revalidatePath('/admin/data-management');
         return { success: `Successfully deleted ${totalDeleted} historical records.` };
