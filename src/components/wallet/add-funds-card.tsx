@@ -10,7 +10,6 @@ import { Banknote, Copy, QrCode, UploadCloud, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -35,10 +34,14 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     resolver: zodResolver(depositRequestSchema),
     defaultValues: {
       amount: 100,
+      utrNumber: "",
+      // The first account is selected by default as there's no UI to choose.
+      selectedAccountId: bankAccounts.length > 0 ? bankAccounts[0].id : "",
     },
   });
 
   const handleCopy = (text: string, field: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     toast({ title: "Copied to clipboard!", description: `${field} has been copied.` });
   };
@@ -84,13 +87,15 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
             userName: userProfile.name,
             amount: data.amount,
             screenshotUrl: screenshotUrl,
+            utrNumber: data.utrNumber,
+            paidTo: data.selectedAccountId,
         });
 
         if (result.error) {
             toast({ variant: "destructive", title: "Submission Failed", description: result.error });
         } else {
             toast({ title: "Request Submitted", description: result.success });
-            form.reset({ amount: 100 });
+            form.reset({ amount: 100, utrNumber: "" });
             clearScreenshot();
             router.refresh();
         }
@@ -113,16 +118,9 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
         <div>
           <h3 className="font-semibold mb-4">Payment Options</h3>
           {bankAccounts.length > 0 ? (
-            <Accordion type="single" collapsible defaultValue="item-0">
-              {bankAccounts.map((account, index) => (
-                <AccordionItem value={`item-${index}`} key={index}>
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-2">
-                        <QrCode className="h-5 w-5 text-primary" />
-                        <span>Pay with UPI QR / Bank Transfer</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
+            <div className="space-y-4">
+              {bankAccounts.map((account) => (
+                <Card key={account.id} className="p-4">
                     <div className="flex flex-col sm:flex-row gap-6 items-center">
                       {account.qrCodeUrl && (
                         <div className="flex flex-col items-center flex-shrink-0">
@@ -137,10 +135,9 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                           <DetailRow label="IFSC Code" value={account.ifscCode} onCopy={() => handleCopy(account.ifscCode, 'IFSC Code')} />
                       </div>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
+                </Card>
               ))}
-            </Accordion>
+            </div>
           ) : (
             <p className="text-muted-foreground">The admin has not set up any payment methods yet.</p>
           )}
@@ -150,7 +147,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
           <h3 className="font-semibold mb-4">Submit Your Deposit</h3>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
+               <FormField
                 control={form.control}
                 name="amount"
                 render={({ field }) => (
@@ -166,6 +163,19 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                   </FormItem>
                 )}
               />
+               <FormField
+                  control={form.control}
+                  name="utrNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>UTR / UPI Transaction ID</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter the 12-digit transaction ID" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               <FormField
                 control={form.control}
                 name="screenshotFile"
