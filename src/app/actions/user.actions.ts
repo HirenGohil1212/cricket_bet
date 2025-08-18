@@ -54,15 +54,24 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
 }
 
 // ** NEW RELIABLE HELPER **
+// This function reliably extracts the storage path from a Firebase Storage URL.
 function getPathFromUrl(url: string): string | null {
     try {
+        // Ensure it's a Firebase Storage URL
+        if (!url.startsWith('https://firebasestorage.googleapis.com')) {
+            return null;
+        }
         const urlObject = new URL(url);
-        // The path we need is after the /o/ part and before the query params.
-        const pathWithQuery = urlObject.pathname.split('/o/')[1];
-        if (!pathWithQuery) return null;
+        // The path is after the /o/ part and before the query params.
+        const fullPathWithQuery = urlObject.pathname;
+        
+        // Example: /v0/b/your-bucket.appspot.com/o/deposits%2Fimage.png
+        const pathEncoded = fullPathWithQuery.split('/o/')[1];
+
+        if (!pathEncoded) return null;
         
         // URL Decode the path to handle special characters like '/' (%2F)
-        return decodeURIComponent(pathWithQuery);
+        return decodeURIComponent(pathEncoded);
     } catch (error) {
         console.error("Could not parse URL to get storage path:", error);
         return null;
