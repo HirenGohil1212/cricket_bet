@@ -18,23 +18,25 @@ export const uploadFile = async (file: File, path: string): Promise<{ downloadUr
     return { downloadUrl, storagePath };
 };
 
-// Deletes a file from Firebase Storage using its direct storage path.
-export const deleteFileByPath = async (path: string): Promise<void> => {
-    if (!path) {
-        console.warn("deleteFileByPath called with no path.");
+// Deletes a file from Firebase Storage using its direct storage path OR full HTTPS URL.
+export const deleteFileByPath = async (pathOrUrl: string): Promise<void> => {
+    if (!pathOrUrl) {
+        console.warn("deleteFileByPath called with no path or URL.");
         return;
     };
 
     try {
-        const fileRef = ref(storage, path);
+        // ref() can take either a gs:// path or an https:// download URL
+        const fileRef = ref(storage, pathOrUrl);
         await deleteObject(fileRef);
     } catch (error: any) {
         if (error.code === 'storage/object-not-found') {
-            console.warn(`File not found, could not delete: ${path}. This may not be an error if the file was already deleted.`);
+            console.warn(`File not found, could not delete: ${pathOrUrl}. This may not be an error if the file was already deleted.`);
         } else {
-            console.error(`Failed to delete file at path ${path}:`, error);
-            // We re-throw the error so the calling function knows the deletion failed.
+            console.error(`Failed to delete file at path/url ${pathOrUrl}:`, error);
+            // Re-throw the error so the calling function knows the deletion failed.
             throw error;
         }
     }
 };
+

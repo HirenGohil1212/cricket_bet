@@ -2,7 +2,7 @@
 
 'use server';
 
-import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
@@ -53,34 +53,6 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
     }
 }
 
-/**
- * ** NEW, ROBUST HELPER FUNCTION **
- * Extracts the storage path from a Firebase Storage URL.
- * This is the reliable way to handle older data that only has a `screenshotUrl`.
- * E.g., "https://.../o/deposits%2Fimage.png?alt=media..." -> "deposits/image.png"
- */
-function getPathFromUrl(url: string): string | null {
-    if (!url || !url.includes('/o/')) return null;
-    try {
-        // Find the start of the path. It's everything after `/o/`.
-        const pathStartIndex = url.indexOf('/o/');
-        
-        // Find the end of the path. It's everything before `?alt=media`.
-        let pathEndIndex = url.indexOf('?alt=media');
-        if (pathEndIndex === -1) {
-            pathEndIndex = url.length;
-        }
-
-        // Extract the URL-encoded path.
-        const encodedPath = url.substring(pathStartIndex + 3, pathEndIndex);
-        
-        // Decode the path to handle special characters like %2F for /.
-        return decodeURIComponent(encodedPath);
-    } catch (error) {
-        console.error("Could not parse URL to get storage path:", error);
-        return null;
-    }
-}
 
 // Server action to delete user data history
 export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
@@ -100,8 +72,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
         const finalStartDate = startOfDay(startDate);
         const finalEndDate = endOfDay(endDate);
 
-        const batch = writeBatch(db);
-
         for (const collectionName of collectionsToDelete) {
             const dateField = dateFieldMap[collectionName];
             if (!dateField) continue;
@@ -114,35 +84,28 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
 
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
-
+            
+            // Process deletions one by one for data integrity
             for (const docSnapshot of snapshot.docs) {
+                // Special handling for deposits to delete associated storage file first
                 if (collectionName === 'deposits') {
                     const data = docSnapshot.data();
-                    try {
-                        // Prioritize the direct path if it exists (for new data).
-                        let pathToDelete = data.screenshotPath;
-                        
-                        // If not, fall back to extracting it from the URL (for old data).
-                        if (!pathToDelete && data.screenshotUrl) {
-                            pathToDelete = getPathFromUrl(data.screenshotUrl);
-                        }
+                    const pathToDelete = data.screenshotPath || data.screenshotUrl;
 
-                        if (pathToDelete) {
-                           await deleteFileByPath(pathToDelete);
+                    if (pathToDelete) {
+                        try {
+                            await deleteFileByPath(pathToDelete);
+                        } catch (storageError) {
+                            console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record.`, storageError);
                         }
-                    } catch (storageError) {
-                        console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record.`, storageError);
                     }
                 }
                 
-                // Add the Firestore document deletion to the batch
-                batch.delete(docSnapshot.ref);
+                // Delete the Firestore document
+                await deleteDoc(docSnapshot.ref);
                 totalDeleted++;
             }
         }
-        
-        // Commit the batched Firestore deletions
-        await batch.commit();
         
         revalidatePath('/admin/data-management');
         return { success: `Successfully deleted ${totalDeleted} historical records.` };
