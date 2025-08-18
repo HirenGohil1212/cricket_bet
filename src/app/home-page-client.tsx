@@ -46,6 +46,8 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [isIos, setIsIos] = useState(false);
 
+  const promoVideoUrl = content?.smallVideoUrl || content?.youtubeUrl;
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -91,7 +93,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
     
     if (!loading && !initialAuthCheckComplete) {
       setInitialAuthCheckComplete(true);
-      if (user && content?.youtubeUrl) {
+      if (user && promoVideoUrl) {
         try {
           const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
           if (!hasBeenShown) {
@@ -103,7 +105,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
         }
       }
     }
-  }, [loading, initialAuthCheckComplete, user, content, router]);
+  }, [loading, initialAuthCheckComplete, user, promoVideoUrl, router]);
 
 
   if (loading || !user) {
@@ -172,9 +174,9 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
           {isNavigating ? <PageLoader /> : children}
         </main>
         <WhatsAppSupportButton appSettings={appSettings} />
-        {content?.youtubeUrl && (
+        {promoVideoUrl && (
             <PromotionalVideoDialog 
-                youtubeUrl={content.youtubeUrl}
+                videoUrl={promoVideoUrl}
                 isOpen={isPromoOpen}
                 onOpenChange={setIsPromoOpen}
             />

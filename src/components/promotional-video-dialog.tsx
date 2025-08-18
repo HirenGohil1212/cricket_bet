@@ -1,10 +1,10 @@
+
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PromotionalVideoDialogProps {
-  youtubeUrl: string;
+  videoUrl: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
@@ -24,11 +24,11 @@ function getYouTubeEmbedUrl(url: string): string | null {
         videoId = urlObj.searchParams.get('v');
       }
     } else {
-      return null; // Not a youtube URL
+      return null; // Not a youtube URL, handled by direct video tag
     }
   } catch (e) {
-    console.error("Invalid YouTube URL provided:", url);
-    return null;
+    console.warn("Could not parse as YouTube URL:", url);
+    return null; // Might be a direct video URL
   }
   
   if (!videoId) return null;
@@ -36,12 +36,37 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
 }
 
-export function PromotionalVideoDialog({ youtubeUrl, isOpen, onOpenChange }: PromotionalVideoDialogProps) {
-  const embedUrl = getYouTubeEmbedUrl(youtubeUrl);
+export function PromotionalVideoDialog({ videoUrl, isOpen, onOpenChange }: PromotionalVideoDialogProps) {
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(videoUrl);
 
-  if (!embedUrl) {
-    return null; // Don't render dialog if URL is invalid
-  }
+  const renderVideo = () => {
+    if (youtubeEmbedUrl) {
+      return (
+        <iframe
+            width="100%"
+            height="100%"
+            src={youtubeEmbedUrl}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="rounded-lg"
+        ></iframe>
+      );
+    }
+    // Fallback to a standard video tag for direct MP4 URLs
+    return (
+        <video
+            src={videoUrl}
+            width="100%"
+            height="100%"
+            controls
+            autoPlay
+            muted
+            className="rounded-lg"
+        />
+    );
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -50,16 +75,7 @@ export function PromotionalVideoDialog({ youtubeUrl, isOpen, onOpenChange }: Pro
             <DialogTitle>Promotional Video</DialogTitle>
         </DialogHeader>
         <div className="aspect-video">
-          <iframe
-            width="100%"
-            height="100%"
-            src={embedUrl}
-            title="YouTube video player"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="rounded-lg"
-          ></iframe>
+          {renderVideo()}
         </div>
       </DialogContent>
     </Dialog>
