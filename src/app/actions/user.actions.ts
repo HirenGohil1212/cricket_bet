@@ -53,6 +53,24 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
     }
 }
 
+
+function getPathFromUrl(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname !== 'firebasestorage.googleapis.com') {
+      return null;
+    }
+    const path = urlObj.pathname.split('/o/')[1];
+    if (!path) {
+      return null;
+    }
+    return decodeURIComponent(path);
+  } catch (error) {
+    console.error("Could not parse URL:", error);
+    return null;
+  }
+}
+
 // Server action to delete user data history
 export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
     if (collectionsToDelete.length === 0) {
@@ -84,44 +102,32 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                const batches: WriteBatch[] = [];
-                let currentBatch = writeBatch(db);
-                let operationCount = 0;
+                const batch = writeBatch(db);
 
                 for (const docSnapshot of snapshot.docs) {
                      if (collectionName === 'deposits') {
                         const data = docSnapshot.data();
+                        let storagePath: string | null = null;
+
+                        if (data.screenshotPath) {
+                            storagePath = data.screenshotPath;
+                        } else if (data.screenshotUrl) {
+                            storagePath = getPathFromUrl(data.screenshotUrl);
+                        }
                         
-                        try {
-                            if (data.screenshotPath) {
-                                // For new data with a direct path, use it.
-                                await deleteFileByPath(data.screenshotPath);
-                            } else if (data.screenshotUrl) {
-                                // Fallback for old data: use the full URL.
-                                await deleteFileByUrl(data.screenshotUrl);
+                        if (storagePath) {
+                            try {
+                                await deleteFileByPath(storagePath);
+                            } catch (storageError) {
+                                console.error(`Failed to delete storage file for deposit ${docSnapshot.id}. Path: ${storagePath}`, storageError);
                             }
-                        } catch (storageError) {
-                            console.error(`Failed to delete storage file for deposit ${docSnapshot.id}.`, storageError);
-                            // Decide if you want to continue or stop. For now, we'll log and continue.
                         }
                     }
-
-                    currentBatch.delete(docSnapshot.ref);
-                    operationCount++;
+                    batch.delete(docSnapshot.ref);
                     totalDeleted++;
-
-                    if (operationCount >= 499) {
-                        batches.push(currentBatch);
-                        currentBatch = writeBatch(db);
-                        operationCount = 0;
-                    }
                 }
 
-                if (operationCount > 0) {
-                    batches.push(currentBatch);
-                }
-
-                await Promise.all(batches.map(batch => batch.commit()));
+                await batch.commit();
             }
         }
         

@@ -44,7 +44,7 @@ export async function createDepositRequest({ userId, userName, amount, screensho
             userName,
             amount,
             screenshotUrl,
-            screenshotPath,
+            screenshotPath, // Save the direct path for reliable deletion
             status: 'Processing',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),

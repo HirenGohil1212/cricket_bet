@@ -89,7 +89,7 @@ export type DepositRequest = {
   userName:string;
   amount: number;
   screenshotUrl: string;
-  screenshotPath: string; // Add storage path for the screenshot
+  screenshotPath?: string;
   status: 'Processing' | 'Approved' | 'Rejected';
   createdAt: string;
   updatedAt: string;
