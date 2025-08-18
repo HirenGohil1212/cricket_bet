@@ -57,17 +57,16 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
 // This function reliably extracts the storage path from a Firebase Storage URL.
 function getPathFromUrl(url: string): string | null {
     try {
-        // Ensure it's a Firebase Storage URL
         if (!url.startsWith('https://firebasestorage.googleapis.com')) {
+            console.warn("URL does not seem to be a Firebase Storage URL:", url);
             return null;
         }
-        const urlObject = new URL(url);
-        // The path is after the /o/ part and before the query params.
-        const fullPathWithQuery = urlObject.pathname;
-        
-        // Example: /v0/b/your-bucket.appspot.com/o/deposits%2Fimage.png
-        const pathEncoded = fullPathWithQuery.split('/o/')[1];
+        // Split the URL at the '/o/' part which separates the bucket info from the file path
+        const urlParts = url.split('/o/');
+        if (urlParts.length < 2) return null;
 
+        // The file path is the part after '/o/' but before the query parameters
+        const pathEncoded = urlParts[1].split('?')[0];
         if (!pathEncoded) return null;
         
         // URL Decode the path to handle special characters like '/' (%2F)
@@ -77,6 +76,7 @@ function getPathFromUrl(url: string): string | null {
         return null;
     }
 }
+
 
 // Server action to delete user data history
 export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
@@ -109,7 +109,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                // Split deletions into batches to avoid exceeding Firestore's write limit (500 per batch)
                 const batches: WriteBatch[] = [];
                 let currentBatch = writeBatch(db);
                 let operationCount = 0;
@@ -135,7 +134,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                                 await deleteFileByPath(pathToDelete);
                             } catch (storageError) {
                                 console.error(`Failed to delete storage file for deposit ${docSnapshot.id}. Path: ${pathToDelete}`, storageError);
-                                // Decide if you want to continue or stop. For now, we'll log and continue.
                             }
                         }
                     }
@@ -144,7 +142,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     operationCount++;
                     totalDeleted++;
 
-                    // Firestore batches have a 500 operation limit. We create a new batch when we approach it.
                     if (operationCount >= 499) {
                         batches.push(currentBatch);
                         currentBatch = writeBatch(db);
@@ -152,12 +149,10 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     }
                 }
 
-                // Add the last batch if it has any operations
                 if (operationCount > 0) {
                     batches.push(currentBatch);
                 }
 
-                // Commit all batches
                 await Promise.all(batches.map(batch => batch.commit()));
             }
         }
