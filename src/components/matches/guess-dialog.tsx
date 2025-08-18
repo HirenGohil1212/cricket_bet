@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -311,7 +313,12 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                                 <FormItem className="w-full">
                                                     <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="Team A prediction..." {...field} />
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Team A prediction..."
+                                                            {...field}
+                                                            onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -326,7 +333,12 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                                                 <FormItem className="w-full">
                                                     <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="Team B prediction..." {...field} />
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Team B prediction..."
+                                                            {...field}
+                                                            onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -446,7 +458,9 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
                 </div>
 
                 <DialogFooter>
-                  <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+                  <DialogClose asChild>
+                    <Button type="button" variant="ghost">Cancel</Button>
+                  </DialogClose>
                   <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
                     {isSubmitting ? "Placing Bet..." : "Place Bet"}
                   </Button>
