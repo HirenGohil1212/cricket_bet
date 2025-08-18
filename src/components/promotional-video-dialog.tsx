@@ -49,10 +49,6 @@ export function PromotionalVideoDialog({ youtubeUrl, isOpen, onOpenChange }: Pro
         <DialogHeader className="sr-only">
             <DialogTitle>Promotional Video</DialogTitle>
         </DialogHeader>
-        <DialogClose className="absolute -top-2 -right-2 z-10 rounded-full bg-background p-1 text-foreground/80 opacity-100 ring-offset-background transition-opacity hover:text-foreground hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
-        </DialogClose>
         <div className="aspect-video">
           <iframe
             width="100%"
