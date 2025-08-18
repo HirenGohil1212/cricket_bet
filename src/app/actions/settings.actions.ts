@@ -4,10 +4,55 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import type { BankAccount, BettingSettings, Sport } from '@/lib/types';
-import { bettingSettingsSchema, type BettingSettingsFormValues } from '@/lib/schemas';
+import type { BankAccount, BettingSettings, Sport, AppSettings } from '@/lib/types';
+import { bettingSettingsSchema, type BettingSettingsFormValues, appSettingsSchema, type AppSettingsFormValues } from '@/lib/schemas';
 import { sports } from '@/lib/data';
 
+
+// --- App Settings ---
+
+// Function to get existing app settings
+export async function getAppSettings(): Promise<AppSettings> {
+    const defaultSettings: AppSettings = {
+        whatsappNumber: '',
+    };
+    try {
+        const docRef = doc(db, 'adminSettings', 'app');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { ...defaultSettings, ...docSnap.data() } as AppSettings;
+        }
+        return defaultSettings;
+    } catch (error) {
+        console.error("Error fetching app settings:", error);
+        return defaultSettings;
+    }
+}
+
+// Server action to update app settings
+export async function updateAppSettings(data: AppSettingsFormValues) {
+    const validatedFields = appSettingsSchema.safeParse(data);
+    if (!validatedFields.success) {
+      return { error: 'Invalid data provided.' };
+    }
+
+    try {
+        const docRef = doc(db, 'adminSettings', 'app');
+        await setDoc(docRef, validatedFields.data, { merge: true });
+        
+        revalidatePath('/admin/settings');
+        revalidatePath('/'); // Revalidate home page to update support button
+        return { success: 'App settings updated successfully!' };
+
+    } catch (error: any) {
+        console.error("Error updating app settings: ", error);
+        return { error: 'Failed to update settings.' };
+    }
+}
+
+
+// --- Bank Details ---
 
 // Function to get existing bank details
 export async function getBankDetails(): Promise<BankAccount[]> {
@@ -46,6 +91,8 @@ export async function updateBankDetails(accounts: BankAccount[]) {
     }
 }
 
+
+// --- Betting Settings ---
 
 // Function to get betting settings
 export async function getBettingSettings(): Promise<BettingSettings> {

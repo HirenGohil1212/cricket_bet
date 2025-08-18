@@ -138,6 +138,10 @@ export type ReferralSettings = {
     isEnabled: boolean;
 };
 
+export type AppSettings = {
+  whatsappNumber: string;
+};
+
 export type ContentSettings = {
     youtubeUrl: string;
     bannerImageUrl: string;
