@@ -85,9 +85,13 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                // For deposit records, we need to delete files from storage first.
-                if (collectionName === 'deposits') {
-                    for (const doc of snapshot.docs) {
+                // Use a single batch for all deletions in this collection
+                let batch: WriteBatch = writeBatch(db);
+                let operationCount = 0;
+
+                for (const doc of snapshot.docs) {
+                     // For deposit records, we need to delete files from storage first.
+                    if (collectionName === 'deposits') {
                         const data = doc.data();
                         if (data.screenshotPath) {
                             try {
@@ -98,13 +102,7 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                             }
                         }
                     }
-                }
 
-                // Now, batch delete the Firestore documents.
-                let batch: WriteBatch = writeBatch(db);
-                let operationCount = 0;
-
-                for (const doc of snapshot.docs) {
                     batch.delete(doc.ref);
                     operationCount++;
                     totalDeleted++;
