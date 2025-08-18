@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import type { BankAccount, BettingSettings, Sport, AppSettings } from '@/lib/types';
 import { bettingSettingsSchema, type BettingSettingsFormValues, appSettingsSchema, type AppSettingsFormValues } from '@/lib/schemas';
 import { sports } from '@/lib/data';
+import { deleteFileByPath } from '@/lib/storage';
 
 
 // --- App Settings ---
@@ -80,6 +81,27 @@ export async function updateBankDetails(accounts: BankAccount[]) {
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
+        // Get the current accounts to compare and find deletions
+        const currentAccounts = await getBankDetails();
+        const newAccountIds = new Set(accounts.map(acc => acc.id));
+
+        // Find accounts that are in the current list but not in the new list
+        const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
+
+        // Delete the QR code from storage for each deleted account
+        for (const account of accountsToDelete) {
+            if (account.qrCodePath) {
+                try {
+                    await deleteFileByPath(account.qrCodePath);
+                } catch (storageError) {
+                    // Log the error but don't block the Firestore update.
+                    // The QR code might have been manually deleted, which is okay.
+                    console.error(`Could not delete QR code for account ${account.id}. Path: ${account.qrCodePath}`, storageError);
+                }
+            }
+        }
+        
+        // Save the new list of accounts
         await setDoc(docRef, { accounts });
         
         revalidatePath('/admin/bank-details');
