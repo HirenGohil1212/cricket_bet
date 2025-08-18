@@ -54,23 +54,30 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
 }
 
 /**
+ * ** NEW, ROBUST HELPER FUNCTION **
  * Extracts the storage path from a Firebase Storage URL.
+ * This is the reliable way to handle older data that only has a `screenshotUrl`.
  * E.g., "https://.../o/deposits%2Fimage.png?alt=media..." -> "deposits/image.png"
  */
 function getPathFromUrl(url: string): string | null {
     if (!url) return null;
     try {
-        const urlObj = new URL(url);
-        const pathName = urlObj.pathname;
+        // Find the start of the path. It's everything after `/o/`.
+        const pathStartIndex = url.indexOf('/o/');
+        if (pathStartIndex === -1) {
+            return null;
+        }
         
-        // Find the path part starting after /o/
-        const pathStartIndex = pathName.indexOf('/o/');
-        if (pathStartIndex === -1) return null;
+        // Find the end of the path. It's everything before `?alt=media`.
+        const pathEndIndex = url.indexOf('?alt=media');
+        if (pathEndIndex === -1) {
+            return null;
+        }
 
-        // The encoded path is the part after /o/
-        const encodedPath = pathName.substring(pathStartIndex + 3);
+        // Extract the URL-encoded path.
+        const encodedPath = url.substring(pathStartIndex + 3, pathEndIndex);
         
-        // Decode the path to handle special characters like %2F for /
+        // Decode the path to handle special characters like %2F for /.
         return decodeURIComponent(encodedPath);
     } catch (error) {
         console.error("Could not parse URL to get storage path:", error);
@@ -115,16 +122,16 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                 if (collectionName === 'deposits') {
                     const data = docSnapshot.data();
                     try {
-                        // Prioritize the direct path if it exists
+                        // Prioritize the direct path if it exists (for new data).
                         let pathToDelete = data.screenshotPath;
                         
-                        // If not, fall back to extracting it from the URL
+                        // If not, fall back to extracting it from the URL (for old data).
                         if (!pathToDelete && data.screenshotUrl) {
                             pathToDelete = getPathFromUrl(data.screenshotUrl);
                         }
 
                         if (pathToDelete) {
-                            await deleteFileByPath(pathToDelete);
+                           await deleteFileByPath(pathToDelete);
                         }
                     } catch (storageError) {
                         console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record.`, storageError);
