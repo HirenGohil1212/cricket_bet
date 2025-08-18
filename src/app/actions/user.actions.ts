@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
-import { deleteFileByPath, deleteFileByUrl } from '@/lib/storage';
+import { deleteFileByPath } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 
 // Function to get user's bank account
@@ -53,20 +53,23 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
     }
 }
 
-
+// ** NEW, RELIABLE HELPER FUNCTION **
+// This function correctly extracts the file path from the full download URL.
 function getPathFromUrl(url: string): string | null {
   try {
     const urlObj = new URL(url);
-    if (urlObj.hostname !== 'firebasestorage.googleapis.com') {
-      return null;
+    if (!urlObj.pathname.includes('/o/')) {
+        return null; // Not a standard Firebase Storage URL
     }
+    // The path is after '/o/' and before '?alt=media'
     const path = urlObj.pathname.split('/o/')[1];
     if (!path) {
       return null;
     }
+    // URL-decode the path to handle characters like %2F (for /)
     return decodeURIComponent(path);
   } catch (error) {
-    console.error("Could not parse URL:", error);
+    console.error("Could not parse URL to get storage path:", error);
     return null;
   }
 }
@@ -109,24 +112,32 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                         const data = docSnapshot.data();
                         let storagePath: string | null = null;
 
+                        // ** NEW ROBUST LOGIC **
+                        // 1. Prioritize the direct screenshotPath if it exists (for new data).
                         if (data.screenshotPath) {
                             storagePath = data.screenshotPath;
+                        // 2. If not, fall back to parsing the URL (for old data).
                         } else if (data.screenshotUrl) {
                             storagePath = getPathFromUrl(data.screenshotUrl);
                         }
                         
+                        // If we have a path, attempt to delete the file from storage first.
                         if (storagePath) {
                             try {
                                 await deleteFileByPath(storagePath);
                             } catch (storageError) {
                                 console.error(`Failed to delete storage file for deposit ${docSnapshot.id}. Path: ${storagePath}`, storageError);
+                                // Optional: Decide if you want to stop the whole process if one file fails.
+                                // For now, we log the error and continue deleting the database record.
                             }
                         }
                     }
+                    // Add the database document deletion to the batch.
                     batch.delete(docSnapshot.ref);
                     totalDeleted++;
                 }
 
+                // Commit all the batched database deletions.
                 await batch.commit();
             }
         }
