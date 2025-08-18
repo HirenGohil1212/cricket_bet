@@ -35,7 +35,6 @@ export const deleteFileByPath = async (path: string): Promise<void> => {
     }
 };
 
-
 // Deletes a file from Firebase Storage using its full public HTTPS URL.
 // This is useful for deleting files when only the URL is known (e.g., for older data).
 export const deleteFileByUrl = async (url: string): Promise<void> => {
@@ -54,4 +53,5 @@ export const deleteFileByUrl = async (url: string): Promise<void> => {
         }
     }
 };
+
 
