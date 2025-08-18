@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Banknote, Copy, QrCode, UploadCloud, X } from "lucide-react";
+import { Banknote, Copy, UploadCloud, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -23,6 +23,24 @@ interface AddFundsCardProps {
   bankAccounts: BankAccount[];
 }
 
+const DetailRow = ({ label, value, onCopy }: { label: string; value?: string; onCopy?: () => void }) => {
+    if (!value) return null;
+    return (
+        <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">{label}:</span>
+            <div className="flex items-center gap-2">
+                <span className="font-medium text-right">{value}</span>
+                {onCopy && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCopy}>
+                        <Copy className="h-3 w-3" />
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
 export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -35,10 +53,16 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     defaultValues: {
       amount: 100,
       utrNumber: "",
-      // The first account is selected by default as there's no UI to choose.
       selectedAccountId: bankAccounts.length > 0 ? bankAccounts[0].id : "",
     },
   });
+  
+  React.useEffect(() => {
+    if (bankAccounts.length > 0) {
+        form.setValue('selectedAccountId', bankAccounts[0].id!);
+    }
+  }, [bankAccounts, form]);
+
 
   const handleCopy = (text: string, field: string) => {
     if (!text) return;
@@ -87,8 +111,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
             userName: userProfile.name,
             amount: data.amount,
             screenshotUrl: screenshotUrl,
-            utrNumber: data.utrNumber,
-            paidTo: data.selectedAccountId,
         });
 
         if (result.error) {
@@ -120,16 +142,16 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
           {bankAccounts.length > 0 ? (
             <div className="space-y-4">
               {bankAccounts.map((account) => (
-                <Card key={account.id} className="p-4">
+                <Card key={account.id} className="p-4 bg-muted/50">
                     <div className="flex flex-col sm:flex-row gap-6 items-center">
                       {account.qrCodeUrl && (
                         <div className="flex flex-col items-center flex-shrink-0">
-                          <Image src={account.qrCodeUrl} alt="UPI QR Code" width={160} height={160} className="rounded-md border p-1 h-40 w-40 object-contain" />
+                          <Image src={account.qrCodeUrl} alt="UPI QR Code" width={160} height={160} className="rounded-md border p-1 h-40 w-40 object-contain bg-white" />
                           <p className="text-muted-foreground text-xs mt-2 text-center">Scan the QR code to pay</p>
                         </div>
                       )}
                       <div className="w-full space-y-2 text-sm">
-                          <DetailRow label="UPI ID" value={account.upiId} onCopy={() => handleCopy(account.upiId, 'UPI ID')} />
+                          <DetailRow label="UPI ID" value={account.upiId} onCopy={() => handleCopy(account.upiId!, 'UPI ID')} />
                           <DetailRow label="Account Name" value={account.accountHolderName} onCopy={() => handleCopy(account.accountHolderName, 'Account Name')} />
                           <DetailRow label="Account Number" value={account.accountNumber} onCopy={() => handleCopy(account.accountNumber, 'Account Number')} />
                           <DetailRow label="IFSC Code" value={account.ifscCode} onCopy={() => handleCopy(account.ifscCode, 'IFSC Code')} />
@@ -139,7 +161,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">The admin has not set up any payment methods yet.</p>
+            <p className="text-muted-foreground text-center py-8">The admin has not set up any payment methods yet.</p>
           )}
         </div>
 
@@ -207,7 +229,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" disabled={isSubmitting || bankAccounts.length === 0}>
                 {isSubmitting ? "Submitting..." : "Submit Deposit Request"}
               </Button>
             </form>
@@ -216,20 +238,4 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
       </CardContent>
     </Card>
   );
-}
-
-
-function DetailRow({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
-    if (!value) return null;
-    return (
-        <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">{label}:</span>
-            <div className="flex items-center gap-2">
-                <span className="font-medium">{value}</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCopy}>
-                    <Copy className="h-3 w-3" />
-                </Button>
-            </div>
-        </div>
-    );
 }
