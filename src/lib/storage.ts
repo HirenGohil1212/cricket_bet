@@ -30,27 +30,16 @@ export const deleteFileByUrl = async (url: string): Promise<void> => {
         // Decode the URL to handle encoded characters like %2F for /
         const decodedUrl = decodeURIComponent(url);
         
-        // Split the URL to find the start of the object path after "/o/"
-        const pathStartIndex = decodedUrl.indexOf('/o/');
-        if (pathStartIndex === -1) {
-             console.warn(`Could not determine file path from URL: ${url}`);
-             return;
-        }
+        // The file path is between "/o/" and "?alt=media"
+        const pathRegex = /\/o\/(.*?)\?alt=media/;
+        const match = decodedUrl.match(pathRegex);
 
-        // Find the end of the path before the query parameters
-        const pathEndIndex = decodedUrl.indexOf('?alt=media');
-        if (pathEndIndex === -1) {
+        if (!match || !match[1]) {
             console.warn(`Could not determine file path from URL: ${url}`);
             return;
         }
-        
-        // Extract the file path
-        const filePath = decodedUrl.substring(pathStartIndex + 3, pathEndIndex);
-        
-        if (!filePath) {
-             console.warn(`Extracted file path is empty from URL: ${url}`);
-             return;
-        }
+
+        const filePath = match[1];
         
         const fileRef = ref(storage, filePath);
         await deleteObject(fileRef);
@@ -67,4 +56,5 @@ export const deleteFileByUrl = async (url: string): Promise<void> => {
         }
     }
 };
+
 
