@@ -57,12 +57,11 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
 // This function correctly extracts the file path from the full download URL.
 function getPathFromUrl(url: string): string | null {
   try {
-    const urlObj = new URL(url);
-    if (!urlObj.pathname.includes('/o/')) {
-        return null; // Not a standard Firebase Storage URL
+    if (!url.includes('/o/')) {
+      return null; // Not a standard Firebase Storage URL
     }
-    // The path is after '/o/' and before '?alt=media'
-    const path = urlObj.pathname.split('/o/')[1];
+    const pathWithToken = url.split('/o/')[1];
+    const path = pathWithToken.split('?')[0];
     if (!path) {
       return null;
     }
@@ -73,6 +72,7 @@ function getPathFromUrl(url: string): string | null {
     return null;
   }
 }
+
 
 // Server action to delete user data history
 export async function deleteDataHistory({ startDate, endDate, collectionsToDelete }: { startDate: Date; endDate: Date; collectionsToDelete: string[] }) {
@@ -121,18 +121,18 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                             storagePath = getPathFromUrl(data.screenshotUrl);
                         }
                         
-                        // If we have a path, attempt to delete the file from storage first.
+                        // If we have a path, attempt to delete the file from storage.
                         if (storagePath) {
                             try {
                                 await deleteFileByPath(storagePath);
                             } catch (storageError) {
-                                console.error(`Failed to delete storage file for deposit ${docSnapshot.id}. Path: ${storagePath}`, storageError);
-                                // Optional: Decide if you want to stop the whole process if one file fails.
-                                // For now, we log the error and continue deleting the database record.
+                                // Log the error, but don't stop the whole process.
+                                // It might be that the file was already deleted or never existed.
+                                console.error(`Could not delete storage file for deposit ${docSnapshot.id}. Path: ${storagePath}`, storageError);
                             }
                         }
                     }
-                    // Add the database document deletion to the batch.
+                    // Always add the database document deletion to the batch.
                     batch.delete(docSnapshot.ref);
                     totalDeleted++;
                 }
