@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
-import { deleteFileByPath } from '@/lib/storage';
+import { deleteFileByPath, deleteFileByUrl } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 
 // Function to get user's bank account
@@ -85,54 +85,44 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                let batch: WriteBatch = writeBatch(db);
+                // Split deletions into batches to avoid exceeding Firestore's write limit (500 per batch)
+                const batches: WriteBatch[] = [];
+                let currentBatch = writeBatch(db);
                 let operationCount = 0;
 
                 for (const doc of snapshot.docs) {
-                    if (collectionName === 'deposits') {
+                     if (collectionName === 'deposits') {
                         const data = doc.data();
-                        let pathToDelete = data.screenshotPath;
-                        
-                        // Fallback for older documents that only have screenshotUrl
-                        if (!pathToDelete && data.screenshotUrl) {
-                            try {
-                                const url = new URL(data.screenshotUrl);
-                                const pathName = url.pathname;
-                                // The path is encoded, so we need to decode it. e.g., /v0/b/bucket-name.appspot.com/o/path%2Fto%2Ffile.jpg -> /v0/b/bucket-name.appspot.com/o/path/to/file.jpg
-                                const decodedPath = decodeURIComponent(pathName);
-                                // Extract the path after the bucket name and '/o/' prefix
-                                const pathPrefix = `/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || storage.app.options.storageBucket}/o/`;
-                                if (decodedPath.startsWith(pathPrefix)) {
-                                    pathToDelete = decodedPath.substring(pathPrefix.length);
-                                }
-                            } catch (e) {
-                                console.error("Could not parse screenshot URL for deletion:", data.screenshotUrl, e);
-                            }
-                        }
-
-                        if (pathToDelete) {
-                            try {
-                                await deleteFileByPath(pathToDelete);
-                            } catch (storageError) {
-                                console.error(`Failed to delete storage file ${pathToDelete}:`, storageError);
-                            }
+                        // ** RELIABLE DELETION LOGIC **
+                        // 1. Prioritize the direct storage path if it exists (for new data)
+                        if (data.screenshotPath) {
+                            await deleteFileByPath(data.screenshotPath);
+                        } 
+                        // 2. Fallback to deleting from URL for older data
+                        else if (data.screenshotUrl) {
+                           await deleteFileByUrl(data.screenshotUrl);
                         }
                     }
 
-                    batch.delete(doc.ref);
+                    currentBatch.delete(doc.ref);
                     operationCount++;
                     totalDeleted++;
 
+                    // Firestore batches have a 500 operation limit. We create a new batch when we approach it.
                     if (operationCount >= 499) {
-                        await batch.commit();
-                        batch = writeBatch(db);
+                        batches.push(currentBatch);
+                        currentBatch = writeBatch(db);
                         operationCount = 0;
                     }
                 }
 
+                // Add the last batch if it has any operations
                 if (operationCount > 0) {
-                    await batch.commit();
+                    batches.push(currentBatch);
                 }
+
+                // Commit all batches
+                await Promise.all(batches.map(batch => batch.commit()));
             }
         }
         
