@@ -8,6 +8,7 @@ import type { UserBankAccount } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 import { deleteFileByUrl } from '@/lib/storage';
+import { endOfDay } from 'date-fns';
 
 // Function to get user's bank account
 export async function getUserBankAccount(userId: string): Promise<UserBankAccount | null> {
@@ -67,6 +68,9 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             withdrawals: 'createdAt',
             matches: 'startTime',
         };
+        
+        // ** FIX: Adjust the end date to include the entire day **
+        const finalEndDate = endOfDay(endDate);
 
         for (const collectionName of collectionsToDelete) {
             const dateField = dateFieldMap[collectionName];
@@ -75,7 +79,7 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const q = query(
                 collection(db, collectionName),
                 where(dateField, '>=', Timestamp.fromDate(startDate)),
-                where(dateField, '<=', Timestamp.fromDate(endDate))
+                where(dateField, '<=', Timestamp.fromDate(finalEndDate)) // Use adjusted end date
             );
 
             const snapshot = await getDocs(q);
