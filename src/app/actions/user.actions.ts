@@ -69,7 +69,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             matches: 'startTime',
         };
         
-        // ** FIX: Adjust the end date to include the entire day **
         const finalEndDate = endOfDay(endDate);
 
         for (const collectionName of collectionsToDelete) {
@@ -79,14 +78,13 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const q = query(
                 collection(db, collectionName),
                 where(dateField, '>=', Timestamp.fromDate(startDate)),
-                where(dateField, '<=', Timestamp.fromDate(finalEndDate)) // Use adjusted end date
+                where(dateField, '<=', Timestamp.fromDate(finalEndDate))
             );
 
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
                 // For deposit records, we need to delete files from storage first.
-                // This can't be done in a batch write, so we do it separately.
                 if (collectionName === 'deposits') {
                     for (const doc of snapshot.docs) {
                         const data = doc.data();

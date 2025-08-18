@@ -21,11 +21,40 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
 
 // Deletes a file from Firebase Storage using its public download URL.
 export const deleteFileByUrl = async (url: string): Promise<void> => {
+    if (!url) return;
+
     try {
         // Firebase Storage URLs have a specific format. We can extract the path from it.
         // Example URL: https://firebasestorage.googleapis.com/v0/b/your-project-id.appspot.com/o/path%2Fto%2Ffile.jpg?alt=media&token=...
-        const fileRef = ref(storage, url);
+        
+        // Decode the URL to handle encoded characters like %2F for /
+        const decodedUrl = decodeURIComponent(url);
+        
+        // Split the URL to find the start of the object path after "/o/"
+        const pathStartIndex = decodedUrl.indexOf('/o/');
+        if (pathStartIndex === -1) {
+             console.warn(`Could not determine file path from URL: ${url}`);
+             return;
+        }
+
+        // Find the end of the path before the query parameters
+        const pathEndIndex = decodedUrl.indexOf('?alt=media');
+        if (pathEndIndex === -1) {
+            console.warn(`Could not determine file path from URL: ${url}`);
+            return;
+        }
+        
+        // Extract the file path
+        const filePath = decodedUrl.substring(pathStartIndex + 3, pathEndIndex);
+        
+        if (!filePath) {
+             console.warn(`Extracted file path is empty from URL: ${url}`);
+             return;
+        }
+        
+        const fileRef = ref(storage, filePath);
         await deleteObject(fileRef);
+
     } catch (error: any) {
         // It's common for 'storage/object-not-found' errors if a file was already deleted or the URL is wrong.
         // We can choose to ignore this specific error to make the deletion process more robust.
@@ -33,7 +62,9 @@ export const deleteFileByUrl = async (url: string): Promise<void> => {
             console.warn(`File not found, could not delete: ${url}`);
         } else {
             // Re-throw other errors
+            console.error(`Failed to delete file at ${url}:`, error);
             throw error;
         }
     }
 };
+
