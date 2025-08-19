@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -446,6 +447,7 @@ export async function getWinnersForMatch(matchId: string): Promise<Winner[]> {
         const usersMap = new Map<string, string>();
         if (userIdsToFetch.size > 0) {
             const userIds = Array.from(userIdsToFetch);
+            // Firestore 'in' query can handle up to 30 items. We batch them.
             const userBatches = [];
             for (let i = 0; i < userIds.length; i += 30) {
                 userBatches.push(userIds.slice(i, i + 30));
@@ -475,3 +477,5 @@ export async function getWinnersForMatch(matchId: string): Promise<Winner[]> {
         return [];
     }
 }
+
+    
