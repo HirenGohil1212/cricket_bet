@@ -110,6 +110,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
             userId: user.uid,
             userName: userProfile.name,
             amount: data.amount,
+            utrNumber: data.utrNumber,
             screenshotUrl: downloadUrl,
             screenshotPath: storagePath,
         });

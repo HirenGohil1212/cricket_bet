@@ -202,6 +202,16 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                             No screenshot was provided for this deposit.
                         </div>
                     )}
+                     <div className="space-y-2">
+                        <Label htmlFor="utr">UTR / Transaction ID</Label>
+                        <Input 
+                            id="utr" 
+                            type="text" 
+                            value={deposit.utrNumber}
+                            readOnly
+                            disabled
+                        />
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="amount">Deposit Amount (INR)</Label>
                         <Input 

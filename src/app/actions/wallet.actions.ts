@@ -22,12 +22,13 @@ interface CreateDepositRequestParams {
     userId: string;
     userName: string;
     amount: number;
+    utrNumber: string;
     screenshotUrl: string;
     screenshotPath: string;
 }
 
 // User action to create a deposit request
-export async function createDepositRequest({ userId, userName, amount, screenshotUrl, screenshotPath }: CreateDepositRequestParams) {
+export async function createDepositRequest({ userId, userName, amount, utrNumber, screenshotUrl, screenshotPath }: CreateDepositRequestParams) {
     if (!userId || !userName) {
         return { error: 'You must be logged in to make a deposit.' };
     }
@@ -37,12 +38,16 @@ export async function createDepositRequest({ userId, userName, amount, screensho
      if (!screenshotUrl || !screenshotPath) {
         return { error: 'A payment screenshot is required.' };
     }
+    if (!utrNumber) {
+        return { error: 'UTR/Transaction ID is required.' };
+    }
 
     try {
         await addDoc(collection(db, "deposits"), {
             userId,
             userName,
             amount,
+            utrNumber,
             screenshotUrl,
             screenshotPath, // Save the direct path for reliable deletion
             status: 'Processing',
