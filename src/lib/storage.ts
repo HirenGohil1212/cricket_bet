@@ -1,8 +1,7 @@
 
-
 'use client'; 
 
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { v4 as uuidv4 } from "uuid";
 
@@ -27,21 +26,34 @@ export const deleteFileByPath = async (pathOrUrl: string): Promise<void> => {
     };
 
     try {
-        // ref() can take either a gs:// path, a direct path, or an https:// download URL.
-        // This is the key to reliably deleting files from either identifier.
         const fileRef = ref(storage, pathOrUrl);
         await deleteObject(fileRef);
     } catch (error: any) {
-        // It's safe to ignore "object-not-found" errors.
-        // This means the file was already deleted or never existed, which is a success state for our purpose.
         if (error.code === 'storage/object-not-found') {
             console.warn(`File not found, could not delete: ${pathOrUrl}. This may not be an error.`);
         } else {
             console.error(`Failed to delete file at path/url ${pathOrUrl}:`, error);
-            // Re-throw the error so the calling function knows the deletion failed and can act accordingly.
             throw error;
         }
     }
 };
 
 
+// New function to list all files in a specific folder
+export const listFiles = async (path: string): Promise<{ name: string, url: string, fullPath: string }[]> => {
+    const folderRef = ref(storage, path);
+    const result = await listAll(folderRef);
+
+    const fileDetails = await Promise.all(
+        result.items.map(async (itemRef) => {
+            const url = await getDownloadURL(itemRef);
+            return {
+                name: itemRef.name,
+                url: url,
+                fullPath: itemRef.fullPath,
+            };
+        })
+    );
+
+    return fileDetails;
+};

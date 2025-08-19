@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { ContentSettings } from '@/lib/types';
-import { deleteFileByPath } from '@/lib/storage';
+import { deleteFileByPath, listFiles } from '@/lib/storage';
 
 interface UpdateContentPayload {
     youtubeUrl: string;
@@ -102,5 +102,32 @@ export async function deleteContentAsset({ assetType }: { assetType: 'banner' | 
     } catch (error: any) {
         console.error(`Error deleting ${assetType}: `, error);
         return { error: `Failed to delete ${assetType}.` };
+    }
+}
+
+
+// New Server Action to list all files in the 'content' folder
+export async function listContentFiles() {
+    try {
+        const files = await listFiles('content');
+        return { files };
+    } catch (error: any) {
+        console.error("Error listing content files:", error);
+        return { error: 'Failed to list content files.', files: [] };
+    }
+}
+
+// New Server Action to delete a file by its full path
+export async function deleteContentFileByPath(path: string) {
+    if (!path) {
+        return { error: 'File path is required.' };
+    }
+    try {
+        await deleteFileByPath(path);
+        revalidatePath('/admin/content');
+        return { success: 'File deleted successfully.' };
+    } catch (error: any) {
+        console.error(`Error deleting file at path ${path}:`, error);
+        return { error: `Failed to delete file.` };
     }
 }
