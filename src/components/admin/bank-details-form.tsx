@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 interface BankDetailsFormProps {
     initialData: BankAccount[];
@@ -53,6 +54,7 @@ const createDefaultAccount = (): BankAccount => ({
 
 export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
   const [previews, setPreviews] = React.useState<Record<string, string>>({});
@@ -64,7 +66,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "accounts",
   });
@@ -78,7 +80,10 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
         return acc;
     }, {} as Record<string, string>);
     setPreviews(initialPreviews);
-  }, [initialData]);
+     form.reset({
+      accounts: initialData.length > 0 ? initialData.map(acc => ({ ...acc, id: acc.id || uuidv4() })) : [createDefaultAccount()],
+    });
+  }, [initialData, form]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string, index: number) => {
     const file = e.target.files?.[0];
@@ -106,6 +111,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     } else {
         remove(index);
         toast({ title: 'Success', description: result.success });
+        router.refresh();
     }
     setIsDeleting(null);
   }
@@ -139,8 +145,9 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
             toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
         } else {
             toast({ title: 'Success', description: 'All changes have been saved.'});
-            // Reset the form with the new data to clear dirty state
+            // Reset the form with the new data to clear dirty state and ensure IDs are correct
             form.reset({ accounts: accountsWithUploads.map(acc => ({...acc, qrCodeFile: undefined})) });
+            router.refresh();
         }
     } catch (error: any) {
         toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload QR code. Please try again." });
@@ -177,11 +184,11 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                                onClick={() => handleAccountDelete(field.id!, index)}
-                                disabled={isDeleting === field.id}
+                                onClick={() => handleAccountDelete(fields[index].id!, index)}
+                                disabled={isDeleting === fields[index].id}
                                 className="bg-destructive hover:bg-destructive/90"
                             >
-                                {isDeleting === field.id ? "Deleting..." : "Delete"}
+                                {isDeleting === fields[index].id ? "Deleting..." : "Delete"}
                             </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -246,8 +253,8 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                                     <FormControl>
                                         <div className="flex items-center gap-4">
                                             <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                                                {previews[field.id!] ? (
-                                                    <Image src={previews[field.id!]} alt="QR Preview" width={96} height={96} className="object-contain"/>
+                                                {previews[fields[index].id!] ? (
+                                                    <Image src={previews[fields[index].id!]} alt="QR Preview" width={96} height={96} className="object-contain"/>
                                                 ) : (
                                                     <UploadCloud className="h-8 w-8 text-muted-foreground" />
                                                 )}
@@ -255,7 +262,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                                             <Input 
                                                 type="file" 
                                                 accept="image/png, image/jpeg, image/webp" 
-                                                onChange={(e) => handleFileChange(e, field.id!, index)} 
+                                                onChange={(e) => handleFileChange(e, fields[index].id!, index)} 
                                                 className="max-w-xs"
                                             />
                                         </div>
