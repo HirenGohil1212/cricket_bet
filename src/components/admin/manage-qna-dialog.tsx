@@ -17,6 +17,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
 
+type ResultState = {
+    questionId: string;
+    result: { teamA: string; teamB: string };
+    playerResult: { teamA: string; teamB: string };
+};
 
 interface ManageQnaDialogProps {
     match: Match;
@@ -32,10 +37,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     const [isSaving, setIsSaving] = React.useState(false);
     const [isSettling, setIsSettling] = React.useState(false);
     
-    // State for text-based results (per question)
-    const [results, setResults] = React.useState<Record<string, { teamA: string; teamB: string }>>({});
-    // State for player-based results, now per question
-    const [playerResults, setPlayerResults] = React.useState<Record<string, { teamA: string; teamB: string }>>({});
+    const [resultsState, setResultsState] = React.useState<ResultState[]>([]);
     
     // New state for the settlement results
     const [settlementResults, setSettlementResults] = React.useState<{ winners: Winner[]; totalBetsProcessed: number; } | null>(null);
@@ -46,38 +48,29 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     // Initialize or update results state when questions change
     React.useEffect(() => {
         if (questions) {
-            const initialResults = questions.reduce((acc, q) => {
-                acc[q.id] = q.result || { teamA: '', teamB: '' };
-                return acc;
-            }, {} as Record<string, { teamA: string; teamB: string }>);
-            setResults(initialResults);
-            
-            const initialPlayerResults = questions.reduce((acc, q) => {
-                acc[q.id] = q.playerResult || { teamA: '', teamB: '' };
-                return acc;
-            }, {} as Record<string, { teamA: string, teamB: string }>)
-            setPlayerResults(initialPlayerResults);
+            const initialResults = questions.map(q => ({
+                questionId: q.id,
+                result: q.result || { teamA: '', teamB: '' },
+                playerResult: q.playerResult || { teamA: '', teamB: '' }
+            }));
+            setResultsState(initialResults);
         }
     }, [questions]);
     
-    const handleResultChange = (questionId: string, team: 'teamA' | 'teamB', value: string) => {
-        setResults(prev => ({
-            ...prev,
-            [questionId]: {
-                ...(prev[questionId] || { teamA: '', teamB: '' }),
-                [team]: value,
-            },
-        }));
+    const handleResultChange = (index: number, team: 'teamA' | 'teamB', value: string) => {
+        setResultsState(prev => {
+            const newState = [...prev];
+            newState[index].result[team] = value;
+            return newState;
+        });
     };
     
-    const handlePlayerResultChange = (questionId: string, team: 'teamA' | 'teamB', value: string) => {
-        setPlayerResults(prev => ({
-            ...prev,
-            [questionId]: {
-                ...(prev[questionId] || { teamA: '', teamB: '' }),
-                [team]: value,
-            },
-        }));
+    const handlePlayerResultChange = (index: number, team: 'teamA' | 'teamB', value: string) => {
+        setResultsState(prev => {
+            const newState = [...prev];
+            newState[index].playerResult[team] = value;
+            return newState;
+        });
     };
 
     const handleSave = async () => {
@@ -86,14 +79,24 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             return;
         }
         setIsSaving(true);
-        
-        const actionResult = await saveQuestionResults(match.id, results, playerResults);
+
+        const resultsToSave = resultsState.reduce((acc, state) => {
+            acc[state.questionId] = state.result;
+            return acc;
+        }, {} as Record<string, { teamA: string; teamB: string }>);
+
+        const playerResultsToSave = resultsState.reduce((acc, state) => {
+            acc[state.questionId] = state.playerResult;
+            return acc;
+        }, {} as Record<string, { teamA: string; teamB: string }>);
+
+        const actionResult = await saveQuestionResults(match.id, resultsToSave, playerResultsToSave);
 
         if (actionResult.error) {
             toast({ variant: 'destructive', title: 'Save Failed', description: actionResult.error });
         } else {
             toast({ title: 'Success', description: actionResult.success });
-            onClose(true); // Close and refresh questions
+            onClose(true);
         }
         setIsSaving(false);
     };
@@ -124,8 +127,11 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
 
     const hasActiveQuestions = questions.some(q => q.status === 'active');
     
-    const renderQuestionCard = (q: Question) => {
+    const renderQuestionCard = (q: Question, index: number) => {
         const isSettled = q.status === 'settled';
+        const currentResult = resultsState[index]?.result || { teamA: '', teamB: '' };
+        const currentPlayerResult = resultsState[index]?.playerResult || { teamA: '', teamB: '' };
+
         return (
              <div key={q.id} className="p-4 border rounded-md space-y-4">
                 <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
@@ -150,8 +156,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                     <Input
                                         id={`${q.id}-teamA`}
                                         placeholder="Result for Team A"
-                                        value={results[q.id]?.teamA || ''}
-                                        onChange={(e) => handleResultChange(q.id, 'teamA', e.target.value)}
+                                        value={currentResult.teamA}
+                                        onChange={(e) => handleResultChange(index, 'teamA', e.target.value)}
                                         disabled={isSaving || isSettling}
                                     />
                                 </div>
@@ -160,8 +166,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                     <Input
                                         id={`${q.id}-teamB`}
                                         placeholder="Result for Team B"
-                                        value={results[q.id]?.teamB || ''}
-                                        onChange={(e) => handleResultChange(q.id, 'teamB', e.target.value)}
+                                        value={currentResult.teamB}
+                                        onChange={(e) => handleResultChange(index, 'teamB', e.target.value)}
                                         disabled={isSaving || isSettling}
                                     />
                                 </div>
@@ -177,8 +183,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                         <Label className="px-1 font-semibold text-xs">{match.teamA.name}</Label>
                                         <ScrollArea className="h-32">
                                             <RadioGroup
-                                                value={playerResults[q.id]?.teamA || ''}
-                                                onValueChange={(value) => handlePlayerResultChange(q.id, 'teamA', value)}
+                                                value={currentPlayerResult.teamA}
+                                                onValueChange={(value) => handlePlayerResultChange(index, 'teamA', value)}
                                                 disabled={isSaving || isSettling}
                                                 className="space-y-1 p-1"
                                             >
@@ -205,8 +211,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                         <Label className="px-1 font-semibold text-xs">{match.teamB.name}</Label>
                                         <ScrollArea className="h-32">
                                             <RadioGroup
-                                                value={playerResults[q.id]?.teamB || ''}
-                                                onValueChange={(value) => handlePlayerResultChange(q.id, 'teamB', value)}
+                                                value={currentPlayerResult.teamB}
+                                                onValueChange={(value) => handlePlayerResultChange(index, 'teamB', value)}
                                                 disabled={isSaving || isSettling}
                                                 className="space-y-1 p-1"
                                             >
@@ -251,7 +257,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                     <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
                         <div className="space-y-6">
                            {questions.length > 0 ? (
-                                questions.map(q => renderQuestionCard(q))
+                                questions.map((q, index) => renderQuestionCard(q, index))
                            ) : (
                                 <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
                            )}

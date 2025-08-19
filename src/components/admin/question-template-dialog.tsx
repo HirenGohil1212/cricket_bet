@@ -34,13 +34,15 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
     
     // This effect ensures the form is reset with the latest questions when the dialog is opened or the questions prop changes.
     React.useEffect(() => {
-        const defaultValues = {
-            questions: existingQuestions.length > 0
-                ? existingQuestions
-                : [{ question: "" }]
-        };
-        form.reset(defaultValues);
-    }, [existingQuestions, form, isOpen]); // Rerun when dialog opens
+        if (isOpen) {
+            const defaultValues = {
+                questions: existingQuestions.length > 0
+                    ? existingQuestions
+                    : [{ question: "" }]
+            };
+            form.reset(defaultValues);
+        }
+    }, [existingQuestions, form, isOpen]); // Rerun when dialog opens or questions change
     
     const handleSubmit = async (data: QnAFormValues) => {
         setIsSubmitting(true);
