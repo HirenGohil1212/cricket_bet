@@ -72,7 +72,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   });
   
   React.useEffect(() => {
-    // Sync previews when initialData changes
+    // Sync previews and form when initialData changes
     const initialPreviews = initialData.reduce((acc, account) => {
         if (account.id && account.qrCodeUrl) {
             acc[account.id] = account.qrCodeUrl;
@@ -184,11 +184,11 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                                onClick={() => handleAccountDelete(fields[index].id!, index)}
-                                disabled={isDeleting === fields[index].id}
+                                onClick={() => handleAccountDelete(field.id, index)}
+                                disabled={isDeleting === field.id}
                                 className="bg-destructive hover:bg-destructive/90"
                             >
-                                {isDeleting === fields[index].id ? "Deleting..." : "Delete"}
+                                {isDeleting === field.id ? "Deleting..." : "Delete"}
                             </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

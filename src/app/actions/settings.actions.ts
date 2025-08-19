@@ -82,44 +82,15 @@ export async function updateBankDetails(accounts: BankAccount[]) {
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        // Step 1: Get the current state from the DB before any changes
-        const currentAccounts = await getBankDetails();
-        
-        // The 'accounts' parameter is the *new* state from the UI, with qrCodeFile removed.
-        const newAccounts = accounts;
-
-        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
-        const newAccountIds = new Set(newAccounts.map(acc => acc.id));
-
-        // Step 2: Find and delete QR codes for accounts that were removed entirely.
-        const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
-        for (const account of accountsToDelete) {
-            if (account.qrCodePath) {
-                await deleteFileByPath(account.qrCodePath);
-            }
-        }
-
-        // Step 3: For accounts that still exist, check if their QR code was replaced.
-        for (const newAccount of newAccounts) {
-            if (!newAccount.id) continue;
-            const oldAccount = currentAccountMap.get(newAccount.id);
-            // If an old account existed, had a QR path, and its path is different from the new path (meaning a new file was uploaded), delete the old one.
-            if (oldAccount && oldAccount.qrCodePath && newAccount.qrCodePath !== oldAccount.qrCodePath) {
-                await deleteFileByPath(oldAccount.qrCodePath);
-            }
-        }
-        
-        // Step 4: Save the final, correct list of accounts to Firestore.
-        await setDoc(docRef, { accounts: newAccounts });
+        // Since this action is now only for saving/updating, we don't need complex deletion logic here.
+        // That is handled by the dedicated deleteBankAccount action.
+        await setDoc(docRef, { accounts });
         
         revalidatePath('/admin/bank-details');
         return { success: 'Bank details updated successfully!' };
 
     } catch (error: any) {
         console.error("Error updating bank details: ", error);
-        if (error.code && error.code.startsWith('storage/')) {
-            return { error: 'A problem occurred with file storage. Please try again.' };
-        }
         return { error: 'An unknown error occurred while updating bank details.' };
     }
 }
@@ -136,6 +107,7 @@ export async function deleteBankAccount(accountId: string) {
         
         const accountToDelete = currentAccounts.find(acc => acc.id === accountId);
         if (!accountToDelete) {
+            // This case should ideally not happen if the frontend sends the correct ID.
             return { error: 'Account not found.' };
         }
         
