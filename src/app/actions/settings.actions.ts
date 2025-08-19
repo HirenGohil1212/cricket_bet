@@ -75,7 +75,8 @@ export async function getBankDetails(): Promise<BankAccount[]> {
     }
 }
 
-// **REWRITTEN & ROBUST** Server action to update bank details, including deletions.
+
+// Server action to update bank details, including deletions.
 export async function updateBankDetails(newAccounts: BankAccount[]) {
     if (!Array.isArray(newAccounts)) {
       return { error: 'Invalid data provided.' };
@@ -84,30 +85,54 @@ export async function updateBankDetails(newAccounts: BankAccount[]) {
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        // 1. Get the current state from the database
+        // 1. Get the current state from the database to compare against
         const currentAccounts = await getBankDetails();
         const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
-        const newAccountIds = new Set(newAccounts.map(acc => acc.id));
 
-        // 2. Identify and delete QR codes for accounts that were removed
+        const accountsWithUploads = await Promise.all(newAccounts.map(async (account) => {
+            let qrCodeUrl = account.qrCodeUrl || '';
+            let qrCodePath = account.qrCodePath || '';
+            const originalAccount = currentAccountMap.get(account.id!);
+
+            // A file is present in the form state for this account.
+            if (account.qrCodeFile instanceof File) {
+                // If there was an old file for this account, delete it first
+                if (originalAccount?.qrCodePath) {
+                    await deleteFileByPath(originalAccount.qrCodePath);
+                }
+                const uploadResult = await uploadFile(account.qrCodeFile, 'qrcodes');
+                qrCodeUrl = uploadResult.downloadUrl;
+                qrCodePath = uploadResult.storagePath;
+            } else if (originalAccount) {
+                // No new file, so retain the old path and URL.
+                qrCodeUrl = originalAccount.qrCodeUrl;
+                qrCodePath = originalAccount.qrCodePath || '';
+            }
+
+            return {
+                id: account.id || uuidv4(), // Ensure new accounts get an ID
+                upiId: account.upiId,
+                accountHolderName: account.accountHolderName,
+                accountNumber: account.accountNumber,
+                ifscCode: account.ifscCode,
+                qrCodeUrl,
+                qrCodePath,
+            };
+        }));
+        
+        // Identify and delete QR codes for accounts that were fully removed
+        const newAccountIds = new Set(accountsWithUploads.map(acc => acc.id));
         for (const [id, account] of currentAccountMap.entries()) {
             if (!newAccountIds.has(id)) {
                 // This account was deleted
                 if (account.qrCodePath) {
                     await deleteFileByPath(account.qrCodePath);
                 }
-            } else {
-                // This account still exists, check if its QR code was replaced
-                const newVersion = newAccounts.find(newAcc => newAcc.id === id);
-                // A new path means a new file was uploaded
-                if (newVersion && newVersion.qrCodePath && account.qrCodePath && newVersion.qrCodePath !== account.qrCodePath) {
-                    await deleteFileByPath(account.qrCodePath);
-                }
             }
         }
         
         // 3. Save the new state
-        await setDoc(docRef, { accounts: newAccounts });
+        await setDoc(docRef, { accounts: accountsWithUploads });
         
         revalidatePath('/admin/bank-details');
         return { success: 'Bank details updated successfully!' };
@@ -117,6 +142,7 @@ export async function updateBankDetails(newAccounts: BankAccount[]) {
         return { error: 'An unknown error occurred while updating bank details.' };
     }
 }
+
 
 // --- Betting Settings ---
 
