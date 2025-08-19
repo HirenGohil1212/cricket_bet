@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, documentId } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import type { Bet, Sport, Winner, Match, BetOption } from "@/lib/types";
 import { db } from "@/lib/firebase";
 import { PaginatedFinishedMatches } from "./paginated-finished-matches";
@@ -40,7 +40,7 @@ export async function FinishedMatchesList({ matches, betOptions }: FinishedMatch
       const userChunks = chunkArray(winnerUserIds, 30);
       
       const userPromises = userChunks.map(chunk => 
-        getDocs(query(usersRef, where(documentId(), 'in', chunk)))
+        getDocs(query(usersRef, where('uid', 'in', chunk)))
       );
       
       const userSnapshots = await Promise.all(userPromises);
@@ -48,7 +48,7 @@ export async function FinishedMatchesList({ matches, betOptions }: FinishedMatch
       
       userSnapshots.forEach(snapshot => {
         snapshot.docs.forEach(doc => {
-          userMap.set(doc.id, doc.data().name || 'Unknown User');
+          userMap.set(doc.data().uid, doc.data().name || 'Unknown User');
         });
       });
 
