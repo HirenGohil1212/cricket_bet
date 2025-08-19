@@ -123,13 +123,19 @@ export function AddMatchForm() {
     setIsSubmitting(true);
     try {
         let teamALogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamACountry.toLowerCase()}.webp`;
+        let teamALogoPath;
         if (data.teamALogoFile) {
-            teamALogoUrl = (await uploadFile(data.teamALogoFile, 'logos')).downloadUrl;
+            const { downloadUrl, storagePath } = await uploadFile(data.teamALogoFile, 'logos');
+            teamALogoUrl = downloadUrl;
+            teamALogoPath = storagePath;
         }
 
         let teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamBCountry.toLowerCase()}.webp`;
+        let teamBLogoPath;
         if (data.teamBLogoFile) {
-            teamBLogoUrl = (await uploadFile(data.teamBLogoFile, 'logos')).downloadUrl;
+            const { downloadUrl, storagePath } = await uploadFile(data.teamBLogoFile, 'logos');
+            teamBLogoUrl = downloadUrl;
+            teamBLogoPath = storagePath;
         }
 
         const processPlayers = async (players: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
@@ -162,12 +168,14 @@ export function AddMatchForm() {
             teamA: {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
+                logoPath: teamALogoPath,
                 countryCode: data.teamACountry,
                 players: teamAPlayers
             },
             teamB: {
                 name: data.teamB || countryB!.name,
                 logoUrl: teamBLogoUrl,
+                logoPath: teamBLogoPath,
                 countryCode: data.teamBCountry,
                 players: teamBPlayers
             }

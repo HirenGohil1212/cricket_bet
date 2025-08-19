@@ -152,13 +152,19 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     
     try {
         let teamALogoUrl = match.teamA.logoUrl;
+        let teamALogoPath = match.teamA.logoPath;
         if (data.teamALogoFile) {
-            teamALogoUrl = (await uploadFile(data.teamALogoFile, 'logos')).downloadUrl;
+            const { downloadUrl, storagePath } = await uploadFile(data.teamALogoFile, 'logos');
+            teamALogoUrl = downloadUrl;
+            teamALogoPath = storagePath;
         }
 
         let teamBLogoUrl = match.teamB.logoUrl;
+        let teamBLogoPath = match.teamB.logoPath;
         if (data.teamBLogoFile) {
-            teamBLogoUrl = (await uploadFile(data.teamBLogoFile, 'logos')).downloadUrl;
+            const { downloadUrl, storagePath } = await uploadFile(data.teamBLogoFile, 'logos');
+            teamBLogoUrl = downloadUrl;
+            teamBLogoPath = storagePath;
         }
         
         const processPlayers = async (newPlayers: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
@@ -189,12 +195,14 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             teamA: {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
+                logoPath: teamALogoPath,
                 countryCode: data.teamACountry,
                 players: teamAPlayers
             },
             teamB: {
                 name: data.teamB || countryB!.name,
                 logoUrl: teamBLogoUrl,
+                logoPath: teamBLogoPath,
                 countryCode: data.teamBCountry,
                 players: teamBPlayers
             }

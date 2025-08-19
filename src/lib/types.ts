@@ -15,6 +15,7 @@ export type Player = {
 export type Team = {
   name: string;
   logoUrl: string;
+  logoPath?: string;
   countryCode?: string;
   players?: Player[];
 };
