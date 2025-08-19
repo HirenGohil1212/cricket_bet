@@ -82,7 +82,7 @@ export async function updateBankDetails(accounts: BankAccount[]) {
 
     try {
         const currentAccounts = await getBankDetails();
-        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
+        const currentAccountMap = new Map(currentAccounts.map(acc => acc.id ? [acc.id, acc] : ['', acc]).filter(([id]) => id));
         const newAccountIds = new Set(accounts.map(acc => acc.id));
 
         // --- CORRECTED DELETION LOGIC ---
@@ -97,11 +97,11 @@ export async function updateBankDetails(accounts: BankAccount[]) {
 
         // 2. Delete old QR code if a new one is uploaded for an existing account
         for (const newAccount of accounts) {
-            if (!newAccount.id) continue;
+            if (!newAccount.id) continue; // Should not happen with UUIDs but good practice
             const oldAccount = currentAccountMap.get(newAccount.id);
-            // Check if a new QR code URL is present and it's different from the old one,
+            // Check if a new QR code URL is present (meaning a new file was uploaded) and it's different from the old one,
             // and an old path exists to be deleted.
-            if (oldAccount?.qrCodePath && newAccount.qrCodeUrl !== oldAccount.qrCodeUrl) {
+            if (oldAccount?.qrCodePath && newAccount.qrCodePath !== oldAccount.qrCodePath) {
                 await deleteFileByPath(oldAccount.qrCodePath);
             }
         }
