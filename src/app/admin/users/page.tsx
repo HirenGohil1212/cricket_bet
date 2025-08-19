@@ -17,7 +17,6 @@ import {
     CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { maskPhoneNumber } from '@/lib/utils';
 
 async function getUsers(): Promise<UserProfile[]> {
     const usersCol = collection(db, 'users');
@@ -63,7 +62,7 @@ export default async function AdminUsersPage() {
                         {users.map((user) => (
                             <TableRow key={user.uid}>
                                 <TableCell className="font-medium">{user.name}</TableCell>
-                                <TableCell className="hidden sm:table-cell">{maskPhoneNumber(user.phoneNumber)}</TableCell>
+                                <TableCell className="hidden sm:table-cell">{user.phoneNumber}</TableCell>
                                 <TableCell>
                                     <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                                         {user.role}
