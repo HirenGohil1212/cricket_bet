@@ -22,8 +22,8 @@ async function getDashboardData() {
         ] = await Promise.all([
             getCountFromServer(usersCol),
             getCountFromServer(query(matchesCol, where('status', 'in', ['Live', 'Upcoming']))),
-            getCountFromServer(query(withdrawalsCol, where('status', '==', 'Pending'))),
-            getCountFromServer(query(depositsCol, where('status', '==', 'Pending'))),
+            getCountFromServer(query(withdrawalsCol, where('status', '==', 'Processing'))),
+            getCountFromServer(query(depositsCol, where('status', '==', 'Processing'))),
             getFinancialSummary()
         ]);
         
