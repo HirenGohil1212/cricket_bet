@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where } from 'firebase/firestore';
@@ -7,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import type { Match, Player } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
 import { countries } from '@/lib/countries';
+import { deleteFileByPath } from '@/lib/storage';
 
 
 // This is a simplified payload that the server action will receive
@@ -82,12 +84,50 @@ export async function deleteMatch(matchId: string) {
     if (!matchId) {
         return { error: 'Match ID is required.' };
     }
+    
+    const matchRef = doc(db, "matches", matchId);
+
     try {
-        await deleteDoc(doc(db, "matches", matchId));
+        const matchDoc = await getDoc(matchRef);
+        if (!matchDoc.exists()) {
+            return { error: 'Match not found.' };
+        }
+        
+        const matchData = matchDoc.data();
+        const deletionPromises: Promise<void>[] = [];
+        
+        const isFirebaseStorageUrl = (url: string) => url.includes('firebasestorage.googleapis.com');
+
+        // Delete team logos if they are from Firebase Storage
+        if (matchData.teamA?.logoUrl && isFirebaseStorageUrl(matchData.teamA.logoUrl)) {
+            deletionPromises.push(deleteFileByPath(matchData.teamA.logoUrl));
+        }
+        if (matchData.teamB?.logoUrl && isFirebaseStorageUrl(matchData.teamB.logoUrl)) {
+            deletionPromises.push(deleteFileByPath(matchData.teamB.logoUrl));
+        }
+
+        // Delete player images if they exist and are from Firebase Storage
+        const playersToDelete = [
+            ...(matchData.teamA?.players || []),
+            ...(matchData.teamB?.players || [])
+        ];
+
+        for (const player of playersToDelete) {
+            if (player.imageUrl && isFirebaseStorageUrl(player.imageUrl)) {
+                deletionPromises.push(deleteFileByPath(player.imageUrl));
+            }
+        }
+
+        // Wait for all storage deletions to settle
+        await Promise.allSettled(deletionPromises);
+
+        // Finally, delete the Firestore document for the match
+        await deleteDoc(matchRef);
+
         revalidatePath('/admin/matches');
         revalidatePath('/');
-        return { success: 'Match deleted successfully!' };
-    } catch (error) {
+        return { success: 'Match and all associated images deleted successfully!' };
+    } catch (error: any) {
         console.error("Error deleting match: ", error);
         return { error: 'Failed to delete match.' };
     }
