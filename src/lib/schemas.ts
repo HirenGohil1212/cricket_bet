@@ -1,4 +1,5 @@
 
+
 import { z } from "zod";
 import { sports, type Sport } from "@/lib/types";
 
@@ -47,7 +48,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export const bankAccountSchema = z.object({
-  id: z.string().optional(),
+  id: z.string(),
   upiId: z.string().min(1, "UPI ID is required."),
   accountHolderName: z.string().min(2, "Account holder name is required."),
   accountNumber: z.string().min(1, "Account number is required."),
@@ -64,6 +65,7 @@ export const bankDetailsFormSchema = z.object({
   accounts: z.array(bankAccountSchema).max(5, "You can add a maximum of 5 accounts.").min(1, "Please add at least one account."),
 });
 
+export type BankAccount = z.infer<typeof bankAccountSchema>;
 export type BankDetailsFormValues = z.infer<typeof bankDetailsFormSchema>;
 
 

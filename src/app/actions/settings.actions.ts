@@ -76,70 +76,61 @@ export async function getBankDetails(): Promise<BankAccount[]> {
 }
 
 
-// Server action to update bank details, including deletions.
-export async function updateBankDetails(newAccounts: BankAccount[]) {
-    if (!Array.isArray(newAccounts)) {
+// Server action to add a new bank account.
+export async function addBankAccount(newAccount: BankAccount) {
+    if (!newAccount) {
       return { error: 'Invalid data provided.' };
     }
     
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        // 1. Get the current state from the database to compare against
         const currentAccounts = await getBankDetails();
-        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
-
-        const accountsWithUploads = await Promise.all(newAccounts.map(async (account) => {
-            let qrCodeUrl = account.qrCodeUrl || '';
-            let qrCodePath = account.qrCodePath || '';
-            const originalAccount = currentAccountMap.get(account.id!);
-
-            // A file is present in the form state for this account.
-            if (account.qrCodeFile instanceof File) {
-                // If there was an old file for this account, delete it first
-                if (originalAccount?.qrCodePath) {
-                    await deleteFileByPath(originalAccount.qrCodePath);
-                }
-                const uploadResult = await uploadFile(account.qrCodeFile, 'qrcodes');
-                qrCodeUrl = uploadResult.downloadUrl;
-                qrCodePath = uploadResult.storagePath;
-            } else if (originalAccount) {
-                // No new file, so retain the old path and URL.
-                qrCodeUrl = originalAccount.qrCodeUrl;
-                qrCodePath = originalAccount.qrCodePath || '';
-            }
-
-            return {
-                id: account.id || uuidv4(), // Ensure new accounts get an ID
-                upiId: account.upiId,
-                accountHolderName: account.accountHolderName,
-                accountNumber: account.accountNumber,
-                ifscCode: account.ifscCode,
-                qrCodeUrl,
-                qrCodePath,
-            };
-        }));
+        const updatedAccounts = [...currentAccounts, newAccount];
         
-        // Identify and delete QR codes for accounts that were fully removed
-        const newAccountIds = new Set(accountsWithUploads.map(acc => acc.id));
-        for (const [id, account] of currentAccountMap.entries()) {
-            if (!newAccountIds.has(id)) {
-                // This account was deleted
-                if (account.qrCodePath) {
-                    await deleteFileByPath(account.qrCodePath);
-                }
-            }
-        }
-        
-        // 3. Save the new state
-        await setDoc(docRef, { accounts: accountsWithUploads });
+        await setDoc(docRef, { accounts: updatedAccounts });
         
         revalidatePath('/admin/bank-details');
-        return { success: 'Bank details updated successfully!' };
+        return { success: 'New bank account added successfully!' };
 
     } catch (error: any) {
-        console.error("Error updating bank details: ", error);
-        return { error: 'An unknown error occurred while updating bank details.' };
+        console.error("Error adding bank account: ", error);
+        return { error: 'An unknown error occurred while adding the account.' };
+    }
+}
+
+
+// Server action to delete a single bank account.
+export async function deleteBankAccount(accountId: string) {
+    if (!accountId) {
+      return { error: 'Account ID is required.' };
+    }
+    
+    const docRef = doc(db, 'adminSettings', 'paymentDetails');
+
+    try {
+        const currentAccounts = await getBankDetails();
+        const accountToDelete = currentAccounts.find(acc => acc.id === accountId);
+
+        if (!accountToDelete) {
+            return { error: 'Account not found.' };
+        }
+
+        // Delete the QR code from storage if it exists
+        if (accountToDelete.qrCodePath) {
+            await deleteFileByPath(accountToDelete.qrCodePath);
+        }
+
+        const updatedAccounts = currentAccounts.filter(acc => acc.id !== accountId);
+
+        await setDoc(docRef, { accounts: updatedAccounts });
+        
+        revalidatePath('/admin/bank-details');
+        return { success: 'Bank account deleted successfully!' };
+
+    } catch (error: any) {
+        console.error("Error deleting bank account: ", error);
+        return { error: 'An unknown error occurred while deleting the account.' };
     }
 }
 
