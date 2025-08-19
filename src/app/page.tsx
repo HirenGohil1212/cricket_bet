@@ -2,7 +2,7 @@
 import { MatchTabs } from "@/components/matches/match-tabs";
 import { HomePageClient } from "@/app/home-page-client";
 import { getContent } from "@/app/actions/content.actions";
-import type { AppSettings, ContentSettings, Sport } from "@/lib/types";
+import type { AppSettings, ContentSettings, Sport, Winner } from "@/lib/types";
 import { sports } from "@/lib/data";
 import { TabsContent } from "@/components/ui/tabs";
 import { Suspense } from "react";
@@ -10,6 +10,7 @@ import { SportMatchListLoader } from "@/components/matches/sport-match-list-load
 import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
 import { getBettingSettings, getAppSettings } from "@/app/actions/settings.actions";
+import { getWinnersForMatch } from "./actions/qna.actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,23 +20,41 @@ async function MatchData({ sport }: { sport?: Sport }) {
     getBettingSettings()
   ]);
   
-  const filteredMatches = sport ? matches.filter(m => m.sport === sport) : matches;
-
-  const upcomingAndLiveMatches = filteredMatches.filter(
+  const upcomingAndLive = matches.filter(
     (m) => (m.status === "Upcoming" || m.status === "Live")
   );
 
-  const finishedMatches = filteredMatches.filter(
+  const finished = matches.filter(
     (m) => m.status === "Finished"
   );
   
+  // Fetch winners for all finished matches in parallel
+  const winnersPromises = finished.map(match => getWinnersForMatch(match.id));
+  const winnersResults = await Promise.all(winnersPromises);
+  
+  const winnersMap = new Map<string, Winner[]>();
+  winnersResults.forEach((winners, index) => {
+    if (winners.length > 0) {
+      winnersMap.set(finished[index].id, winners);
+    }
+  });
+
+  const augmentedFinishedMatches = finished.map(match => ({
+    ...match,
+    winners: winnersMap.get(match.id) || [],
+  }));
+
+
+  const filteredUpcomingAndLiveMatches = sport ? upcomingAndLive.filter(m => m.sport === sport) : upcomingAndLive;
+  const filteredFinishedMatches = sport ? augmentedFinishedMatches.filter(m => m.sport === sport) : augmentedFinishedMatches;
+
   // If a specific sport is selected, use its settings. Otherwise, default to Cricket for the "All" tab.
   const betOptionsForSport = sport ? settings.betOptions[sport] : settings.betOptions["Cricket"];
 
   return (
     <SportMatchList
-      upcomingAndLiveMatches={upcomingAndLiveMatches}
-      finishedMatches={finishedMatches}
+      upcomingAndLiveMatches={filteredUpcomingAndLiveMatches}
+      finishedMatches={filteredFinishedMatches}
       sport={sport}
       betOptions={betOptionsForSport}
     />
