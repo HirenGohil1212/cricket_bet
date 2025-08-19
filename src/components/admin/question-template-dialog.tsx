@@ -42,7 +42,7 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
             };
             form.reset(defaultValues);
         }
-    }, [existingQuestions, form, isOpen]); // Rerun when dialog opens or questions change
+    }, [existingQuestions, isOpen, form]); // Rerun when dialog opens or questions change
     
     const handleSubmit = async (data: QnAFormValues) => {
         setIsSubmitting(true);

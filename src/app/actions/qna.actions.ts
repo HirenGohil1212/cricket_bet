@@ -76,7 +76,7 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
 
         revalidatePath(`/admin/q-and-a`);
         return { success: 'Questions have been updated successfully!' };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating questions: ", error);
         return { error: 'Failed to update questions.' };
     }
