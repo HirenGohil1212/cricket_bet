@@ -29,10 +29,12 @@ const formSchema = bankAccountSchema.omit({
     qrCodeFile: bankAccountSchema.shape.qrCodeFile.optional()
 });
 
+interface AddBankAccountFormProps {
+    onAccountAdded: (newAccount: BankAccount) => void;
+}
 
-export function AddBankAccountForm() {
+export function AddBankAccountForm({ onAccountAdded }: AddBankAccountFormProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [preview, setPreview] = React.useState<string | null>(null);
 
@@ -78,7 +80,7 @@ export function AddBankAccountForm() {
         uploadResult = await uploadFile(data.qrCodeFile, 'qrcodes');
       }
 
-      const payload = {
+      const payload: BankAccount = {
         id: uuidv4(),
         upiId: data.upiId,
         accountHolderName: data.accountHolderName,
@@ -94,9 +96,9 @@ export function AddBankAccountForm() {
         toast({ variant: "destructive", title: "Error", description: result.error });
       } else {
         toast({ title: "Account Added", description: result.success });
+        onAccountAdded(payload); // Notify parent component
         form.reset();
         clearImage();
-        router.refresh();
       }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Operation Failed", description: error.message || "An unknown error occurred." });

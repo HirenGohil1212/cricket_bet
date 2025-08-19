@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -24,13 +24,17 @@ import { Card } from "../ui/card";
 
 interface BankAccountListProps {
   initialBankAccounts: BankAccount[];
+  onAccountDeleted: (accountId: string) => void;
 }
 
-export function BankAccountList({ initialBankAccounts }: BankAccountListProps) {
+export function BankAccountList({ initialBankAccounts, onAccountDeleted }: BankAccountListProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [accounts, setAccounts] = useState(initialBankAccounts);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAccounts(initialBankAccounts);
+  }, [initialBankAccounts]);
 
   const handleDelete = async (accountId: string) => {
     setIsDeleting(accountId);
@@ -39,8 +43,7 @@ export function BankAccountList({ initialBankAccounts }: BankAccountListProps) {
       toast({ variant: "destructive", title: "Error", description: result.error });
     } else {
       toast({ title: "Account Deleted", description: result.success });
-      // No need to call router.refresh(), just update local state for instant UI feedback
-      setAccounts(currentAccounts => currentAccounts.filter(acc => acc.id !== accountId));
+      onAccountDeleted(accountId); // Notify parent
     }
     setIsDeleting(null);
   };
