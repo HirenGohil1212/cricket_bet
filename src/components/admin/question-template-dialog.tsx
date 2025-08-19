@@ -58,7 +58,7 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
                 <DialogHeader>
                     <DialogTitle>Manage Question Template for {sport}</DialogTitle>
                     <DialogDescription>
-                        These questions will be applied to all upcoming and live {sport} matches.
+                        These questions will be applied to all upcoming and live {sport} matches. This will overwrite any existing questions on those matches.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 max-h-[60vh] overflow-y-auto">
