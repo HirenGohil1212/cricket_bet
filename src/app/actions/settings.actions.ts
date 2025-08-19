@@ -84,15 +84,14 @@ export async function updateBankDetails(accounts: BankAccount[]) {
     try {
         // Step 1: Get the current state from the DB before any changes
         const currentAccounts = await getBankDetails();
-        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
-
-        // Step 2: The 'accounts' parameter is the *new* state from the UI.
-        // We must first strip out qrCodeFile as it cannot be stored in Firestore.
-        const accountsForFirestore = accounts.map(({ qrCodeFile, ...rest }) => rest);
         
-        const newAccountIds = new Set(accountsForFirestore.map(acc => acc.id));
+        // The 'accounts' parameter is the *new* state from the UI, with qrCodeFile removed.
+        const newAccounts = accounts;
 
-        // Step 3: Find and delete QR codes for accounts that were removed entirely.
+        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
+        const newAccountIds = new Set(newAccounts.map(acc => acc.id));
+
+        // Step 2: Find and delete QR codes for accounts that were removed entirely.
         const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
         for (const account of accountsToDelete) {
             if (account.qrCodePath) {
@@ -100,8 +99,8 @@ export async function updateBankDetails(accounts: BankAccount[]) {
             }
         }
 
-        // Step 4: For accounts that still exist, check if their QR code was replaced.
-        for (const newAccount of accountsForFirestore) {
+        // Step 3: For accounts that still exist, check if their QR code was replaced.
+        for (const newAccount of newAccounts) {
             if (!newAccount.id) continue;
             const oldAccount = currentAccountMap.get(newAccount.id);
             // If an old account existed, had a QR path, and its path is different from the new path (meaning a new file was uploaded), delete the old one.
@@ -110,8 +109,8 @@ export async function updateBankDetails(accounts: BankAccount[]) {
             }
         }
         
-        // Step 5: Save the final, correct list of accounts to Firestore.
-        await setDoc(docRef, { accounts: accountsForFirestore });
+        // Step 4: Save the final, correct list of accounts to Firestore.
+        await setDoc(docRef, { accounts: newAccounts });
         
         revalidatePath('/admin/bank-details');
         return { success: 'Bank details updated successfully!' };
