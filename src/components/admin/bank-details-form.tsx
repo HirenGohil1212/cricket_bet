@@ -3,12 +3,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import * as React from "react";
 import Image from "next/image";
-import { PlusCircle, Trash2, UploadCloud, CheckCircle, Loader2 } from "lucide-react";
+import { PlusCircle, Trash2, UploadCloud } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
-import { debounce } from 'lodash';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,16 +22,24 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { bankDetailsFormSchema, type BankDetailsFormValues } from "@/lib/schemas";
 import type { BankAccount } from "@/lib/types";
-import { updateBankDetails } from "@/app/actions/settings.actions";
+import { updateBankDetails, deleteBankAccount } from "@/app/actions/settings.actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { uploadFile } from "@/lib/storage";
-import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface BankDetailsFormProps {
     initialData: BankAccount[];
 }
-
-type SavingState = 'idle' | 'saving' | 'saved';
 
 const createDefaultAccount = (): BankAccount => ({
   id: uuidv4(),
@@ -46,7 +53,8 @@ const createDefaultAccount = (): BankAccount => ({
 
 export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const { toast } = useToast();
-  const [savingState, setSavingState] = React.useState<SavingState>('idle');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
   const [previews, setPreviews] = React.useState<Record<string, string>>({});
 
   const form = useForm<BankDetailsFormValues>({
@@ -56,63 +64,21 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "accounts",
   });
   
-  const watchedFields = useWatch({ control: form.control, name: 'accounts' });
-  const isDirty = form.formState.isDirty;
-
-  const debouncedSave = React.useCallback(
-    debounce(async (data: BankDetailsFormValues['accounts']) => {
-        setSavingState('saving');
-        try {
-            const accountsWithUploads = await Promise.all(data.map(async (account) => {
-                let qrCodeUrl = account.qrCodeUrl || '';
-                let qrCodePath = account.qrCodePath || '';
-
-                if (account.qrCodeFile instanceof File) {
-                    const uploadResult = await uploadFile(account.qrCodeFile, 'qrcodes');
-                    qrCodeUrl = uploadResult.downloadUrl;
-                    qrCodePath = uploadResult.storagePath;
-                }
-
-                return {
-                    id: account.id,
-                    upiId: account.upiId,
-                    accountHolderName: account.accountHolderName,
-                    accountNumber: account.accountNumber,
-                    ifscCode: account.ifscCode,
-                    qrCodeUrl,
-                    qrCodePath,
-                };
-            }));
-
-            const result = await updateBankDetails(accountsWithUploads);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Auto-save Failed', description: result.error });
-                setSavingState('idle');
-            } else {
-                setSavingState('saved');
-                form.reset({ accounts: accountsWithUploads.map(acc => ({ ...acc, qrCodeFile: undefined })) });
-                setTimeout(() => setSavingState('idle'), 2000);
-            }
-        } catch (error: any) {
-            toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload QR code. Please try again." });
-            setSavingState('idle');
-        }
-    }, 1500),
-  [toast, form]);
-  
   React.useEffect(() => {
-    if (isDirty) {
-        const validation = bankDetailsFormSchema.safeParse(form.getValues());
-        if (validation.success) {
-            debouncedSave(validation.data.accounts);
+    // Sync previews when initialData changes
+    const initialPreviews = initialData.reduce((acc, account) => {
+        if (account.id && account.qrCodeUrl) {
+            acc[account.id] = account.qrCodeUrl;
         }
-    }
-  }, [watchedFields, isDirty, form, debouncedSave]);
+        return acc;
+    }, {} as Record<string, string>);
+    setPreviews(initialPreviews);
+  }, [initialData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string, index: number) => {
     const file = e.target.files?.[0];
@@ -124,38 +90,103 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        form.setValue(`accounts.${index}.qrCodeFile`, file, { shouldValidate: true, shouldDirty: true });
+        form.setValue(`accounts.${index}.qrCodeFile`, file, { shouldValidate: true });
         setPreviews(prev => ({...prev, [fieldId]: result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleAccountDelete = async (accountId: string, index: number) => {
+    if (!accountId) return;
+    setIsDeleting(accountId);
+    const result = await deleteBankAccount(accountId);
+    if (result.error) {
+        toast({ variant: 'destructive', title: 'Deletion Failed', description: result.error });
+    } else {
+        remove(index);
+        toast({ title: 'Success', description: result.success });
+    }
+    setIsDeleting(null);
+  }
+
+  async function onSubmit(data: BankDetailsFormValues) {
+    setIsSubmitting(true);
+    try {
+        const accountsWithUploads = await Promise.all(data.accounts.map(async (account) => {
+            let qrCodeUrl = account.qrCodeUrl || '';
+            let qrCodePath = account.qrCodePath || '';
+
+            if (account.qrCodeFile instanceof File) {
+                const uploadResult = await uploadFile(account.qrCodeFile, 'qrcodes');
+                qrCodeUrl = uploadResult.downloadUrl;
+                qrCodePath = uploadResult.storagePath;
+            }
+
+            return {
+                id: account.id,
+                upiId: account.upiId,
+                accountHolderName: account.accountHolderName,
+                accountNumber: account.accountNumber,
+                ifscCode: account.ifscCode,
+                qrCodeUrl,
+                qrCodePath,
+            };
+        }));
+        
+        const result = await updateBankDetails(accountsWithUploads);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
+        } else {
+            toast({ title: 'Success', description: 'All changes have been saved.'});
+            // Reset the form with the new data to clear dirty state
+            form.reset({ accounts: accountsWithUploads.map(acc => ({...acc, qrCodeFile: undefined})) });
+        }
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload QR code. Please try again." });
+    } finally {
+        setIsSubmitting(false);
+    }
+  }
+
+
   return (
     <Form {...form}>
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
-        <div className="flex justify-end">
-            <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground transition-opacity", savingState !== 'idle' ? 'opacity-100' : 'opacity-0')}>
-                {savingState === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
-                {savingState === 'saving' && <span>Saving...</span>}
-                {savingState === 'saved' && <CheckCircle className="h-3 w-3 text-green-500" />}
-                {savingState === 'saved' && <span className="text-green-500">Saved</span>}
-            </div>
-        </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
             {fields.map((field, index) => (
                 <Card key={field.id} className="relative pt-8 border-border">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
-                      onClick={() => remove(index)}
-                      disabled={savingState === 'saving'}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remove Account</span>
-                    </Button>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this bank account and its QR code.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => handleAccountDelete(field.id!, index)}
+                                disabled={isDeleting === field.id}
+                                className="bg-destructive hover:bg-destructive/90"
+                            >
+                                {isDeleting === field.id ? "Deleting..." : "Delete"}
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-6">
                             <FormField
@@ -164,7 +195,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Account Holder Name</FormLabel>
-                                  <FormControl><Input placeholder="e.g. John Doe" {...field} disabled={savingState === 'saving'} /></FormControl>
+                                  <FormControl><Input placeholder="e.g. John Doe" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -175,7 +206,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Account Number</FormLabel>
-                                  <FormControl><Input placeholder="e.g. 1234567890" {...field} disabled={savingState === 'saving'} /></FormControl>
+                                  <FormControl><Input placeholder="e.g. 1234567890" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -188,7 +219,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>IFSC Code</FormLabel>
-                                  <FormControl><Input placeholder="e.g. SBIN0001234" {...field} disabled={savingState === 'saving'} /></FormControl>
+                                  <FormControl><Input placeholder="e.g. SBIN0001234" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -199,7 +230,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>UPI ID</FormLabel>
-                                  <FormControl><Input placeholder="e.g. johndoe@upi" {...field} disabled={savingState === 'saving'} /></FormControl>
+                                  <FormControl><Input placeholder="e.g. johndoe@upi" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -215,10 +246,8 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                                     <FormControl>
                                         <div className="flex items-center gap-4">
                                             <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                                                {previews[field.id] ? (
-                                                    <Image src={previews[field.id]} alt="QR Preview" width={96} height={96} className="object-contain"/>
-                                                ) : form.getValues(`accounts.${index}.qrCodeUrl`) ? (
-                                                     <Image src={form.getValues(`accounts.${index}.qrCodeUrl`)!} alt="Current QR Code" width={96} height={96} className="object-contain" />
+                                                {previews[field.id!] ? (
+                                                    <Image src={previews[field.id!]} alt="QR Preview" width={96} height={96} className="object-contain"/>
                                                 ) : (
                                                     <UploadCloud className="h-8 w-8 text-muted-foreground" />
                                                 )}
@@ -226,9 +255,8 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                                             <Input 
                                                 type="file" 
                                                 accept="image/png, image/jpeg, image/webp" 
-                                                onChange={(e) => handleFileChange(e, field.id, index)} 
+                                                onChange={(e) => handleFileChange(e, field.id!, index)} 
                                                 className="max-w-xs"
-                                                disabled={savingState === 'saving'}
                                             />
                                         </div>
                                     </FormControl>
@@ -247,10 +275,13 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                 type="button" 
                 variant="outline" 
                 onClick={() => append(createDefaultAccount())}
-                disabled={fields.length >= 5 || savingState === 'saving'}
+                disabled={fields.length >= 5}
             >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Another Account
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !form.formState.isDirty}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
         </div>
       </form>

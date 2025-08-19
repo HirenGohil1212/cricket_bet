@@ -2,7 +2,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { BankAccount, BettingSettings, Sport, AppSettings } from '@/lib/types';
@@ -121,6 +121,38 @@ export async function updateBankDetails(accounts: BankAccount[]) {
             return { error: 'A problem occurred with file storage. Please try again.' };
         }
         return { error: 'An unknown error occurred while updating bank details.' };
+    }
+}
+
+// NEW Server action to delete a single bank account
+export async function deleteBankAccount(accountId: string) {
+    if (!accountId) {
+        return { error: 'Account ID is required.' };
+    }
+
+    const docRef = doc(db, 'adminSettings', 'paymentDetails');
+    try {
+        const currentAccounts = await getBankDetails();
+        
+        const accountToDelete = currentAccounts.find(acc => acc.id === accountId);
+        if (!accountToDelete) {
+            return { error: 'Account not found.' };
+        }
+        
+        // Delete the QR code from storage if it exists
+        if (accountToDelete.qrCodePath) {
+            await deleteFileByPath(accountToDelete.qrCodePath);
+        }
+
+        // Filter out the deleted account and update Firestore
+        const updatedAccounts = currentAccounts.filter(acc => acc.id !== accountId);
+        await setDoc(docRef, { accounts: updatedAccounts });
+
+        revalidatePath('/admin/bank-details');
+        return { success: 'Bank account deleted successfully!' };
+    } catch (error: any) {
+        console.error("Error deleting bank account:", error);
+        return { error: 'Failed to delete bank account.' };
     }
 }
 
