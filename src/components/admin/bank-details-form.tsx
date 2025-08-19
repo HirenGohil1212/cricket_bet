@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { bankDetailsFormSchema, type BankDetailsFormValues } from "@/lib/schemas";
 import type { BankAccount } from "@/lib/types";
-import { updateBankDetails, deleteBankAccount } from "@/app/actions/settings.actions";
+import { updateBankDetails } from "@/app/actions/settings.actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { uploadFile } from "@/lib/storage";
 import {
@@ -56,7 +56,6 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
   const [previews, setPreviews] = React.useState<Record<string, string>>({});
 
   const form = useForm<BankDetailsFormValues>({
@@ -102,35 +101,27 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
     }
   };
 
-  const handleAccountDelete = async (accountId: string, index: number) => {
-    if (!accountId) return;
-    setIsDeleting(accountId);
-    const result = await deleteBankAccount(accountId);
-    if (result.error) {
-        toast({ variant: 'destructive', title: 'Deletion Failed', description: result.error });
-    } else {
-        remove(index);
-        toast({ title: 'Success', description: result.success });
-        router.refresh();
-    }
-    setIsDeleting(null);
-  }
-
   async function onSubmit(data: BankDetailsFormValues) {
     setIsSubmitting(true);
     try {
-        const accountsWithUploads = await Promise.all(data.accounts.map(async (account) => {
+        const accountsWithUploads = await Promise.all(data.accounts.map(async (account, index) => {
             let qrCodeUrl = account.qrCodeUrl || '';
             let qrCodePath = account.qrCodePath || '';
+            const originalAccount = initialData.find(a => a.id === account.id);
 
+            // A file is present in the form state for this account.
             if (account.qrCodeFile instanceof File) {
                 const uploadResult = await uploadFile(account.qrCodeFile, 'qrcodes');
                 qrCodeUrl = uploadResult.downloadUrl;
                 qrCodePath = uploadResult.storagePath;
+            } else if (originalAccount) {
+                // No new file, so retain the old path and URL.
+                qrCodeUrl = originalAccount.qrCodeUrl;
+                qrCodePath = originalAccount.qrCodePath || '';
             }
 
             return {
-                id: account.id,
+                id: account.id || uuidv4(), // Ensure new accounts get an ID
                 upiId: account.upiId,
                 accountHolderName: account.accountHolderName,
                 accountNumber: account.accountNumber,
@@ -145,8 +136,7 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
             toast({ variant: 'destructive', title: 'Save Failed', description: result.error });
         } else {
             toast({ title: 'Success', description: 'All changes have been saved.'});
-            // Reset the form with the new data to clear dirty state and ensure IDs are correct
-            form.reset({ accounts: accountsWithUploads.map(acc => ({...acc, qrCodeFile: undefined})) });
+            // Let the component re-fetch the new state via router.refresh()
             router.refresh();
         }
     } catch (error: any) {
@@ -178,17 +168,16 @@ export function BankDetailsForm({ initialData }: BankDetailsFormProps) {
                             <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this bank account and its QR code.
+                                This will remove this bank account. The change will be permanent after you click "Save Changes".
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                                onClick={() => handleAccountDelete(field.id, index)}
-                                disabled={isDeleting === field.id}
+                                onClick={() => remove(index)}
                                 className="bg-destructive hover:bg-destructive/90"
                             >
-                                {isDeleting === field.id ? "Deleting..." : "Delete"}
+                                Remove
                             </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

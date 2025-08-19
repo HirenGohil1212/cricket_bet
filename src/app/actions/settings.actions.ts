@@ -9,6 +9,7 @@ import type { BankAccount, BettingSettings, Sport, AppSettings } from '@/lib/typ
 import { bettingSettingsSchema, type BettingSettingsFormValues, appSettingsSchema, type AppSettingsFormValues } from '@/lib/schemas';
 import { sports } from '@/lib/data';
 import { deleteFileByPath } from '@/lib/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 
 // --- App Settings ---
@@ -64,7 +65,8 @@ export async function getBankDetails(): Promise<BankAccount[]> {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            return (data.accounts as BankAccount[]) || [];
+            // Ensure every account has a UUID
+            return (data.accounts as BankAccount[] || []).map(acc => ({ ...acc, id: acc.id || uuidv4() }));
         }
         return [];
     } catch (error) {
@@ -73,18 +75,39 @@ export async function getBankDetails(): Promise<BankAccount[]> {
     }
 }
 
-// Server action to update bank details
-export async function updateBankDetails(accounts: BankAccount[]) {
-    if (!Array.isArray(accounts)) {
+// **REWRITTEN & ROBUST** Server action to update bank details, including deletions.
+export async function updateBankDetails(newAccounts: BankAccount[]) {
+    if (!Array.isArray(newAccounts)) {
       return { error: 'Invalid data provided.' };
     }
-
+    
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
-        // Since this action is now only for saving/updating, we don't need complex deletion logic here.
-        // That is handled by the dedicated deleteBankAccount action.
-        await setDoc(docRef, { accounts });
+        // 1. Get the current state from the database
+        const currentAccounts = await getBankDetails();
+        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
+        const newAccountIds = new Set(newAccounts.map(acc => acc.id));
+
+        // 2. Identify and delete QR codes for accounts that were removed
+        for (const [id, account] of currentAccountMap.entries()) {
+            if (!newAccountIds.has(id)) {
+                // This account was deleted
+                if (account.qrCodePath) {
+                    await deleteFileByPath(account.qrCodePath);
+                }
+            } else {
+                // This account still exists, check if its QR code was replaced
+                const newVersion = newAccounts.find(newAcc => newAcc.id === id);
+                // A new path means a new file was uploaded
+                if (newVersion && newVersion.qrCodePath && account.qrCodePath && newVersion.qrCodePath !== account.qrCodePath) {
+                    await deleteFileByPath(account.qrCodePath);
+                }
+            }
+        }
+        
+        // 3. Save the new state
+        await setDoc(docRef, { accounts: newAccounts });
         
         revalidatePath('/admin/bank-details');
         return { success: 'Bank details updated successfully!' };
@@ -94,40 +117,6 @@ export async function updateBankDetails(accounts: BankAccount[]) {
         return { error: 'An unknown error occurred while updating bank details.' };
     }
 }
-
-// NEW Server action to delete a single bank account
-export async function deleteBankAccount(accountId: string) {
-    if (!accountId) {
-        return { error: 'Account ID is required.' };
-    }
-
-    const docRef = doc(db, 'adminSettings', 'paymentDetails');
-    try {
-        const currentAccounts = await getBankDetails();
-        
-        const accountToDelete = currentAccounts.find(acc => acc.id === accountId);
-        if (!accountToDelete) {
-            // This case should ideally not happen if the frontend sends the correct ID.
-            return { error: 'Account not found.' };
-        }
-        
-        // Delete the QR code from storage if it exists
-        if (accountToDelete.qrCodePath) {
-            await deleteFileByPath(accountToDelete.qrCodePath);
-        }
-
-        // Filter out the deleted account and update Firestore
-        const updatedAccounts = currentAccounts.filter(acc => acc.id !== accountId);
-        await setDoc(docRef, { accounts: updatedAccounts });
-
-        revalidatePath('/admin/bank-details');
-        return { success: 'Bank account deleted successfully!' };
-    } catch (error: any) {
-        console.error("Error deleting bank account:", error);
-        return { error: 'Failed to delete bank account.' };
-    }
-}
-
 
 // --- Betting Settings ---
 
