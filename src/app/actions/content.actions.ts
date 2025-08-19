@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { ContentSettings } from '@/lib/types';
@@ -60,5 +60,47 @@ export async function updateContent(payload: UpdateContentPayload) {
     } catch (error: any) {
         console.error("Error updating content: ", error);
         return { error: error.message || 'An unknown error occurred while updating content.' };
+    }
+}
+
+
+// Server action to delete a specific content asset
+export async function deleteContentAsset({ assetType }: { assetType: 'banner' | 'video' }) {
+    if (!assetType) {
+        return { error: 'Asset type is required.' };
+    }
+    
+    try {
+        const docRef = doc(db, 'adminSettings', 'content');
+        const currentContent = await getContent();
+        if (!currentContent) {
+            return { error: 'No content settings found to delete from.' };
+        }
+
+        if (assetType === 'banner') {
+            if (currentContent.bannerImagePath) {
+                await deleteFileByPath(currentContent.bannerImagePath);
+            }
+            await updateDoc(docRef, {
+                bannerImageUrl: '',
+                bannerImagePath: ''
+            });
+        } else if (assetType === 'video') {
+             if (currentContent.smallVideoPath) {
+                await deleteFileByPath(currentContent.smallVideoPath);
+            }
+            await updateDoc(docRef, {
+                smallVideoUrl: '',
+                smallVideoPath: ''
+            });
+        }
+
+        revalidatePath('/admin/content');
+        revalidatePath('/');
+        return { success: `${assetType.charAt(0).toUpperCase() + assetType.slice(1)} deleted successfully.` };
+
+    } catch (error: any) {
+        console.error(`Error deleting ${assetType}: `, error);
+        return { error: `Failed to delete ${assetType}.` };
     }
 }

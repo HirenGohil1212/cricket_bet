@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as React from "react";
 import Image from "next/image";
-import { Film, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
+import { Film, Image as ImageIcon, Link as LinkIcon, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,9 +22,20 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { contentManagementSchema, type ContentManagementFormValues } from "@/lib/schemas";
 import type { ContentSettings } from "@/lib/types";
-import { updateContent } from "@/app/actions/content.actions";
+import { updateContent, deleteContentAsset } from "@/app/actions/content.actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { uploadFile } from "@/lib/storage";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ContentManagementFormProps {
     initialData: ContentSettings | null;
@@ -31,7 +43,9 @@ interface ContentManagementFormProps {
 
 export function ContentManagementForm({ initialData }: ContentManagementFormProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   
   const [bannerPreview, setBannerPreview] = React.useState<string | null>(initialData?.bannerImageUrl || null);
   const [videoPreview, setVideoPreview] = React.useState<string | null>(initialData?.smallVideoUrl || null);
@@ -42,6 +56,14 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
       youtubeUrl: initialData?.youtubeUrl || "",
     },
   });
+  
+  React.useEffect(() => {
+    setBannerPreview(initialData?.bannerImageUrl || null);
+    setVideoPreview(initialData?.smallVideoUrl || null);
+    form.reset({
+        youtubeUrl: initialData?.youtubeUrl || ''
+    });
+  }, [initialData, form]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: "bannerImageFile" | "smallVideoFile") => {
     const file = e.target.files?.[0];
@@ -60,6 +82,26 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
       reader.readAsDataURL(file);
     }
   };
+  
+  const handleDelete = async (assetType: 'banner' | 'video') => {
+    setIsDeleting(true);
+    const result = await deleteContentAsset({ assetType });
+    if (result.error) {
+        toast({ variant: 'destructive', title: 'Deletion Failed', description: result.error });
+    } else {
+        toast({ title: 'Success!', description: result.success });
+        if (assetType === 'banner') {
+            setBannerPreview(null);
+            form.setValue('bannerImageFile', null);
+        } else {
+            setVideoPreview(null);
+            form.setValue('smallVideoFile', null);
+        }
+        router.refresh();
+    }
+    setIsDeleting(false);
+  };
+
 
   async function onSubmit(data: ContentManagementFormValues) {
     setIsSubmitting(true);
@@ -95,6 +137,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
             toast({ variant: "destructive", title: "Error", description: result.error });
         } else {
             toast({ title: "Success!", description: result.success });
+            router.refresh();
         }
     } catch (error: any) {
         toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload files. Please try again." });
@@ -148,6 +191,29 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         />
                                     </FormControl>
                                     <FormDescription>Upload a banner image (e.g., 16:9 ratio). Max 5MB.</FormDescription>
+                                     {bannerPreview && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button type="button" variant="destructive" size="sm" className="w-full max-w-xs">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Banner
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete the banner image from storage. This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDelete('banner')} disabled={isDeleting}>
+                                                        {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                     )}
                                 </div>
                             </div>
                             <FormMessage />
@@ -181,6 +247,29 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         />
                                     </FormControl>
                                     <FormDescription>Upload a short video ad (MP4 format). Max 10MB.</FormDescription>
+                                    {videoPreview && (
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button type="button" variant="destructive" size="sm" className="w-full max-w-xs">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Video
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete the video from storage. This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDelete('video')} disabled={isDeleting}>
+                                                        {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                 </div>
                             </div>
                             <FormMessage />
@@ -193,7 +282,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
 
         <div className="flex items-center justify-end">
             <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Content"}
+                {isSubmitting ? "Saving..." : "Save Content Changes"}
             </Button>
         </div>
       </form>
