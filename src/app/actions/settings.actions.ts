@@ -81,13 +81,26 @@ export async function updateBankDetails(accounts: BankAccount[]) {
     const docRef = doc(db, 'adminSettings', 'paymentDetails');
 
     try {
+        // Step 1: Get the current state from the DB before any changes
         const currentAccounts = await getBankDetails();
-        const currentAccountMap = new Map(currentAccounts.map(acc => acc.id ? [acc.id, acc] : ['', acc]).filter(([id]) => id));
-        const newAccountIds = new Set(accounts.map(acc => acc.id));
+        const currentAccountMap = new Map(currentAccounts.map(acc => [acc.id, acc]));
 
-        // --- CORRECTED DELETION LOGIC ---
+        // Step 2: Process new data and file uploads first
+        const finalAccounts = await Promise.all(accounts.map(async (account) => {
+            // If a new file is present, upload it.
+            if (account.qrCodeFile instanceof File) {
+                const { uploadFile } = await import('@/lib/storage');
+                const { downloadUrl, storagePath } = await uploadFile(account.qrCodeFile, 'qrcodes');
+                return { ...account, qrCodeUrl: downloadUrl, qrCodePath: storagePath };
+            }
+            // Otherwise, return the account as is (it might have an existing URL).
+            return account;
+        }));
 
-        // 1. Delete QR codes for accounts that are completely removed from the list
+        // Step 3: Compare old and new states to find what needs to be deleted from storage.
+        const newAccountIds = new Set(finalAccounts.map(acc => acc.id));
+
+        // Case 1: An entire account was deleted from the UI.
         const accountsToDelete = currentAccounts.filter(acc => acc.id && !newAccountIds.has(acc.id));
         for (const account of accountsToDelete) {
             if (account.qrCodePath) {
@@ -95,28 +108,26 @@ export async function updateBankDetails(accounts: BankAccount[]) {
             }
         }
 
-        // 2. Delete old QR code if a new one is uploaded for an existing account
-        for (const newAccount of accounts) {
-            if (!newAccount.id) continue; // Should not happen with UUIDs but good practice
+        // Case 2: An existing account had its QR code replaced with a new one.
+        for (const newAccount of finalAccounts) {
+            if (!newAccount.id) continue;
             const oldAccount = currentAccountMap.get(newAccount.id);
-            // Check if a new QR code URL is present (meaning a new file was uploaded) and it's different from the old one,
-            // and an old path exists to be deleted.
-            if (oldAccount?.qrCodePath && newAccount.qrCodePath !== oldAccount.qrCodePath) {
+            // If an old account existed, had a QR path, and its path is different from the new path (meaning a new file was uploaded), delete the old one.
+            if (oldAccount && oldAccount.qrCodePath && newAccount.qrCodePath !== oldAccount.qrCodePath) {
                 await deleteFileByPath(oldAccount.qrCodePath);
             }
         }
         
-        // --- END CORRECTED DELETION LOGIC ---
-        
-        // Save the new list of accounts
-        await setDoc(docRef, { accounts });
+        // Step 4: Save the final, correct list of accounts to Firestore.
+        // We need to strip out the 'qrCodeFile' property as it cannot be stored in Firestore.
+        const accountsForFirestore = finalAccounts.map(({ qrCodeFile, ...rest }) => rest);
+        await setDoc(docRef, { accounts: accountsForFirestore });
         
         revalidatePath('/admin/bank-details');
         return { success: 'Bank details updated successfully!' };
 
     } catch (error: any) {
         console.error("Error updating bank details: ", error);
-        // It's better to return a specific error message if possible
         if (error.code && error.code.startsWith('storage/')) {
             return { error: 'A problem occurred with file storage. Please try again.' };
         }
