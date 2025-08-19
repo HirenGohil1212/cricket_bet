@@ -6,28 +6,54 @@ import type { Sport, Match, Question } from "@/lib/types";
 import { SportIcon } from "@/components/icons";
 import { MatchQnaCard } from "./match-qna-card";
 import { Button } from "../ui/button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { QuestionTemplateDialog } from "./question-template-dialog";
+import { getMatches } from "@/app/actions/match.actions";
+import { Skeleton } from "../ui/skeleton";
 
 interface QandADashboardProps {
     matches: Match[];
-    initialTemplates: Record<Sport, Question[]>;
+    initialTemplates: Record<Sport, Pick<Question, 'question'>[]>;
 }
 
-export function QandADashboard({ matches, initialTemplates }: QandADashboardProps) {
+function QnaDashboardSkeleton() {
+    return (
+        <div className="mt-6 space-y-6">
+            <div className="flex justify-end">
+                <Skeleton className="h-10 w-48" />
+            </div>
+            <div className="space-y-4">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        </div>
+    )
+}
+
+export function QandADashboard({ matches: initialMatches, initialTemplates }: QandADashboardProps) {
+  const [matches, setMatches] = useState(initialMatches);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const upcomingMatches = matches.filter(m => m.status === 'Upcoming' || m.status === 'Live');
+  const refreshMatches = useCallback(async () => {
+    setIsLoading(true);
+    const updatedMatches = await getMatches();
+    setMatches(updatedMatches);
+    setIsLoading(false);
+  }, []);
   
   const handleManageTemplate = (sport: Sport) => {
     setSelectedSport(sport);
     setIsTemplateDialogOpen(true);
   };
 
-  const onDialogClose = () => {
+  const onDialogClose = (shouldRefresh: boolean) => {
     setIsTemplateDialogOpen(false);
     setSelectedSport(null);
+    if (shouldRefresh) {
+        refreshMatches();
+    }
   }
 
   return (
@@ -41,23 +67,24 @@ export function QandADashboard({ matches, initialTemplates }: QandADashboardProp
             </TabsTrigger>
           ))}
         </TabsList>
-        {sports.map((sport) => (
-          <TabsContent key={sport} value={sport} className="mt-6 space-y-6">
-            <div className="flex justify-end">
-                <Button onClick={() => handleManageTemplate(sport)}>Manage {sport} Questions</Button>
-            </div>
-             {upcomingMatches.filter(m => m.sport === sport).length > 0 ? (
-                  upcomingMatches
-                      .filter(m => m.sport === sport)
-                      .map(match => <MatchQnaCard key={match.id} match={match} />)
-             ) : (
-                  <div className="text-center text-muted-foreground py-12 border rounded-md">
-                      <p>No upcoming or live matches found for this sport.</p>
-                      <p className="text-sm">You can still manage the question template.</p>
-                  </div>
-             )}
-          </TabsContent>
-        ))}
+        {sports.map((sport) => {
+          const upcomingMatches = matches.filter(m => m.sport === sport && (m.status === 'Upcoming' || m.status === 'Live'));
+          return (
+             <TabsContent key={sport} value={sport} className="mt-6 space-y-6">
+                <div className="flex justify-end">
+                    <Button onClick={() => handleManageTemplate(sport)}>Manage {sport} Questions</Button>
+                </div>
+                {isLoading ? <QnaDashboardSkeleton /> : upcomingMatches.length > 0 ? (
+                      upcomingMatches.map(match => <MatchQnaCard key={match.id} match={match} onUpdate={refreshMatches} />)
+                 ) : (
+                      <div className="text-center text-muted-foreground py-12 border rounded-md">
+                          <p>No upcoming or live matches found for this sport.</p>
+                          <p className="text-sm">You can still manage the question template.</p>
+                      </div>
+                 )}
+              </TabsContent>
+          )
+        })}
       </Tabs>
       {selectedSport && (
         <QuestionTemplateDialog

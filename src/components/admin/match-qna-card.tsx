@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -18,9 +17,10 @@ import { useRouter } from 'next/navigation';
 
 interface MatchQnaCardProps {
     match: Match;
+    onUpdate: () => void;
 }
 
-export function MatchQnaCard({ match }: MatchQnaCardProps) {
+export function MatchQnaCard({ match, onUpdate }: MatchQnaCardProps) {
     const { toast } = useToast();
     const router = useRouter();
     const [questions, setQuestions] = React.useState<Question[]>([]);
@@ -28,7 +28,6 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
     const [isCancelling, setIsCancelling] = React.useState(false);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
 
-    // New state for winners
     const [isFetchingWinners, setIsFetchingWinners] = React.useState(false);
     const [winnersData, setWinnersData] = React.useState<{ winners: Winner[] } | null>(null);
     const [isWinnersDialogOpen, setIsWinnersDialogOpen] = React.useState(false);
@@ -49,8 +48,7 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
         setIsManageDialogOpen(false);
         if (shouldRefresh) {
             fetchAndSetQuestions();
-            // Also refresh the whole page to get latest match status
-            router.refresh();
+            onUpdate(); 
         }
     }
 
@@ -69,7 +67,7 @@ export function MatchQnaCard({ match }: MatchQnaCardProps) {
             toast({ variant: 'destructive', title: 'Cancellation Failed', description: result.error });
         } else {
             toast({ title: 'Match Cancelled', description: result.success });
-            router.refresh();
+            onUpdate();
         }
         setIsCancelling(false);
     }

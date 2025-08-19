@@ -16,23 +16,20 @@ interface QuestionTemplateDialogProps {
     sport: Sport;
     existingQuestions: Pick<Question, 'question'>[];
     isOpen: boolean;
-    onClose: () => void;
+    onClose: (shouldRefresh: boolean) => void;
 }
 
 export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClose }: QuestionTemplateDialogProps) {
     const { toast } = useToast();
-    const router = useRouter();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
     const form = useForm<QnAFormValues>({
         resolver: zodResolver(qnaFormSchema),
-        // Initial default values, will be updated by useEffect
         defaultValues: {
             questions: [{ question: "" }]
         },
     });
     
-    // This effect ensures the form is reset with the latest questions when the dialog is opened or the questions prop changes.
     React.useEffect(() => {
         if (isOpen) {
             const defaultValues = {
@@ -42,7 +39,7 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
             };
             form.reset(defaultValues);
         }
-    }, [existingQuestions, isOpen, form]); // Rerun when dialog opens or questions change
+    }, [existingQuestions, isOpen, form]);
     
     const handleSubmit = async (data: QnAFormValues) => {
         setIsSubmitting(true);
@@ -51,14 +48,13 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
             toast({ variant: 'destructive', title: 'Update Failed', description: result.error });
         } else {
             toast({ title: 'Success', description: result.success });
-            router.refresh();
-            onClose();
+            onClose(true);
         }
         setIsSubmitting(false);
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Manage Question Template for {sport}</DialogTitle>
@@ -72,7 +68,7 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
                     </FormProvider>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+                    <Button variant="ghost" onClick={() => onClose(false)} disabled={isSubmitting}>Cancel</Button>
                     <Button onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting}>
                         {isSubmitting ? 'Saving...' : 'Save & Apply to Matches'}
                     </Button>
