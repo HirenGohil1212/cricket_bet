@@ -1,68 +1,31 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
-import type { Bet, Sport, Winner, Match, BetOption } from "@/lib/types";
-import { db } from "@/lib/firebase";
+
+import type { Match, Winner, BetOption } from "@/lib/types";
+import { getWinnersForMatch } from "@/app/actions/qna.actions";
 import { PaginatedFinishedMatches } from "./paginated-finished-matches";
+import { Suspense } from "react";
+import { FinishedMatchesLoader } from "./finished-matches-loader";
 
 interface FinishedMatchesListProps {
   matches: Match[];
   betOptions: BetOption[];
+  searchTerm: string;
 }
 
-const chunkArray = <T,>(arr: T[], size: number): T[][] => {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-}
-
-export async function FinishedMatchesList({ matches, betOptions }: FinishedMatchesListProps) {
+async function FinishedMatchesData({ matches, betOptions, searchTerm }: FinishedMatchesListProps) {
   if (matches.length === 0) {
     return null;
   }
   
-  const finishedMatchIds = matches.map(m => m.id);
+  // Fetch winners for all finished matches in parallel
+  const winnersPromises = matches.map(match => getWinnersForMatch(match.id));
+  const winnersResults = await Promise.all(winnersPromises);
+  
   const winnersMap = new Map<string, Winner[]>();
-
-  if (finishedMatchIds.length > 0) {
-    const betsRef = collection(db, 'bets');
-    const usersRef = collection(db, 'users');
-    
-    const betChunks = chunkArray(finishedMatchIds, 30);
-    const betPromises = betChunks.map(chunk => 
-      getDocs(query(betsRef, where('matchId', 'in', chunk), where('status', '==', 'Won')))
-    );
-    const betSnapshots = await Promise.all(betPromises);
-    const allWinningBets = betSnapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Bet, 'id'>) })));
-
-    if (allWinningBets.length > 0) {
-      const winnerUserIds = [...new Set(allWinningBets.map(bet => bet.userId))];
-      const userChunks = chunkArray(winnerUserIds, 30);
-      
-      const userPromises = userChunks.map(chunk => 
-        getDocs(query(usersRef, where('uid', 'in', chunk)))
-      );
-      
-      const userSnapshots = await Promise.all(userPromises);
-      const userMap = new Map<string, string>();
-      
-      userSnapshots.forEach(snapshot => {
-        snapshot.docs.forEach(doc => {
-          userMap.set(doc.data().uid, doc.data().name || 'Unknown User');
-        });
-      });
-
-      allWinningBets.forEach(bet => {
-        const matchWinners = winnersMap.get(bet.matchId) || [];
-        matchWinners.push({
-          userId: bet.userId,
-          name: userMap.get(bet.userId) || `User ID: ${bet.userId}`,
-          payoutAmount: bet.potentialWin || 0,
-        });
-        winnersMap.set(bet.matchId, matchWinners);
-      });
+  winnersResults.forEach((winners, index) => {
+    if (winners.length > 0) {
+      winnersMap.set(matches[index].id, winners);
     }
-  }
+  });
   
   const augmentedMatches = matches.map(match => ({
     ...match,
@@ -73,6 +36,22 @@ export async function FinishedMatchesList({ matches, betOptions }: FinishedMatch
     <PaginatedFinishedMatches
       matches={augmentedMatches}
       betOptions={betOptions}
+      searchTerm={searchTerm}
     />
   );
 }
+
+
+export function FinishedMatchesList({ matches, betOptions, searchTerm }: FinishedMatchesListProps) {
+   if (matches.length === 0) {
+    return null;
+  }
+
+  return (
+    <Suspense fallback={<FinishedMatchesLoader />}>
+      <FinishedMatchesData matches={matches} betOptions={betOptions} searchTerm={searchTerm} />
+    </Suspense>
+  )
+}
+
+    

@@ -4,9 +4,9 @@
 import type { Match, Sport, BetOption } from "@/lib/types";
 import { MatchList } from "./match-list";
 import { useState } from "react";
-import { PaginatedFinishedMatches } from "./paginated-finished-matches";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { FinishedMatchesList } from "./finished-matches-list";
 
 interface SportMatchListProps {
   sport?: Sport;
@@ -41,7 +41,7 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches,
         searchTerm={searchTerm}
       />
       
-      <PaginatedFinishedMatches
+      <FinishedMatchesList
         matches={finishedMatches}
         betOptions={betOptions}
         searchTerm={searchTerm}
@@ -56,3 +56,5 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches,
     </div>
   );
 }
+
+    
