@@ -85,13 +85,14 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
             
+            // Use a batch for Firestore deletions for efficiency
             const batch = writeBatch(db);
 
             for (const docSnapshot of snapshot.docs) {
                 // Special handling for deposits to delete associated storage file first
                 if (collectionName === 'deposits') {
                     const data = docSnapshot.data();
-                    // Use the direct path if available (new data), otherwise use the full URL (old data)
+                    // Use the direct path if available, otherwise fall back to the full URL.
                     const pathToDelete = data.screenshotPath || data.screenshotUrl;
 
                     if (pathToDelete) {
@@ -101,17 +102,17 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                         } catch (storageError) {
                             // Log the error but continue to delete the Firestore record,
                             // as the file might be non-existent, which is okay.
-                            console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record.`, storageError);
+                            console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
                         }
                     }
                 }
                 
                 // Add the Firestore document deletion to the batch
                 batch.delete(docSnapshot.ref);
-                totalDeleted++;
             }
              // Commit all deletions for the current collection
             await batch.commit();
+            totalDeleted += snapshot.size;
         }
         
         revalidatePath('/admin/data-management');
@@ -121,4 +122,3 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
         return { error: 'Failed to delete data history. Check server logs for details.' };
     }
 }
-
