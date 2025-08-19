@@ -12,6 +12,7 @@ import {
     updateDoc,
     getDoc,
     orderBy,
+    documentId,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -25,7 +26,6 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
     if (!matchId) return [];
     try {
         const questionsRef = collection(db, `matches/${matchId}/questions`);
-        // ** FIX: Added orderBy to ensure consistent question sequence **
         const q = query(questionsRef, orderBy('createdAt', 'asc'));
         const querySnapshot = await getDocs(q);
 
@@ -268,7 +268,7 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
 
             for (const idBatch of userBatches) {
-                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', idBatch));
+                 const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', idBatch));
                 const usersSnapshot = await getDocs(usersQuery);
                 usersSnapshot.forEach(userDoc => {
                     usersMap.set(userDoc.id, userDoc.data().name || 'Unknown User');
@@ -452,7 +452,7 @@ export async function getWinnersForMatch(matchId: string): Promise<Winner[]> {
             }
 
             for (const idBatch of userBatches) {
-                const usersQuery = query(collection(db, 'users'), where('uid', 'in', idBatch));
+                const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', idBatch));
                 const usersSnapshot = await getDocs(usersQuery);
                 usersSnapshot.forEach(userDoc => {
                     usersMap.set(userDoc.id, userDoc.data().name || 'Unknown User');
