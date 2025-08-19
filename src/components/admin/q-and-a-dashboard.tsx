@@ -62,7 +62,6 @@ export function QandADashboard({ matches: initialMatches, initialTemplates }: Qa
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto">
           {sports.map((sport) => (
             <TabsTrigger key={sport} value={sport} className="flex flex-col sm:flex-row items-center gap-2 py-2">
-              <SportIcon sport={sport} className="w-5 h-5" />
               <span>{sport}</span>
             </TabsTrigger>
           ))}
