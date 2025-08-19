@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import {
@@ -13,6 +11,7 @@ import {
     runTransaction,
     updateDoc,
     getDoc,
+    orderBy,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -26,7 +25,8 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
     if (!matchId) return [];
     try {
         const questionsRef = collection(db, `matches/${matchId}/questions`);
-        const q = query(questionsRef);
+        // ** FIX: Added orderBy to ensure consistent question sequence **
+        const q = query(questionsRef, orderBy('createdAt', 'asc'));
         const querySnapshot = await getDocs(q);
 
         return querySnapshot.docs.map(doc => {

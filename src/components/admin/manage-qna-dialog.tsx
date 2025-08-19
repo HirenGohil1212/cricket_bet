@@ -15,7 +15,6 @@ import { SettlementResultsDialog } from './settlement-results-dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { useAuth } from '@/context/auth-context';
 
 
@@ -35,8 +34,8 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     
     // State for text-based results (per question)
     const [results, setResults] = React.useState<Record<string, { teamA: string; teamB: string }>>({});
-    // State for player-based results (one for the whole match)
-    const [playerResult, setPlayerResult] = React.useState<{ teamA: string; teamB: string }>({ teamA: '', teamB: '' });
+    // State for player-based results, now per question
+    const [playerResults, setPlayerResults] = React.useState<Record<string, { teamA: string; teamB: string }>>({});
     
     // New state for the settlement results
     const [settlementResults, setSettlementResults] = React.useState<{ winners: Winner[]; totalBetsProcessed: number; } | null>(null);
@@ -53,10 +52,11 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             }, {} as Record<string, { teamA: string; teamB: string }>);
             setResults(initialResults);
             
-            // Assume player result is the same for all questions, so take from the first.
-            const firstQuestionWithPlayerResult = questions.find(q => q.playerResult);
-            const initialPlayerResult = firstQuestionWithPlayerResult?.playerResult || { teamA: '', teamB: '' };
-            setPlayerResult(initialPlayerResult);
+            const initialPlayerResults = questions.reduce((acc, q) => {
+                acc[q.id] = q.playerResult || { teamA: '', teamB: '' };
+                return acc;
+            }, {} as Record<string, { teamA: string, teamB: string }>)
+            setPlayerResults(initialPlayerResults);
         }
     }, [questions]);
     
@@ -70,10 +70,13 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
         }));
     };
     
-    const handlePlayerResultChange = (team: 'teamA' | 'teamB', value: string) => {
-        setPlayerResult(prev => ({
+    const handlePlayerResultChange = (questionId: string, team: 'teamA' | 'teamB', value: string) => {
+        setPlayerResults(prev => ({
             ...prev,
-            [team]: value,
+            [questionId]: {
+                ...(prev[questionId] || { teamA: '', teamB: '' }),
+                [team]: value,
+            },
         }));
     };
 
@@ -84,13 +87,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
         }
         setIsSaving(true);
         
-        // Construct the per-question playerResults object expected by the backend action
-        const playerResultsForSave = questions.reduce((acc, q) => {
-            acc[q.id] = playerResult;
-            return acc;
-        }, {} as Record<string, { teamA: string, teamB: string }>);
-
-        const actionResult = await saveQuestionResults(match.id, results, playerResultsForSave);
+        const actionResult = await saveQuestionResults(match.id, results, playerResults);
 
         if (actionResult.error) {
             toast({ variant: 'destructive', title: 'Save Failed', description: actionResult.error });
@@ -127,133 +124,119 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
 
     const hasActiveQuestions = questions.some(q => q.status === 'active');
     
-    const QnaSection = (
-        <Card>
-            <CardHeader>
-                <CardTitle>Q&A Results</CardTitle>
-                <CardDescription>Enter the text-based results for each question.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 {questions.length > 0 ? (
-                    questions.map(q => {
-                        const isSettled = q.status === 'settled';
-                        return (
-                            <div key={q.id} className="p-4 border rounded-md space-y-4">
-                                <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
-                                
-                                {isSettled && q.result ? (
-                                    <div className="flex items-center justify-around gap-2 text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
-                                        <span>{match.teamA.name}: {q.result.teamA}</span>
-                                        <span>{match.teamB.name}: {q.result.teamB}</span>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor={`${q.id}-teamA`} className="text-xs">{match.teamA.name}</Label>
-                                            <Input
-                                                id={`${q.id}-teamA`}
-                                                placeholder="Result for Team A"
-                                                value={results[q.id]?.teamA || ''}
-                                                onChange={(e) => handleResultChange(q.id, 'teamA', e.target.value)}
-                                                disabled={isSaving || isSettling}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor={`${q.id}-teamB`} className="text-xs">{match.teamB.name}</Label>
-                                            <Input
-                                                id={`${q.id}-teamB`}
-                                                placeholder="Result for Team B"
-                                                value={results[q.id]?.teamB || ''}
-                                                onChange={(e) => handleResultChange(q.id, 'teamB', e.target.value)}
-                                                disabled={isSaving || isSettling}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })
-                ) : (
-                    <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
-                )}
-            </CardContent>
-        </Card>
-    );
-    
-    const PlayerSection = (
-        <Card>
-            <CardHeader>
-                <CardTitle>Winning Player Selection</CardTitle>
-                <CardDescription>Select the winning player for this match. This selection will apply to all player-based questions.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {questions.length > 0 ? (
-                    <div className="p-4 border rounded-md space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="rounded-md border p-2 space-y-2">
-                                <Label className="px-1 font-semibold">{match.teamA.name}</Label>
-                                <ScrollArea className="h-40">
-                                    <RadioGroup
-                                        value={playerResult.teamA}
-                                        onValueChange={(value) => handlePlayerResultChange('teamA', value)}
-                                        disabled={isSaving || isSettling}
-                                        className="space-y-1 p-1"
-                                    >
-                                        {(match.teamA.players && match.teamA.players.length > 0) ? (
-                                            match.teamA.players.map(player => (
-                                                <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
-                                                    <RadioGroupItem value={player.name} id={`admin-a-${player.name}`} />
-                                                    <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={player.imageUrl} alt={player.name} />
-                                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <span>{player.name}</span>
-                                                </Label>
-                                            ))
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                                                <p>No players listed.</p>
-                                            </div>
-                                        )}
-                                    </RadioGroup>
-                                </ScrollArea>
-                            </div>
-                            <div className="rounded-md border p-2 space-y-2">
-                                <Label className="px-1 font-semibold">{match.teamB.name}</Label>
-                                <ScrollArea className="h-40">
-                                    <RadioGroup
-                                        value={playerResult.teamB}
-                                        onValueChange={(value) => handlePlayerResultChange('teamB', value)}
-                                        disabled={isSaving || isSettling}
-                                        className="space-y-1 p-1"
-                                    >
-                                        {(match.teamB.players && match.teamB.players.length > 0) ? (
-                                            match.teamB.players.map(player => (
-                                                <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
-                                                    <RadioGroupItem value={player.name} id={`admin-b-${player.name}`} />
-                                                    <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={player.imageUrl} alt={player.name} />
-                                                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <span>{player.name}</span>
-                                                </Label>
-                                            ))
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                                                <p>No players listed.</p>
-                                            </div>
-                                        )}
-                                    </RadioGroup>
-                                </ScrollArea>
-                            </div>
-                        </div>
+    const renderQuestionCard = (q: Question) => {
+        const isSettled = q.status === 'settled';
+        return (
+             <div key={q.id} className="p-4 border rounded-md space-y-4">
+                <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
+                
+                {isSettled ? (
+                    <div className="text-center text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
+                        Result: {match.teamA.name} - {q.result?.teamA || 'N/A'}, {match.teamB.name} - {q.result?.teamB || 'N/A'}
+                         {match.isSpecialMatch && q.playerResult && (
+                           <span className="block text-xs mt-1">
+                                Player Result: {match.teamA.name} - {q.playerResult.teamA || 'N/A'}, {match.teamB.name} - {q.playerResult.teamB || 'N/A'}
+                           </span>
+                        )}
                     </div>
                 ) : (
-                    <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
+                    <div className="space-y-4">
+                        {/* Q&A Input */}
+                        <div>
+                            <Label className="text-xs font-semibold">Q&A Result</Label>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor={`${q.id}-teamA`} className="text-xs">{match.teamA.name}</Label>
+                                    <Input
+                                        id={`${q.id}-teamA`}
+                                        placeholder="Result for Team A"
+                                        value={results[q.id]?.teamA || ''}
+                                        onChange={(e) => handleResultChange(q.id, 'teamA', e.target.value)}
+                                        disabled={isSaving || isSettling}
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor={`${q.id}-teamB`} className="text-xs">{match.teamB.name}</Label>
+                                    <Input
+                                        id={`${q.id}-teamB`}
+                                        placeholder="Result for Team B"
+                                        value={results[q.id]?.teamB || ''}
+                                        onChange={(e) => handleResultChange(q.id, 'teamB', e.target.value)}
+                                        disabled={isSaving || isSettling}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                         {/* Player Input */}
+                        {match.isSpecialMatch && (
+                            <div>
+                                <Label className="text-xs font-semibold">Player Result</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="rounded-md border p-2 space-y-2">
+                                        <Label className="px-1 font-semibold text-xs">{match.teamA.name}</Label>
+                                        <ScrollArea className="h-32">
+                                            <RadioGroup
+                                                value={playerResults[q.id]?.teamA || ''}
+                                                onValueChange={(value) => handlePlayerResultChange(q.id, 'teamA', value)}
+                                                disabled={isSaving || isSettling}
+                                                className="space-y-1 p-1"
+                                            >
+                                                {(match.teamA.players && match.teamA.players.length > 0) ? (
+                                                    match.teamA.players.map(player => (
+                                                        <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal text-xs">
+                                                            <RadioGroupItem value={player.name} id={`admin-a-${q.id}-${player.name}`} />
+                                                            <Avatar className="h-6 w-6">
+                                                                <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <span>{player.name}</span>
+                                                        </Label>
+                                                    ))
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                                                        <p>No players listed.</p>
+                                                    </div>
+                                                )}
+                                            </RadioGroup>
+                                        </ScrollArea>
+                                    </div>
+                                    <div className="rounded-md border p-2 space-y-2">
+                                        <Label className="px-1 font-semibold text-xs">{match.teamB.name}</Label>
+                                        <ScrollArea className="h-32">
+                                            <RadioGroup
+                                                value={playerResults[q.id]?.teamB || ''}
+                                                onValueChange={(value) => handlePlayerResultChange(q.id, 'teamB', value)}
+                                                disabled={isSaving || isSettling}
+                                                className="space-y-1 p-1"
+                                            >
+                                                {(match.teamB.players && match.teamB.players.length > 0) ? (
+                                                    match.teamB.players.map(player => (
+                                                        <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal text-xs">
+                                                            <RadioGroupItem value={player.name} id={`admin-b-${q.id}-${player.name}`} />
+                                                            <Avatar className="h-6 w-6">
+                                                                <AvatarImage src={player.imageUrl} alt={player.name} />
+                                                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <span>{player.name}</span>
+                                                        </Label>
+                                                    ))
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                                                        <p>No players listed.</p>
+                                                    </div>
+                                                )}
+                                            </RadioGroup>
+                                        </ScrollArea>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
-            </CardContent>
-        </Card>
-    );
+            </div>
+        )
+    }
 
     return (
         <>
@@ -267,8 +250,11 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                     </DialogHeader>
                     <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
                         <div className="space-y-6">
-                           {QnaSection}
-                           {match.isSpecialMatch && PlayerSection}
+                           {questions.length > 0 ? (
+                                questions.map(q => renderQuestionCard(q))
+                           ) : (
+                                <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
+                           )}
                         </div>
                     </ScrollArea>
                     <DialogFooter className="mt-6 flex-col sm:flex-row items-center sm:justify-between w-full">
