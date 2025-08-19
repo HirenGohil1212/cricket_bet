@@ -57,10 +57,11 @@ export async function createMatch(payload: MatchServerPayload) {
                 const batch = writeBatch(db);
                 const questionsCollectionRef = collection(db, `matches/${newMatchRef.id}/questions`);
                 
-                templateData.questions.forEach((q: any) => {
+                templateData.questions.forEach((q: any, index: number) => {
                     const questionRef = doc(questionsCollectionRef);
                     batch.set(questionRef, {
                         question: q.question,
+                        order: index, // Add order field
                         createdAt: Timestamp.now(),
                         status: 'active',
                         result: null,

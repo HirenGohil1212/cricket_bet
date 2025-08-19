@@ -27,7 +27,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
     if (!matchId) return [];
     try {
         const questionsRef = collection(db, `matches/${matchId}/questions`);
-        const q = query(questionsRef, orderBy('createdAt', 'asc'));
+        const q = query(questionsRef, orderBy('order', 'asc'));
         const querySnapshot = await getDocs(q);
 
         return querySnapshot.docs.map(doc => {
@@ -35,6 +35,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
             return {
                 id: doc.id,
                 question: data.question,
+                order: data.order,
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
                 result: data.result || null,
@@ -62,10 +63,11 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
             batch.delete(doc.ref);
         });
 
-        questions.forEach(q => {
+        questions.forEach((q, index) => {
             const questionRef = doc(questionsCollectionRef);
             batch.set(questionRef, {
                 question: q.question,
+                order: index, // Add order field
                 createdAt: Timestamp.now(),
                 status: 'active',
                 result: null,
@@ -129,10 +131,11 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
             });
             
             // Add new questions from the template
-            validatedQuestions.data.questions.forEach(q => {
+            validatedQuestions.data.questions.forEach((q, index) => {
                 const questionRef = doc(questionsCollectionRef);
                 batch.set(questionRef, {
                     question: q.question,
+                    order: index, // Add order field
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,
