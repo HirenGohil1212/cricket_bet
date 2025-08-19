@@ -24,20 +24,23 @@ export function QuestionTemplateDialog({ sport, existingQuestions, isOpen, onClo
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    const defaultValues = React.useMemo(() => ({
-        questions: existingQuestions.length > 0
-            ? existingQuestions
-            : [{ question: "" }]
-    }), [existingQuestions]);
-
     const form = useForm<QnAFormValues>({
         resolver: zodResolver(qnaFormSchema),
-        defaultValues,
+        // Initial default values, will be updated by useEffect
+        defaultValues: {
+            questions: [{ question: "" }]
+        },
     });
     
+    // This effect ensures the form is reset with the latest questions when the dialog is opened or the questions prop changes.
     React.useEffect(() => {
+        const defaultValues = {
+            questions: existingQuestions.length > 0
+                ? existingQuestions
+                : [{ question: "" }]
+        };
         form.reset(defaultValues);
-    }, [defaultValues, form]);
+    }, [existingQuestions, form, isOpen]); // Rerun when dialog opens
     
     const handleSubmit = async (data: QnAFormValues) => {
         setIsSubmitting(true);
