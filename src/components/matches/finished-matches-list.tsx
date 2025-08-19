@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, documentId } from "firebase/firestore";
 import type { Bet, Sport, Winner, Match, BetOption } from "@/lib/types";
 import { db } from "@/lib/firebase";
 import { PaginatedFinishedMatches } from "./paginated-finished-matches";
@@ -33,16 +33,19 @@ export async function FinishedMatchesList({ matches, betOptions }: FinishedMatch
       getDocs(query(betsRef, where('matchId', 'in', chunk), where('status', '==', 'Won')))
     );
     const betSnapshots = await Promise.all(betPromises);
-    const allWinningBets = betSnapshots.flatMap(snapshot => snapshot.docs.map(doc => doc.data() as Bet));
+    const allWinningBets = betSnapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Bet, 'id'>) })));
 
     if (allWinningBets.length > 0) {
       const winnerUserIds = [...new Set(allWinningBets.map(bet => bet.userId))];
       const userChunks = chunkArray(winnerUserIds, 30);
+      
       const userPromises = userChunks.map(chunk => 
-        getDocs(query(usersRef, where('uid', 'in', chunk)))
+        getDocs(query(usersRef, where(documentId(), 'in', chunk)))
       );
+      
       const userSnapshots = await Promise.all(userPromises);
       const userMap = new Map<string, string>();
+      
       userSnapshots.forEach(snapshot => {
         snapshot.docs.forEach(doc => {
           userMap.set(doc.id, doc.data().name || 'Unknown User');
