@@ -70,8 +70,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         startTime: new Date(match.startTime),
         isSpecialMatch: match.isSpecialMatch || false,
         allowOneSidedBets: match.allowOneSidedBets || false,
-        teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [],
-        teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [],
+        teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+        teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
     }
   });
 
@@ -90,8 +90,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   }, [selectedSport])
   
   React.useEffect(() => {
-    const defaultTeamAPlayers = match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [];
-    const defaultTeamBPlayers = match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl })) || [];
+    const defaultTeamAPlayers = match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [];
+    const defaultTeamBPlayers = match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [];
 
     form.reset({
         sport: match.sport,
@@ -173,10 +173,13 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
 
             for (const player of newPlayers) {
                 let imageUrl = player.playerImageUrl || '';
+                let imagePath = player.imagePath || '';
                 if (player.playerImageFile) {
-                    imageUrl = (await uploadFile(player.playerImageFile, 'players')).downloadUrl;
+                    const { downloadUrl, storagePath } = await uploadFile(player.playerImageFile, 'players');
+                    imageUrl = downloadUrl;
+                    imagePath = storagePath;
                 }
-                processedPlayers.push({ name: player.name, imageUrl });
+                processedPlayers.push({ name: player.name, imageUrl, imagePath });
             }
             return processedPlayers;
         };
@@ -275,7 +278,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                     onSelect={(currentValue) => {
                                         const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
                                         if (selected) {
-                                            append({ name: selected.name, playerImageUrl: selected.imageUrl });
+                                            append({ name: selected.name, playerImageUrl: selected.imageUrl, imagePath: selected.imagePath });
                                         }
                                         setOpen(false);
                                     }}

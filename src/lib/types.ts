@@ -9,6 +9,7 @@ export type Player = {
   id?: string; // Player ID from the 'players' collection
   name: string;
   imageUrl: string;
+  imagePath?: string;
   sport?: Sport;
 };
 

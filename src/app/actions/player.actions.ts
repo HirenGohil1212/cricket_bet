@@ -1,20 +1,21 @@
 
 'use server';
 
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, where, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Player, Sport } from '@/lib/types';
+import { deleteFileByPath } from '@/lib/storage';
 
 // Server action to create a new player
-export async function createPlayer(playerData: { name: string; imageUrl: string; sport: Sport }) {
+export async function createPlayer(playerData: { name: string; imageUrl: string; imagePath: string; sport: Sport }) {
     try {
         const docRef = await addDoc(collection(db, "players"), {
             ...playerData,
             createdAt: Timestamp.now(),
         });
         revalidatePath('/admin/players');
-        return { success: 'Player created successfully!', id: docRef.id };
+        return { success: 'Player created successfully!', id: docRef.id, playerData };
     } catch (error: any) {
         console.error("Error creating player: ", error);
         return { error: 'An unknown error occurred while creating the player.' };
@@ -34,6 +35,7 @@ export async function getPlayers(): Promise<Player[]> {
                 id: doc.id,
                 name: data.name,
                 imageUrl: data.imageUrl,
+                imagePath: data.imagePath,
                 sport: data.sport,
             } as Player;
         });
@@ -58,6 +60,7 @@ export async function getPlayersBySport(sport: Sport): Promise<Player[]> {
                 id: doc.id,
                 name: data.name,
                 imageUrl: data.imageUrl,
+                imagePath: data.imagePath,
                 sport: data.sport,
             } as Player;
         });
@@ -74,11 +77,22 @@ export async function deletePlayer(playerId: string) {
     if (!playerId) {
         return { error: 'Player ID is required.' };
     }
+    const playerRef = doc(db, "players", playerId);
     try {
-        await deleteDoc(doc(db, "players", playerId));
+        const playerDoc = await getDoc(playerRef);
+        if (!playerDoc.exists()) {
+            return { error: "Player not found." };
+        }
+
+        const playerData = playerDoc.data();
+        if (playerData.imagePath) {
+            await deleteFileByPath(playerData.imagePath);
+        }
+
+        await deleteDoc(playerRef);
         revalidatePath('/admin/players');
         return { success: 'Player deleted successfully!' };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error deleting player: ", error);
         return { error: 'Failed to delete player.' };
     }

@@ -60,16 +60,32 @@ export function AddPlayerForm({ onPlayerAdded }: AddPlayerFormProps) {
   async function onSubmit(data: PlayerFormValues) {
     setIsSubmitting(true);
     try {
-      const { downloadUrl } = await uploadFile(data.playerImageFile, 'players');
-      const result = await createPlayer({ name: data.name, sport: data.sport, imageUrl: downloadUrl });
+      const { downloadUrl, storagePath } = await uploadFile(data.playerImageFile, 'players');
+      const result = await createPlayer({ 
+        name: data.name, 
+        sport: data.sport, 
+        imageUrl: downloadUrl,
+        imagePath: storagePath 
+      });
 
       if (result.error) {
         toast({ variant: "destructive", title: "Error", description: result.error });
       } else {
         toast({ title: "Player Added", description: `${data.name} has been added to the list.` });
-        onPlayerAdded({ ...data, imageUrl: downloadUrl, id: result.id }); // Notify parent component
+        onPlayerAdded({ 
+            id: result.id,
+            name: data.name,
+            sport: data.sport,
+            imageUrl: downloadUrl, 
+            imagePath: storagePath
+        }); // Notify parent component
         form.reset();
         setPreview(null);
+        // Reset the file input visually
+        const input = document.getElementById('playerImageFile') as HTMLInputElement;
+        if (input) {
+            input.value = '';
+        }
       }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload image. Please try again." });
@@ -132,6 +148,7 @@ export function AddPlayerForm({ onPlayerAdded }: AddPlayerFormProps) {
                     )}
                   </div>
                   <Input
+                    id="playerImageFile"
                     type="file"
                     accept="image/png, image/jpeg, image/webp"
                     onChange={(e) => handleFileChange(e)}

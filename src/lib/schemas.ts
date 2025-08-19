@@ -13,6 +13,7 @@ const playerSchema = z.object({
   name: z.string().min(2, "Player name must be at least 2 characters."),
   playerImageFile: z.instanceof(File).optional(),
   playerImageUrl: z.string().optional(),
+  imagePath: z.string().optional(),
 });
 
 // Schema for the client-side form for adding/editing a match

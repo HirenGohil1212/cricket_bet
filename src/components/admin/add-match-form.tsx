@@ -143,13 +143,15 @@ export function AddMatchForm() {
             if (!players) return processedPlayers;
 
             for (const player of players) {
-                // If player has an imageUrl, it's an existing player, so just pass it through
-                // If not, it's a new player, upload image if it exists.
                 let imageUrl = player.playerImageUrl || '';
+                let imagePath = player.imagePath || '';
+
                 if (player.playerImageFile) {
-                    imageUrl = (await uploadFile(player.playerImageFile, 'players')).downloadUrl;
+                    const { downloadUrl, storagePath } = await uploadFile(player.playerImageFile, 'players');
+                    imageUrl = downloadUrl;
+                    imagePath = storagePath;
                 }
-                processedPlayers.push({ name: player.name, imageUrl });
+                processedPlayers.push({ name: player.name, imageUrl, imagePath });
             }
             return processedPlayers;
         }
@@ -249,7 +251,7 @@ export function AddMatchForm() {
                                     onSelect={(currentValue) => {
                                         const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
                                         if (selected) {
-                                            append({ name: selected.name, playerImageUrl: selected.imageUrl });
+                                            append({ name: selected.name, playerImageUrl: selected.imageUrl, imagePath: selected.imagePath });
                                         }
                                         setOpen(false);
                                     }}
