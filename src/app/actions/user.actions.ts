@@ -89,20 +89,36 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const batch = writeBatch(db);
 
             for (const docSnapshot of snapshot.docs) {
+                const data = docSnapshot.data();
+                
                 // Special handling for deposits to delete associated storage file first
                 if (collectionName === 'deposits') {
-                    const data = docSnapshot.data();
-                    // Use the direct path if available, otherwise fall back to the full URL.
                     const pathToDelete = data.screenshotPath || data.screenshotUrl;
-
                     if (pathToDelete) {
                         try {
-                            // This function now robustly handles both paths and URLs
                             await deleteFileByPath(pathToDelete);
                         } catch (storageError) {
-                            // Log the error but continue to delete the Firestore record,
-                            // as the file might be non-existent, which is okay.
                             console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
+                        }
+                    }
+                }
+                
+                // ** NEW LOGIC FOR MATCHES **
+                if (collectionName === 'matches') {
+                    // Delete Team A logo if path exists
+                    if (data.teamA?.logoPath) {
+                        try {
+                            await deleteFileByPath(data.teamA.logoPath);
+                        } catch (storageError) {
+                             console.error(`Could not delete storage file for Team A logo in match ${docSnapshot.id}. Error:`, storageError);
+                        }
+                    }
+                    // Delete Team B logo if path exists
+                     if (data.teamB?.logoPath) {
+                        try {
+                            await deleteFileByPath(data.teamB.logoPath);
+                        } catch (storageError) {
+                             console.error(`Could not delete storage file for Team B logo in match ${docSnapshot.id}. Error:`, storageError);
                         }
                     }
                 }
