@@ -106,13 +106,13 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
     )
 }
 
-function SportBettingForm({ sport }: { sport: Sport }) {
-    const { getValues, formState: { isDirty, dirtyFields } } = useFormContext<BettingSettingsFormValues>();
+// ** New Centralized Auto-Save Component **
+function AutoSaveWatcher({ setSavingState }: { setSavingState: React.Dispatch<React.SetState<SavingState>> }) {
+    const { control, getValues } = useFormContext<BettingSettingsFormValues>();
     const { toast } = useToast();
-    const router = useRouter();
-    const [savingState, setSavingState] = React.useState<SavingState>('idle');
-    
-    const watchedFields = useWatch({ name: `betOptions.${sport}` as any });
+
+    // Watch all fields for changes
+    const watchedFields = useWatch({ control });
 
     const debouncedSave = React.useCallback(
         debounce(async (data: BettingSettingsFormValues) => {
@@ -126,22 +126,24 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                 setTimeout(() => setSavingState('idle'), 2000); // Reset after 2s
             }
         }, 1500),
-    [toast, router]
+    [toast, setSavingState]
     );
 
     React.useEffect(() => {
-        let isSportDirty = !!dirtyFields.betOptions?.[sport];
-
-        if (isDirty && isSportDirty) {
-            const allValues = getValues();
-            const validation = bettingSettingsSchema.safeParse(allValues);
-            if(validation.success){
-                debouncedSave(validation.data);
-            }
+        const allValues = getValues();
+        const validation = bettingSettingsSchema.safeParse(allValues);
+        if (validation.success) {
+            debouncedSave(validation.data);
         }
-    }, [watchedFields, isDirty, dirtyFields.betOptions, sport, debouncedSave, getValues]);
+    // We only want to run this when watchedFields change, so we disable the exhaustive-deps lint warning
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [watchedFields, debouncedSave, getValues]);
+
+    return null; // This component does not render anything
+}
 
 
+function SportBettingForm({ sport }: { sport: Sport }) {
     return (
         <Card>
             <CardHeader>
@@ -149,12 +151,6 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                     <div className="flex items-center gap-2">
                         <SportIcon sport={sport} className="w-5 h-5" />
                         {sport} Settings
-                    </div>
-                     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground transition-opacity", savingState !== 'idle' ? 'opacity-100' : 'opacity-0')}>
-                        {savingState === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
-                        {savingState === 'saving' && <span>Saving...</span>}
-                        {savingState === 'saved' && <CheckCircle className="h-3 w-3 text-green-500" />}
-                        {savingState === 'saved' && <span className="text-green-500">Saved</span>}
                     </div>
                 </CardTitle>
             </CardHeader>
@@ -195,6 +191,8 @@ function SportBettingForm({ sport }: { sport: Sport }) {
 
 export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
   
+  const [savingState, setSavingState] = React.useState<SavingState>('idle');
+
   const form = useForm<BettingSettingsFormValues>({
     resolver: zodResolver(bettingSettingsSchema),
     defaultValues: {
@@ -204,18 +202,26 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
 
   return (
     <FormProvider {...form}>
-      <div className="space-y-8">
-        <FormDescription>
-          Define the fixed bet amounts available to users and the corresponding payout if they win for each sport. Changes are saved automatically.
-        </FormDescription>
+        <AutoSaveWatcher setSavingState={setSavingState} />
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <FormDescription>
+                    Define the fixed bet amounts available to users and their corresponding payout. Changes are saved automatically.
+                </FormDescription>
+                <div className={cn("flex items-center gap-1.5 text-sm text-muted-foreground transition-opacity", savingState !== 'idle' ? 'opacity-100' : 'opacity-0')}>
+                    {savingState === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {savingState === 'saving' && <span>Saving...</span>}
+                    {savingState === 'saved' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                    {savingState === 'saved' && <span className="text-green-500">Saved</span>}
+                </div>
+            </div>
 
-        <div className="space-y-6">
-            {sports.map((sport) => (
-                <SportBettingForm key={sport} sport={sport} />
-            ))}
+            <div className="space-y-6">
+                {sports.map((sport) => (
+                    <SportBettingForm key={sport} sport={sport} />
+                ))}
+            </div>
         </div>
-        
-      </div>
     </FormProvider>
   )
 }
