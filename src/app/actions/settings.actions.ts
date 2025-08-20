@@ -5,7 +5,7 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import type { BankAccount, BettingSettings, Sport, AppSettings, BetOption } from '@/lib/types';
+import type { BankAccount, BettingSettings, Sport, AppSettings, BetOption, CricketBetOptions } from '@/lib/types';
 import { bettingSettingsSchema, type BettingSettingsFormValues, appSettingsSchema, type AppSettingsFormValues } from '@/lib/schemas';
 import { sports } from '@/lib/data';
 import { deleteFileByPath } from '@/lib/storage';
@@ -145,16 +145,15 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         { amount: 29, payout: 60 },
     ];
     
-    // Ensure the default structure includes all sports defined in `lib/data`
+    // Create the default structure, ensuring Cricket has the correct nested object.
     const defaultSettings: BettingSettings = {
         betOptions: {
-            // Cricket gets a special structure
             Cricket: {
                 general: [...defaultBetOptions],
                 oneSided: [...defaultBetOptions],
                 player: [...defaultBetOptions],
             },
-            // Other sports get the regular array
+            // Reduce other sports into the betOptions object
             ...sports.filter(s => s !== 'Cricket').reduce((acc, sport) => {
                 acc[sport] = [...defaultBetOptions];
                 return acc;
@@ -167,37 +166,29 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && docSnap.data().betOptions) {
-             const dataFromDb = docSnap.data() as BettingSettings;
-             
-             // Merge DB data with defaults to ensure all sports are present
-             // and cricket has its required structure
-             const finalSettings: BettingSettings = {
-                 betOptions: {
-                    ...defaultSettings.betOptions, // Start with default structure
-                    ...dataFromDb.betOptions, // Overwrite with DB data
-                 }
-             };
-             
-             // Ensure cricket substructure is fully present
-             if (!finalSettings.betOptions.Cricket.general) {
-                 finalSettings.betOptions.Cricket.general = [...defaultBetOptions];
-             }
-             if (!finalSettings.betOptions.Cricket.oneSided) {
-                 finalSettings.betOptions.Cricket.oneSided = [...defaultBetOptions];
-             }
-             if (!finalSettings.betOptions.Cricket.player) {
-                 finalSettings.betOptions.Cricket.player = [...defaultBetOptions];
-             }
-             
-             // Ensure other sports have valid arrays
-             sports.forEach(sport => {
-                 if (sport !== 'Cricket') {
-                     if (!finalSettings.betOptions[sport] || !Array.isArray(finalSettings.betOptions[sport]) || finalSettings.betOptions[sport].length === 0) {
-                         finalSettings.betOptions[sport] = [...defaultBetOptions];
-                     }
-                 }
-             })
+             const dbData = docSnap.data() as { betOptions: Partial<BettingSettings['betOptions']> };
+             const dbOptions = dbData.betOptions;
 
+             // Start with the correct default structure
+             const finalSettings = JSON.parse(JSON.stringify(defaultSettings));
+             
+             // Loop through all sports and apply saved settings if they exist and are valid
+             sports.forEach(sport => {
+                 if (sport === 'Cricket') {
+                    // Check if the saved Cricket data has the correct nested structure
+                    const cricketData = dbOptions.Cricket as CricketBetOptions;
+                    if (cricketData && cricketData.general && cricketData.oneSided && cricketData.player) {
+                        finalSettings.betOptions.Cricket = cricketData;
+                    }
+                 } else {
+                    // For other sports, check if the saved data is a valid array
+                    const sportData = dbOptions[sport] as BetOption[];
+                    if (Array.isArray(sportData) && sportData.length > 0) {
+                        finalSettings.betOptions[sport] = sportData;
+                    }
+                 }
+             });
+             
              return finalSettings;
         }
         // Return default settings if document doesn't exist or is malformed
