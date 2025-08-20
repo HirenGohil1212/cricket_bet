@@ -104,7 +104,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 userId,
                 matchId,
                 matchDescription,
-                predictions,
+                predictions, // This now correctly includes the full question text
                 amount,
                 status: 'Pending',
                 timestamp: Timestamp.now(),

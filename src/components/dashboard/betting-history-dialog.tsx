@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge";
-import type { Bet, Match } from "@/lib/types";
+import type { Bet, Match, Prediction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -30,6 +30,22 @@ interface BettingHistoryDialogProps {
   onOpenChange: (open: boolean) => void;
   match?: Match | null;
 }
+
+const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { prediction: Prediction, teamAName: string, teamBName: string }) => {
+    const isTeamA = !!prediction.predictedAnswer?.teamA;
+    const teamName = isTeamA ? teamAName : teamBName;
+    const answer = isTeamA ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
+
+    return (
+      <div className="text-xs space-y-1">
+          <div className="text-muted-foreground">{prediction.questionText}</div>
+          <div className="font-medium">
+             Answer: <span className="text-primary">{answer}</span>
+          </div>
+      </div>
+    )
+}
+
 
 export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHistoryDialogProps) {
   const { user } = useAuth();
@@ -111,20 +127,23 @@ export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHisto
                         </div>
                       </TableCell>
                       <TableCell>
-                         {bet.betType === 'player' ? (
-                            <div className="text-xs space-y-1">
-                                <div className="font-semibold text-muted-foreground">Player Bet</div>
-                                {bet.predictions[0]?.predictedAnswer?.teamA && (
-                                  <div className="font-medium">
-                                    {teamAName}: <span className="text-primary">{bet.predictions[0].predictedAnswer.teamA}</span>
-                                  </div>
-                                )}
-                                {bet.predictions[0]?.predictedAnswer?.teamB && (
-                                  <div className="font-medium">
-                                    {teamBName}: <span className="text-primary">{bet.predictions[0].predictedAnswer.teamB}</span>
-                                  </div>
-                                )}
-                            </div>
+                         {(bet.betType === 'player' && bet.predictions.length > 0) ? (
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="item-1">
+                                <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                                    View {bet.predictions.length} player prediction(s)
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <ul className="space-y-2 pt-2">
+                                        {bet.predictions.map((p, index) => (
+                                          <li key={index} className="text-xs border-l-2 pl-2 border-muted space-y-1">
+                                            <PlayerPredictionDisplay prediction={p} teamAName={teamAName} teamBName={teamBName} />
+                                          </li>
+                                        ))}
+                                    </ul>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
                          ) : bet.predictions.length > 0 ? (
                             <Accordion type="single" collapsible className="w-full">
                               <AccordionItem value="item-1">
