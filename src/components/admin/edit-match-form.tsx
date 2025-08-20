@@ -47,15 +47,52 @@ import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { ScrollArea } from "../ui/scroll-area";
+import { Skeleton } from "../ui/skeleton";
 
 interface EditMatchFormProps {
     match: Match;
 }
 
+function EditMatchFormSkeleton() {
+    return (
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                </CardContent>
+            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-96 w-full" />
+            </div>
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-72" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-64 w-full" />
+                </CardContent>
+            </Card>
+            <Skeleton className="h-10 w-32" />
+        </div>
+    );
+}
+
+
 export function EditMatchForm({ match }: EditMatchFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isFormReady, setIsFormReady] = React.useState(false);
 
   const [teamAPreview, setTeamAPreview] = React.useState<string | null>(match.teamA.logoUrl);
   const [teamBPreview, setTeamBPreview] = React.useState<string | null>(match.teamB.logoUrl);
@@ -67,23 +104,34 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
-    defaultValues: async () => {
-        const questions = await getQuestionsForMatch(match.id);
-        return {
-            sport: match.sport,
-            teamA: match.teamA.name,
-            teamB: match.teamB.name,
-            teamACountry: match.teamA.countryCode,
-            teamBCountry: match.teamB.countryCode,
-            startTime: new Date(match.startTime),
-            isSpecialMatch: match.isSpecialMatch || false,
-            allowOneSidedBets: match.allowOneSidedBets || false,
-            teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
-            teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
-            questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [],
-        }
-    }
   });
+  
+  React.useEffect(() => {
+    const initializeForm = async () => {
+        try {
+            const questions = await getQuestionsForMatch(match.id);
+            form.reset({
+                sport: match.sport,
+                teamA: match.teamA.name,
+                teamB: match.teamB.name,
+                teamACountry: match.teamA.countryCode,
+                teamBCountry: match.teamB.countryCode,
+                startTime: new Date(match.startTime),
+                isSpecialMatch: match.isSpecialMatch || false,
+                allowOneSidedBets: match.allowOneSidedBets || false,
+                teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+                teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+                questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [],
+            });
+            setIsFormReady(true);
+        } catch (error) {
+            console.error("Failed to initialize form:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to load match data.' });
+        }
+    };
+    initializeForm();
+  }, [match, form, toast]);
+
 
   const selectedSport = useWatch({ control: form.control, name: 'sport' });
 
@@ -434,6 +482,11 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
       </div>
     );
   };
+
+  if (!isFormReady) {
+    return <EditMatchFormSkeleton />;
+  }
+
 
   return (
     <Form {...form}>
