@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -313,8 +314,10 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   const PlayerSelector = ({ team }: { team: 'A' | 'B'}) => {
     const players = team === 'A' ? match.teamA.players : match.teamB.players;
+    
     const selectedPlayers = team === 'A' ? selectedPlayersA : selectedPlayersB;
     const setSelectedPlayers = team === 'A' ? setSelectedPlayersA : setSelectedPlayersB;
+
     const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
     const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -338,8 +341,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                 {players.map(player => (
                                     <CommandItem 
                                         key={player.name} 
-                                        onSelect={(e) => {
-                                            e.preventDefault(); // This is the crucial part to prevent closing
+                                        onSelect={() => {
                                             const isSelected = selectedPlayers.some(p => p.name === player.name);
                                             if (isSelected) {
                                                 setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
