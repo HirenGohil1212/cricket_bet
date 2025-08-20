@@ -340,25 +340,22 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <CommandGroup>
                                 {players.map(player => (
                                     <CommandItem
-                                        key={player.name}
-                                        value={player.name}
-                                        onSelect={(currentValue) => {
-                                            // This onSelect is needed for keyboard navigation, but click is handled by onClick
-                                        }}
-                                        onClick={() => {
+                                        key={player.name} 
+                                        onSelect={() => {
                                             const isSelected = selectedPlayers.some(p => p.name === player.name);
                                             if (isSelected) {
                                                 setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
                                             } else {
                                                 setSelectedPlayers([...selectedPlayers, player]);
                                             }
+                                            setPopoverOpen(true); // Keep it open
                                         }}
                                         className="cursor-pointer"
                                     >
                                          <Checkbox
                                             checked={selectedPlayers.some(p => p.name === player.name)}
                                             className="mr-2"
-                                            readOnly // The click is handled by the parent CommandItem
+                                            readOnly 
                                         />
                                         <span>{player.name}</span>
                                     </CommandItem>
