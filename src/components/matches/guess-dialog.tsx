@@ -167,7 +167,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 const currentPrediction = form.getValues(`predictions.${q.id}`);
                 if (betOnSide === 'teamA' && currentPrediction?.teamB) {
                     form.setValue(`predictions.${q.id}.teamB`, '');
-                } else if (betOnside === 'teamB' && currentPrediction?.teamA) {
+                } else if (betOnSide === 'teamB' && currentPrediction?.teamA) {
                     form.setValue(`predictions.${q.id}.teamA`, '');
                 }
             });
@@ -237,7 +237,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         const teamBPlayers = data.predictions.teamB || {};
         
         for (const [playerId, playerQuestions] of Object.entries(teamAPlayers)) {
-            const player = match.teamA.players?.find(p => p.id === playerId);
+            const player = match.teamA.players?.find(p => p.name === playerId);
             for (const [questionId, answer] of Object.entries(playerQuestions as Record<string, string>)) {
                 finalPredictions.push({
                     questionId: `${player?.name}:${questionId}`,
@@ -247,7 +247,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             }
         }
         for (const [playerId, playerQuestions] of Object.entries(teamBPlayers)) {
-            const player = match.teamB.players?.find(p => p.id === playerId);
+            const player = match.teamB.players?.find(p => p.name === playerId);
             for (const [questionId, answer] of Object.entries(playerQuestions as Record<string, string>)) {
                  finalPredictions.push({
                     questionId: `${player?.name}:${questionId}`,
@@ -303,7 +303,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   const PlayerSelector = ({ team }: { team: 'A' | 'B'}) => {
     const players = team === 'A' ? match.teamA.players : match.teamB.players;
-    const selectedPlayers = team === 'A' ? selectedPlayersA : selectedPlayersB;
+    const selectedPlayers = team === 'A' ? selectedPlayersA : setSelectedPlayersB;
     const setSelectedPlayers = team === 'A' ? setSelectedPlayersA : setSelectedPlayersB;
     const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
     const [popoverOpen, setPopoverOpen] = useState(false);
@@ -326,7 +326,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <CommandEmpty>No player found.</CommandEmpty>
                              <CommandGroup>
                                 {players.map(player => (
-                                    <CommandItem key={player.id || player.name} onSelect={() => {
+                                    <CommandItem key={player.name} onSelect={() => {
                                         const isSelected = selectedPlayers.some(p => p.name === player.name);
                                         if (isSelected) {
                                             setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
@@ -348,7 +348,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </Popover>
             <div className="flex flex-wrap gap-2">
                 {selectedPlayers.map(player => (
-                    <Badge key={player.id || player.name} variant="secondary" className="flex items-center gap-1">
+                    <Badge key={player.name} variant="secondary" className="flex items-center gap-1">
                         {player.name}
                         <button onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name))} className="rounded-full hover:bg-muted-foreground/20">
                             <X className="h-3 w-3"/>
@@ -368,7 +368,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         </div>
         
         {[...selectedPlayersA, ...selectedPlayersB].map(player => (
-            <div key={player.id || player.name} className="p-3 border rounded-lg space-y-3">
+            <div key={player.name} className="p-3 border rounded-lg space-y-3">
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={player.imageUrl} alt={player.name} />
@@ -381,7 +381,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                         <FormField
                             key={q.id}
                             control={form.control}
-                            name={`predictions.${selectedPlayersA.includes(player) ? 'teamA' : 'teamB'}.${player.id}.${q.id}`}
+                            name={`predictions.${selectedPlayersA.includes(player) ? 'teamA' : 'teamB'}.${player.name}.${q.id}`}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs">{q.question}</FormLabel>
