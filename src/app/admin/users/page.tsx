@@ -51,6 +51,7 @@ export default function AdminUsersPage() {
                 } as UserProfile;
             });
 
+            // Corrected referral count logic
             const referralCounts = new Map<string, number>();
             userList.forEach(user => {
                 if (user.referredBy) {
