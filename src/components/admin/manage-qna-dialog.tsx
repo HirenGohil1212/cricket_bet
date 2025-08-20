@@ -51,8 +51,6 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             const initialResults = questions.map(q => ({
                 questionId: q.id,
                 result: q.result || { teamA: '', teamB: '' },
-                // The playerResult from DB is {teamA: 'PlayerName', teamB: 'PlayerName'} which is not what we want here.
-                // We need to initialize our new grid state.
                 playerResult: q.playerResult || {},
             }));
             setResultsState(initialResults);
@@ -171,55 +169,53 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             </div>
         )
     };
-    
-    const renderQuestionCard = (q: Question, index: number) => {
-        const isSettled = q.status === 'settled';
-        const currentResult = resultsState[index]?.result || { teamA: '', teamB: '' };
-        
-        if (match.isSpecialMatch) return null; // Hide individual cards if special match
 
-        return (
-             <div key={q.id} className="p-4 border rounded-md space-y-4">
-                <p className="font-semibold text-muted-foreground text-center block">{q.question}</p>
-                
-                {isSettled ? (
-                    <div className="text-center text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
-                        Result: {match.teamA.name} - {q.result?.teamA || 'N/A'}, {match.teamB.name} - {q.result?.teamB || 'N/A'}
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {/* Q&A Input */}
-                        <div>
-                            <Label className="text-xs font-semibold">Q&A Result</Label>
-                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor={`${q.id}-teamA`} className="text-xs">{match.teamA.name}</Label>
+    const TeamResultGrid = () => {
+         return (
+             <div className="space-y-2">
+                <h4 className="font-semibold">Team Results</h4>
+                <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-1/2">Question</TableHead>
+                            <TableHead className="text-center">{match.teamA.name}</TableHead>
+                            <TableHead className="text-center">{match.teamB.name}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                         {questions.map((q, qIndex) => (
+                            <TableRow key={q.id}>
+                                <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
+                                <TableCell>
                                     <Input
-                                        id={`${q.id}-teamA`}
-                                        placeholder="Result for Team A"
-                                        value={currentResult.teamA}
-                                        onChange={(e) => handleResultChange(index, 'teamA', e.target.value)}
-                                        disabled={isSaving || isSettling}
+                                      type="text"
+                                      className="min-w-[80px] text-center"
+                                      placeholder="Result"
+                                      value={resultsState[qIndex]?.result?.teamA || ''}
+                                      onChange={(e) => handleResultChange(qIndex, 'teamA', e.target.value)}
+                                      disabled={isSaving || isSettling || q.status === 'settled'}
                                     />
-                                </div>
-                                <div>
-                                    <Label htmlFor={`${q.id}-teamB`} className="text-xs">{match.teamB.name}</Label>
+                                </TableCell>
+                                <TableCell>
                                     <Input
-                                        id={`${q.id}-teamB`}
-                                        placeholder="Result for Team B"
-                                        value={currentResult.teamB}
-                                        onChange={(e) => handleResultChange(index, 'teamB', e.target.value)}
-                                        disabled={isSaving || isSettling}
+                                      type="text"
+                                      className="min-w-[80px] text-center"
+                                      placeholder="Result"
+                                      value={resultsState[qIndex]?.result?.teamB || ''}
+                                      onChange={(e) => handleResultChange(qIndex, 'teamB', e.target.value)}
+                                      disabled={isSaving || isSettling || q.status === 'settled'}
                                     />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                                </TableCell>
+                            </TableRow>
+                         ))}
+                    </TableBody>
+                </Table>
+                </div>
             </div>
         )
-    }
-
+    };
+    
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
@@ -239,7 +235,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                         <PlayerResultGrid team={match.teamB} teamSide="teamB" />
                                     </div>
                                 ) : (
-                                    questions.map((q, index) => renderQuestionCard(q, index))
+                                    <TeamResultGrid />
                                 )
                            ) : (
                                 <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
