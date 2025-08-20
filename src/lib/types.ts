@@ -39,8 +39,7 @@ export type Match = {
   winners?: Winner[];
   isSpecialMatch?: boolean;
   allowOneSidedBets?: boolean;
-  dummyUserId?: string;
-  dummyAmount?: number;
+  dummyWinners?: { userId: string; amount: number }[];
 };
 
 export type Prediction = {

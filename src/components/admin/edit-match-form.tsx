@@ -126,8 +126,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
                 teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
                 questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [],
-                dummyUserId: match.dummyUserId || 'none',
-                dummyAmount: match.dummyAmount || 0,
+                dummyWinners: match.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})) || [],
             });
             setIsFormReady(true);
         } catch (error) {
@@ -170,6 +169,11 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   const { fields: questionFields, append: appendQuestion, remove: removeQuestion, replace: replaceQuestions } = useFieldArray({
     control: form.control,
     name: "questions"
+  });
+
+  const { fields: dummyWinnerFields, append: appendDummyWinner, remove: removeDummyWinner } = useFieldArray({
+    control: form.control,
+    name: "dummyWinners"
   });
 
   const handleFileChange = (
@@ -245,8 +249,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
             questions: data.questions,
-            dummyUserId: data.dummyUserId,
-            dummyAmount: data.dummyAmount,
+            dummyWinners: data.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})),
             teamA: {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
@@ -762,46 +765,61 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
 
         <Card>
             <CardHeader>
-                <CardTitle>Dummy Winner (Optional)</CardTitle>
-                <CardDescription>If no real user wins, this dummy user will be shown as the winner on the summary page.</CardDescription>
+                <CardTitle>Dummy Winners (Optional)</CardTitle>
+                <CardDescription>If no real user wins, these dummy users will be shown as the winners on the summary page.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="dummyUserId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dummy User</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingDummyUsers}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a dummy user"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                           {availableDummyUsers.map(user => (
-                                <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                           ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="dummyAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dummy Win Amount (INR)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="e.g., 500" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <CardContent className="space-y-4">
+                {dummyWinnerFields.map((field, index) => (
+                    <div key={field.id} className="flex items-end gap-4 p-4 border rounded-md relative">
+                        <FormField
+                            control={form.control}
+                            name={`dummyWinners.${index}.userId`}
+                            render={({ field }) => (
+                                <FormItem className="flex-1">
+                                <FormLabel>Dummy User</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingDummyUsers}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a dummy user"} />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {availableDummyUsers.map(user => (
+                                            <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name={`dummyWinners.${index}.amount`}
+                            render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    <FormLabel>Dummy Win Amount (INR)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="e.g., 500" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => removeDummyWinner(index)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ))}
+                 <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendDummyWinner({ userId: '', amount: 0 })}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Another Dummy Winner
+                </Button>
             </CardContent>
         </Card>
 

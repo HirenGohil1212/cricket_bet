@@ -402,17 +402,26 @@ export async function settleMatchAndPayouts(matchId: string) {
         }
 
         // --- NEW DUMMY USER LOGIC ---
-        // If there are no real winners, check for a dummy user.
-        if (finalWinners.length === 0 && matchData.dummyUserId && matchData.dummyAmount > 0) {
-            const dummyUserRef = doc(db, 'dummyUsers', matchData.dummyUserId);
-            const dummyUserDoc = await getDoc(dummyUserRef);
-            if (dummyUserDoc.exists()) {
-                finalWinners.push({
-                    userId: 'dummy',
-                    name: `(Dummy) ${dummyUserDoc.data().name}`,
-                    payoutAmount: matchData.dummyAmount
-                });
-            }
+        // If there are no real winners, check for dummy winners.
+        if (finalWinners.length === 0 && matchData.dummyWinners && matchData.dummyWinners.length > 0) {
+            const dummyUserIds = matchData.dummyWinners.map((dw: any) => dw.userId);
+            const dummyUsersQuery = query(collection(db, 'dummyUsers'), where(documentId(), 'in', dummyUserIds));
+            const dummyUsersSnapshot = await getDocs(dummyUsersQuery);
+            const dummyUsersMap = new Map();
+            dummyUsersSnapshot.forEach(doc => {
+                dummyUsersMap.set(doc.id, doc.data());
+            });
+
+            matchData.dummyWinners.forEach((dw: any) => {
+                const dummyUser = dummyUsersMap.get(dw.userId);
+                if (dummyUser) {
+                    finalWinners.push({
+                        userId: `dummy-${dw.userId}`,
+                        name: `(Dummy) ${dummyUser.name}`,
+                        payoutAmount: dw.amount
+                    });
+                }
+            });
         }
 
         // --- STEP 3: Execute writes ---
