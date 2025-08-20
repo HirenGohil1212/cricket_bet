@@ -62,113 +62,123 @@ export function UserProfileForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-            <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            </div>
-            <div className="flex justify-end">
-                <Skeleton className="h-10 w-36" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-48" />
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                </CardHeader>
+                <CardContent>
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-1/4" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <Skeleton className="h-10 w-36" />
+                    </div>
+                </div>
+                </CardContent>
+            </Card>
+        </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Bank Details</CardTitle>
-        <CardDescription>
-          This information will be used for processing your withdrawals. Please ensure it is accurate.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <FormField
-                control={form.control}
-                name="accountHolderName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Account Holder Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="accountNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Account Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. 1234567890" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ifscCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>IFSC Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. SBIN0001234" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="upiId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>UPI ID (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. johndoe@upi" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting || loading}>
-                {isSubmitting ? "Saving..." : "Save Bank Details"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+        {userProfile && (
+            <h2 className="text-2xl font-bold font-headline text-foreground">
+                Hello, {userProfile.name}!
+            </h2>
+        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Bank Details</CardTitle>
+            <CardDescription>
+              This information will be used for processing your withdrawals. Please ensure it is accurate.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <FormField
+                    control={form.control}
+                    name="accountHolderName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Holder Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. John Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="accountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 1234567890" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="ifscCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>IFSC Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. SBIN0001234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="upiId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UPI ID (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. johndoe@upi" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={isSubmitting || loading}>
+                    {isSubmitting ? "Saving..." : "Save Bank Details"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+    </div>
   );
 }
