@@ -85,8 +85,17 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
             
-            // Use a batch for Firestore deletions for efficiency
-            const batch = writeBatch(db);
+            // --- Backup Logic ---
+            const backupCollectionName = `delete_${collectionName}`;
+            const backupBatch = writeBatch(db);
+            snapshot.docs.forEach(docSnapshot => {
+                const backupDocRef = doc(db, backupCollectionName, docSnapshot.id);
+                backupBatch.set(backupDocRef, docSnapshot.data());
+            });
+            await backupBatch.commit();
+            
+            // --- Deletion Logic (after backup) ---
+            const deleteBatch = writeBatch(db);
 
             for (const docSnapshot of snapshot.docs) {
                 const data = docSnapshot.data();
@@ -103,9 +112,7 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     }
                 }
                 
-                // ** NEW LOGIC FOR MATCHES **
                 if (collectionName === 'matches') {
-                    // Delete Team A logo if path exists
                     if (data.teamA?.logoPath) {
                         try {
                             await deleteFileByPath(data.teamA.logoPath);
@@ -113,7 +120,6 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                              console.error(`Could not delete storage file for Team A logo in match ${docSnapshot.id}. Error:`, storageError);
                         }
                     }
-                    // Delete Team B logo if path exists
                      if (data.teamB?.logoPath) {
                         try {
                             await deleteFileByPath(data.teamB.logoPath);
@@ -123,16 +129,15 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     }
                 }
                 
-                // Add the Firestore document deletion to the batch
-                batch.delete(docSnapshot.ref);
+                deleteBatch.delete(docSnapshot.ref);
             }
-             // Commit all deletions for the current collection
-            await batch.commit();
+            
+            await deleteBatch.commit();
             totalDeleted += snapshot.size;
         }
         
         revalidatePath('/admin/data-management');
-        return { success: `Successfully deleted ${totalDeleted} historical records.` };
+        return { success: `Successfully backed up and deleted ${totalDeleted} historical records.` };
     } catch (error: any) {
         console.error("Error deleting data history: ", error);
         return { error: 'Failed to delete data history. Check server logs for details.' };
