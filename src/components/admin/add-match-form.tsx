@@ -111,7 +111,7 @@ export function AddMatchForm() {
       name: "teamBPlayers"
   });
   
-  const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({
+  const { fields: questionFields, append: appendQuestion, remove: removeQuestion, replace: replaceQuestions } = useFieldArray({
     control: form.control,
     name: "questions"
   });
@@ -348,19 +348,17 @@ export function AddMatchForm() {
     );
   }
   
-    const QuestionManager = () => {
-    const { fields, append, remove } = useFieldArray({ control: form.control, name: "questions" });
+  const QuestionManager = () => {
     const currentQuestions = useWatch({ control: form.control, name: "questions" }) || [];
+    const sportSpecificQuestions = questionBank.filter(q => q.sport === selectedSport);
     const [open, setOpen] = React.useState(false);
-
-    const unselectedQuestions = questionBank.filter(q => !currentQuestions.some(cq => cq.question === q.question));
 
     return (
       <div className="space-y-4">
-        {fields.map((field, index) => (
+        {questionFields.map((field, index) => (
           <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
             <span className="flex-1 text-sm">{field.question}</span>
-            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeQuestion(index)}>
               <Trash2 className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>
@@ -377,18 +375,26 @@ export function AddMatchForm() {
                  <Command>
                     <CommandInput placeholder="Search questions..." />
                     <CommandList>
-                        <CommandEmpty>No questions found.</CommandEmpty>
+                        <CommandEmpty>No questions found for {selectedSport}.</CommandEmpty>
                         <CommandGroup>
-                        {unselectedQuestions.map((q) => (
-                            <CommandItem
+                        {sportSpecificQuestions.map((q) => (
+                             <CommandItem
                                 key={q.id}
                                 value={q.question}
                                 onSelect={() => {
-                                    append({ question: q.question });
-                                    setOpen(false);
+                                    const current = form.getValues("questions") || [];
+                                    const isSelected = current.some(cq => cq.question === q.question);
+                                    if (isSelected) {
+                                        removeQuestion(current.findIndex(cq => cq.question === q.question));
+                                    } else {
+                                        appendQuestion({ question: q.question });
+                                    }
                                 }}
                             >
-                                <Check className={cn("mr-2 h-4 w-4", "opacity-0")} />
+                                <Checkbox
+                                    className="mr-2"
+                                    checked={currentQuestions.some(cq => cq.question === q.question)}
+                                />
                                 {q.question}
                             </CommandItem>
                         ))}
@@ -398,12 +404,12 @@ export function AddMatchForm() {
             </PopoverContent>
         </Popover>
 
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ question: "" })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ question: "" })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add New Question Manually
         </Button>
         <FormMessage>{form.formState.errors.questions?.message}</FormMessage>
         
-        {fields.map((field, index) => {
+        {questionFields.map((field, index) => {
           if (questionBank.some(q => q.question === field.question)) return null;
           return (
             <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative border-dashed">
@@ -420,7 +426,7 @@ export function AddMatchForm() {
                   </FormItem>
                 )}
               />
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 mt-5" onClick={() => remove(index)}>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 mt-5" onClick={() => removeQuestion(index)}>
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>
@@ -441,7 +447,10 @@ export function AddMatchForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Sport</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={(value) => {
+                        field.onChange(value);
+                        replaceQuestions([]); // Clear questions when sport changes
+                    }} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a sport" />

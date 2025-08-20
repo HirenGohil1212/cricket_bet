@@ -26,19 +26,21 @@ import type { Question, Sport, QnaFormValues, Winner } from '@/lib/types';
 
 // --- Question Bank Actions ---
 
-export async function createQuestionInBank(questionText: string) {
-    if (!questionText || questionText.trim().length < 5) {
-        return { error: 'Question text must be at least 5 characters.' };
+export async function createQuestionInBank(questionText: string, sport: Sport) {
+    if (!questionText || !questionText.trim()) {
+        return { error: 'Question text cannot be empty.' };
     }
     try {
         const docRef = await addDoc(collection(db, 'questionBank'), {
             question: questionText.trim(),
+            sport: sport,
             createdAt: Timestamp.now(),
         });
 
         const newQuestion: Question = {
             id: docRef.id,
             question: questionText.trim(),
+            sport: sport,
             createdAt: new Date().toISOString(),
             order: 0, 
             status: 'active',
@@ -517,5 +519,3 @@ export async function getWinnersForMatch(matchId: string): Promise<Winner[]> {
         return [];
     }
 }
-
-    

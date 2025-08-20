@@ -123,6 +123,7 @@ export type QnaFormValues = {
 export type Question = {
   id: string;
   question: string;
+  sport?: Sport;
   order: number;
   createdAt: string;
   status: 'active' | 'closed' | 'settled';
