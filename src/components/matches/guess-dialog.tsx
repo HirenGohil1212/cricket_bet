@@ -167,7 +167,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 const currentPrediction = form.getValues(`predictions.${q.id}`);
                 if (betOnSide === 'teamA' && currentPrediction?.teamB) {
                     form.setValue(`predictions.${q.id}.teamB`, '');
-                } else if (betOnSide === 'teamB' && currentPrediction?.teamA) {
+                } else if (betOnside === 'teamB' && currentPrediction?.teamA) {
                     form.setValue(`predictions.${q.id}.teamA`, '');
                 }
             });
@@ -326,16 +326,16 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <CommandEmpty>No player found.</CommandEmpty>
                              <CommandGroup>
                                 {players.map(player => (
-                                    <CommandItem key={player.id} onSelect={() => {
-                                        const isSelected = selectedPlayers.some(p => p.id === player.id);
+                                    <CommandItem key={player.id || player.name} onSelect={() => {
+                                        const isSelected = selectedPlayers.some(p => p.name === player.name);
                                         if (isSelected) {
-                                            setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id));
+                                            setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
                                         } else {
                                             setSelectedPlayers([...selectedPlayers, player]);
                                         }
                                     }}>
                                          <Checkbox
-                                            checked={selectedPlayers.some(p => p.id === player.id)}
+                                            checked={selectedPlayers.some(p => p.name === player.name)}
                                             className="mr-2"
                                         />
                                         <span>{player.name}</span>
@@ -348,9 +348,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </Popover>
             <div className="flex flex-wrap gap-2">
                 {selectedPlayers.map(player => (
-                    <Badge key={player.id} variant="secondary" className="flex items-center gap-1">
+                    <Badge key={player.id || player.name} variant="secondary" className="flex items-center gap-1">
                         {player.name}
-                        <button onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id))} className="rounded-full hover:bg-muted-foreground/20">
+                        <button onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name))} className="rounded-full hover:bg-muted-foreground/20">
                             <X className="h-3 w-3"/>
                         </button>
                     </Badge>
@@ -368,7 +368,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         </div>
         
         {[...selectedPlayersA, ...selectedPlayersB].map(player => (
-            <div key={player.id} className="p-3 border rounded-lg space-y-3">
+            <div key={player.id || player.name} className="p-3 border rounded-lg space-y-3">
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={player.imageUrl} alt={player.name} />
