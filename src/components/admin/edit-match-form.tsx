@@ -45,6 +45,8 @@ import { getPlayersBySport } from "@/app/actions/player.actions";
 import { getQuestionsForMatch, getQuestionsFromBank } from "@/app/actions/qna.actions";
 import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface EditMatchFormProps {
     match: Match;
@@ -347,7 +349,16 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     const currentQuestions = useWatch({ control: form.control, name: "questions" }) || [];
     const sportSpecificQuestions = questionBank.filter(q => q.sport === selectedSport);
     const [open, setOpen] = React.useState(false);
-
+  
+    const handleSelect = (questionText: string) => {
+      const isSelected = currentQuestions.some(cq => cq.question === questionText);
+      if (isSelected) {
+        removeQuestion(currentQuestions.findIndex(cq => cq.question === questionText));
+      } else {
+        appendQuestion({ question: questionText });
+      }
+    };
+  
     return (
       <div className="space-y-4">
         {questionFields.map((field, index) => (
@@ -358,52 +369,45 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             </Button>
           </div>
         ))}
-        
+  
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-                    {isLoadingQuestions ? "Loading questions..." : "Select from Question Bank"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                 <Command>
-                    <CommandInput placeholder="Search questions..." />
-                    <CommandList>
-                        <CommandEmpty>No questions found for {selectedSport}.</CommandEmpty>
-                        <CommandGroup>
-                        {sportSpecificQuestions.map((q) => (
-                             <CommandItem
-                                key={q.id}
-                                value={q.question}
-                                onSelect={() => {
-                                    const current = form.getValues("questions") || [];
-                                    const isSelected = current.some(cq => cq.question === q.question);
-                                    if (isSelected) {
-                                        removeQuestion(current.findIndex(cq => cq.question === q.question));
-                                    } else {
-                                        appendQuestion({ question: q.question });
-                                    }
-                                }}
-                            >
-                                <Checkbox
-                                    className="mr-2"
-                                    checked={currentQuestions.some(cq => cq.question === q.question)}
-                                />
-                                {q.question}
-                            </CommandItem>
-                        ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
+          <PopoverTrigger asChild>
+            <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
+              {isLoadingQuestions ? "Loading questions..." : "Select from Question Bank"}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+            <ScrollArea className="h-72">
+              <div className="p-2 space-y-1">
+                {isLoadingQuestions ? (
+                  <p className="text-sm text-center text-muted-foreground p-4">Loading...</p>
+                ) : sportSpecificQuestions.length > 0 ? (
+                  sportSpecificQuestions.map((q) => (
+                    <Label
+                      key={q.id}
+                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted font-normal cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={currentQuestions.some(cq => cq.question === q.question)}
+                        onCheckedChange={() => handleSelect(q.question)}
+                      />
+                      <span className="text-sm flex-1">{q.question}</span>
+                    </Label>
+                  ))
+                ) : (
+                  <p className="text-sm text-center text-muted-foreground p-4">No questions found for {selectedSport}.</p>
+                )}
+              </div>
+            </ScrollArea>
+          </PopoverContent>
         </Popover>
-
+  
         <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ question: "" })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add New Question Manually
         </Button>
         <FormMessage>{form.formState.errors.questions?.message}</FormMessage>
-        
+  
         {questionFields.map((field, index) => {
           if (questionBank.some(q => q.question === field.question)) return null;
           return (
