@@ -421,6 +421,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                             type="number"
                                             placeholder="Prediction"
                                             {...field}
+                                            value={field.value ?? ''}
                                             onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                                         />
                                     </FormControl>
@@ -554,6 +555,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                                 type="number"
                                                                 placeholder="Ans"
                                                                 {...field}
+                                                                value={field.value ?? ''}
                                                                 className="text-center"
                                                                 onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                                                             />
@@ -584,6 +586,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                                     placeholder="Ans"
                                                                     className="text-center"
                                                                     {...field}
+                                                                    value={field.value ?? ''}
                                                                     onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                                                                 />
                                                             </FormControl>
@@ -625,6 +628,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
-
 
