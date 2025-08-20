@@ -43,6 +43,9 @@ import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
 import { getPlayersBySport } from "@/app/actions/player.actions";
 import { Textarea } from "../ui/textarea";
+import { getQuestionsFromBank } from "@/app/actions/qna.actions";
+import type { Question } from "@/lib/types";
+import { Checkbox } from "../ui/checkbox";
 
 
 export function AddMatchForm() {
@@ -56,6 +59,8 @@ export function AddMatchForm() {
 
   const [availablePlayers, setAvailablePlayers] = React.useState<Player[]>([]);
   const [isLoadingPlayers, setIsLoadingPlayers] = React.useState(false);
+  const [questionBank, setQuestionBank] = React.useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(false);
 
 
   const form = useForm<MatchFormValues>({
@@ -68,7 +73,7 @@ export function AddMatchForm() {
         teamBPlayers: [],
         isSpecialMatch: false,
         allowOneSidedBets: false,
-        questions: [{ question: "" }]
+        questions: []
     }
   });
 
@@ -84,7 +89,17 @@ export function AddMatchForm() {
         }
     }
     fetchPlayers();
-  }, [selectedSport])
+  }, [selectedSport]);
+
+  React.useEffect(() => {
+    const fetchQuestions = async () => {
+        setIsLoadingQuestions(true);
+        const questions = await getQuestionsFromBank();
+        setQuestionBank(questions);
+        setIsLoadingQuestions(false);
+    }
+    fetchQuestions();
+  }, []);
 
   const { fields: teamAPlayerFields, append: appendTeamAPlayer, remove: removeTeamAPlayer } = useFieldArray({
     control: form.control,
@@ -332,6 +347,89 @@ export function AddMatchForm() {
       </div>
     );
   }
+  
+    const QuestionManager = () => {
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: "questions" });
+    const currentQuestions = useWatch({ control: form.control, name: "questions" }) || [];
+    const [open, setOpen] = React.useState(false);
+
+    const unselectedQuestions = questionBank.filter(q => !currentQuestions.some(cq => cq.question === q.question));
+
+    return (
+      <div className="space-y-4">
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+            <span className="flex-1 text-sm">{field.question}</span>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
+        ))}
+        
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
+                    {isLoadingQuestions ? "Loading questions..." : "Select from Question Bank"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                 <Command>
+                    <CommandInput placeholder="Search questions..." />
+                    <CommandList>
+                        <CommandEmpty>No questions found.</CommandEmpty>
+                        <CommandGroup>
+                        {unselectedQuestions.map((q) => (
+                            <CommandItem
+                                key={q.id}
+                                value={q.question}
+                                onSelect={() => {
+                                    append({ question: q.question });
+                                    setOpen(false);
+                                }}
+                            >
+                                <Check className={cn("mr-2 h-4 w-4", "opacity-0")} />
+                                {q.question}
+                            </CommandItem>
+                        ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ question: "" })}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Question Manually
+        </Button>
+        <FormMessage>{form.formState.errors.questions?.message}</FormMessage>
+        
+        {fields.map((field, index) => {
+          if (questionBank.some(q => q.question === field.question)) return null;
+          return (
+            <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative border-dashed">
+              <FormField
+                control={form.control}
+                name={`questions.${index}.question`}
+                render={({ field: qField }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel className="text-xs">New Question Text</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter new question" {...qField} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 mt-5" onClick={() => remove(index)}>
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
 
   return (
     <Form {...form}>
@@ -597,44 +695,7 @@ export function AddMatchForm() {
                 <CardDescription>Add the questions users will predict the outcome for.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {questionFields.map((field, index) => (
-                    <FormField
-                        key={field.id}
-                        control={form.control}
-                        name={`questions.${index}.question`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className={cn(index !== 0 && "sr-only")}>
-                                    Question {index + 1}
-                                </FormLabel>
-                                <div className="flex items-center gap-2">
-                                    <FormControl>
-                                        <Textarea placeholder={`e.g., Which team will win the toss?`} {...field} />
-                                    </FormControl>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => removeQuestion(index)}
-                                        disabled={questionFields.length <= 1}
-                                    >
-                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                ))}
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendQuestion({ question: "" })}
-                >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Question
-                </Button>
+                <QuestionManager />
             </CardContent>
         </Card>
         

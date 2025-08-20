@@ -1,21 +1,200 @@
+
+"use client";
+
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMatches } from "@/app/actions/match.actions";
 import { QandADashboard } from "@/components/admin/q-and-a-dashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Question } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, Trash2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { createQuestionInBank, getQuestionsFromBank, deleteQuestionFromBank } from '@/app/actions/qna.actions';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-export default async function QandAPage() {
-    const matches = await getMatches();
-    
+function QandAPageSkeleton() {
     return (
-        <Card className="flex h-full flex-col">
+        <div className="grid gap-6 md:grid-cols-2">
+            <div>
+                 <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full mt-1" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+             <div>
+                 <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-1/2" />
+                        <Skeleton className="h-4 w-3/4 mt-1" />
+                    </CardHeader>
+                    <CardContent>
+                       <Skeleton className="h-64 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    )
+}
+
+function QuestionBankManager() {
+    const { toast } = useToast();
+    const [questions, setQuestions] = React.useState<Question[]>([]);
+    const [newQuestion, setNewQuestion] = React.useState('');
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    React.useEffect(() => {
+        const loadQuestions = async () => {
+            const fetchedQuestions = await getQuestionsFromBank();
+            setQuestions(fetchedQuestions);
+            setIsLoading(false);
+        };
+        loadQuestions();
+    }, []);
+
+    const handleAddQuestion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newQuestion.trim().length < 5) {
+            toast({ variant: 'destructive', title: 'Invalid Question', description: 'Question must be at least 5 characters long.' });
+            return;
+        }
+        setIsSubmitting(true);
+        const result = await createQuestionInBank(newQuestion);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        } else {
+            toast({ title: 'Success', description: 'New question added to the bank.' });
+            setQuestions(prev => [result.newQuestion as Question, ...prev]);
+            setNewQuestion('');
+        }
+        setIsSubmitting(false);
+    };
+
+    const handleDeleteQuestion = async (questionId: string) => {
+        const result = await deleteQuestionFromBank(questionId);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        } else {
+            toast({ title: 'Success', description: 'Question removed from the bank.' });
+            setQuestions(prev => prev.filter(q => q.id !== questionId));
+        }
+    };
+
+    return (
+         <Card>
             <CardHeader>
-                <CardTitle>Match Results &amp; Settlement</CardTitle>
+                <CardTitle>Question Bank</CardTitle>
                 <CardDescription>
-                    Select a match to enter results for its questions and settle the bets.
+                    Manage the reusable list of questions that can be added to any match.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto">
-                <QandADashboard matches={matches} />
+            <CardContent>
+                <form onSubmit={handleAddQuestion} className="flex items-center gap-2 mb-4">
+                    <Input 
+                        placeholder="Add a new question..."
+                        value={newQuestion}
+                        onChange={(e) => setNewQuestion(e.target.value)}
+                        disabled={isSubmitting}
+                    />
+                    <Button type="submit" disabled={isSubmitting}>
+                        <PlusCircle className="h-4 w-4 mr-2" /> Add
+                    </Button>
+                </form>
+
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {isLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                    ) : questions.length > 0 ? (
+                        questions.map(q => (
+                            <div key={q.id} className="flex items-center justify-between p-2 border rounded-md">
+                                <span className="text-sm">{q.question}</span>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will permanently delete this question from the bank.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteQuestion(q.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-muted-foreground py-8">No questions in the bank.</p>
+                    )}
+                </div>
             </CardContent>
         </Card>
+    );
+}
+
+
+export default function QandAPage() {
+    const [matches, setMatches] = React.useState<any[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    const refreshMatches = React.useCallback(async () => {
+        setIsLoading(true);
+        const updatedMatches = await getMatches();
+        setMatches(updatedMatches);
+        setIsLoading(false);
+    }, []);
+
+    React.useEffect(() => {
+        refreshMatches();
+    }, [refreshMatches]);
+
+    if (isLoading) {
+        return <QandAPageSkeleton />
+    }
+    
+    return (
+        <Tabs defaultValue="results" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="results">Match Results & Settlement</TabsTrigger>
+                <TabsTrigger value="bank">Question Bank</TabsTrigger>
+            </TabsList>
+            <TabsContent value="results" className="mt-4">
+                <Card className="flex h-full flex-col">
+                    <CardHeader>
+                        <CardTitle>Match Results &amp; Settlement</CardTitle>
+                        <CardDescription>
+                            Select a match to enter results for its questions and settle the bets.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-y-auto">
+                        <QandADashboard matches={matches} onUpdate={refreshMatches} />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="bank" className="mt-4">
+                <QuestionBankManager />
+            </TabsContent>
+        </Tabs>
     );
 }

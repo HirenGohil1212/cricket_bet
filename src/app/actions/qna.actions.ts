@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -13,12 +14,75 @@ import {
     getDoc,
     orderBy,
     documentId,
+    addDoc,
+    deleteDoc
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { qnaFormSchema } from '@/lib/schemas';
 import type { Question, Sport, QnaFormValues, Winner } from '@/lib/types';
+
+
+// --- Question Bank Actions ---
+
+export async function createQuestionInBank(questionText: string) {
+    if (!questionText || questionText.trim().length < 5) {
+        return { error: 'Question text must be at least 5 characters.' };
+    }
+    try {
+        const docRef = await addDoc(collection(db, 'questionBank'), {
+            question: questionText.trim(),
+            createdAt: Timestamp.now(),
+        });
+
+        const newQuestion: Question = {
+            id: docRef.id,
+            question: questionText.trim(),
+            createdAt: new Date().toISOString(),
+            order: 0, 
+            status: 'active',
+            result: null,
+        }
+        revalidatePath('/admin/q-and-a');
+        return { success: 'Question added successfully.', newQuestion };
+    } catch (error) {
+        console.error("Error creating question in bank: ", error);
+        return { error: 'Failed to add question to the bank.' };
+    }
+}
+
+export async function getQuestionsFromBank(): Promise<Question[]> {
+    try {
+        const q = query(collection(db, 'questionBank'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: (doc.data().createdAt as Timestamp).toDate().toISOString()
+        } as Question));
+    } catch (error) {
+        console.error("Error fetching questions from bank: ", error);
+        return [];
+    }
+}
+
+export async function deleteQuestionFromBank(questionId: string) {
+    if (!questionId) {
+        return { error: 'Question ID is required.' };
+    }
+    try {
+        await deleteDoc(doc(db, 'questionBank', questionId));
+        revalidatePath('/admin/q-and-a');
+        return { success: 'Question deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting question from bank: ", error);
+        return { error: 'Failed to delete question.' };
+    }
+}
+
+
+// --- Match-specific Question Actions ---
 
 
 // Function to get questions for a specific match
