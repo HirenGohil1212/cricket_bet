@@ -10,16 +10,13 @@ import { Suspense } from "react";
 import { SportMatchListLoader } from "@/components/matches/sport-match-list-loader";
 import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
-import { getBettingSettings, getAppSettings } from "@/app/actions/settings.actions";
+import { getAppSettings } from "@/app/actions/settings.actions";
 import { getWinnersForMatch } from "./actions/qna.actions";
 
 export const dynamic = 'force-dynamic';
 
 async function MatchData({ sport }: { sport?: Sport }) {
-  const [matches, settings] = await Promise.all([
-    getMatches(),
-    getBettingSettings()
-  ]);
+  const matches = await getMatches();
   
   const upcomingAndLive = matches.filter(
     (m) => (m.status === "Upcoming" || m.status === "Live")
@@ -49,25 +46,11 @@ async function MatchData({ sport }: { sport?: Sport }) {
   const filteredUpcomingAndLiveMatches = sport ? upcomingAndLive.filter(m => m.sport === sport) : upcomingAndLive;
   const filteredFinishedMatches = sport ? augmentedFinishedMatches.filter(m => m.sport === sport) : augmentedFinishedMatches;
 
-  let betOptionsForSport: BetOption[];
-  if (sport === 'Cricket') {
-    // For cricket on the main page, we show the general bet options.
-    // The specific options (one-sided, player) will be used in the GuessDialog.
-    betOptionsForSport = settings.betOptions.Cricket.general;
-  } else if (sport) {
-    betOptionsForSport = settings.betOptions[sport];
-  } else {
-    // Default to Cricket's general options for the "All" tab.
-    betOptionsForSport = settings.betOptions.Cricket.general;
-  }
-
-
   return (
     <SportMatchList
       upcomingAndLiveMatches={filteredUpcomingAndLiveMatches}
       finishedMatches={filteredFinishedMatches}
       sport={sport}
-      betOptions={betOptionsForSport}
     />
   )
 }

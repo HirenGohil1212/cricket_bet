@@ -135,7 +135,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     return bettingSettings.betOptions[match.sport];
   }, [bettingSettings, match, bettingMode, betOnSide]);
 
-  const validBetAmounts = React.useMemo(() => betOptions.map(opt => opt.amount), [betOptions]);
+  const validBetAmounts = React.useMemo(() => (betOptions || []).map(opt => opt.amount), [betOptions]);
   
   const form = useForm<z.infer<ReturnType<typeof createPredictionSchema>>>({
     resolver: (data, context, options) => {

@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Match, Sport, BetOption } from '@/lib/types';
+import type { Match, Sport } from '@/lib/types';
 import { MatchCard } from './match-card';
 import { GuessDialog } from './guess-dialog';
 import { BettingHistoryDialog } from '../dashboard/betting-history-dialog';
@@ -14,7 +14,7 @@ interface MatchListProps {
   searchTerm: string;
 }
 
-export function MatchList({ matches, sport, searchTerm }: MatchListProps) {
+export function MatchList({ matches, searchTerm }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
   const [localMatches, setLocalMatches] = useState(matches);

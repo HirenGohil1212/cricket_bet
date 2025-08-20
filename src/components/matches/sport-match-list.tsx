@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { Match, Sport, BetOption } from "@/lib/types";
+import type { Match, Sport } from "@/lib/types";
 import { MatchList } from "./match-list";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -54,5 +54,4 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches 
     </div>
   );
 }
-
     
