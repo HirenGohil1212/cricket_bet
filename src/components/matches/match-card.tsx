@@ -117,7 +117,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                 {status === 'Live' && <Badge variant="destructive" className="animate-pulse mb-1">LIVE</Badge>}
                 {status !== 'Live' && (
                     <p className="text-3xl font-bold text-foreground font-headline">
-                      {score ? score : <span className="text-muted-foreground">-</span>}
+                      {score ? score : <span className="text-muted-foreground">vs</span>}
                     </p>
                 )}
                 {status === 'Finished' && (
