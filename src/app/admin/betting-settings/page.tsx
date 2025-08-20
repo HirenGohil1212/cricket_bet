@@ -10,9 +10,6 @@ export default async function BettingSettingsPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Betting Settings</CardTitle>
-                <CardDescription>
-                    Manage the available bet amounts and their corresponding payouts.
-                </CardDescription>
             </CardHeader>
             <CardContent>
                 <BettingSettingsForm initialData={settings} />
