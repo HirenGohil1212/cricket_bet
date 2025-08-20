@@ -9,9 +9,9 @@ export default async function SettingsPage() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Application Settings</CardTitle>
+                <CardTitle>Support Settings</CardTitle>
                 <CardDescription>
-                    Manage general settings for the application.
+                    Manage support and contact settings for the application.
                 </CardDescription>
             </CardHeader>
             <CardContent>

@@ -94,7 +94,7 @@ export default function AdminLayout({
     { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
     { href: "/admin/content", label: "Content", icon: GalleryHorizontal },
     { href: "/admin/data-management", label: "Data Management", icon: DatabaseZap },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/settings", label: "Support", icon: Settings },
   ];
 
   const renderNavLinks = (isMobile = false) =>
