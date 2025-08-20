@@ -120,9 +120,6 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                       {score ? score : <span className="text-muted-foreground">vs</span>}
                     </p>
                 )}
-                {status === 'Finished' && (
-                    <p className="text-xs text-muted-foreground">Final Score</p>
-                )}
               </div>
 
               {/* Team B Display */}
