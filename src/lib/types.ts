@@ -73,6 +73,7 @@ export type UserProfile = {
   referredBy?: string; // UID of the referrer
   isFirstBetPlaced?: boolean; // Has the user placed their first bet
   referralBonusAwarded?: boolean; // Has this user received their signup bonus
+  totalReferrals?: number; // New field for referral count
 };
 
 export type BankAccount = {

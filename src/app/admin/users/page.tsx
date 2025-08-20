@@ -17,6 +17,7 @@ import {
     CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Users } from 'lucide-react';
 
 async function getUsers(): Promise<UserProfile[]> {
     const usersCol = collection(db, 'users');
@@ -32,9 +33,25 @@ async function getUsers(): Promise<UserProfile[]> {
             referralCode: data.referralCode,
             createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
             role: data.role || 'user',
+            referredBy: data.referredBy,
         } as UserProfile;
     });
-    return userList;
+
+    // Calculate referral counts
+    const referralCounts = new Map<string, number>();
+    userList.forEach(user => {
+        if (user.referredBy) {
+            referralCounts.set(user.referredBy, (referralCounts.get(user.referredBy) || 0) + 1);
+        }
+    });
+
+    // Add referral counts to user objects
+    const usersWithReferrals = userList.map(user => ({
+        ...user,
+        totalReferrals: referralCounts.get(user.uid) || 0,
+    }));
+    
+    return usersWithReferrals;
 }
 
 export default async function AdminUsersPage() {
@@ -53,6 +70,7 @@ export default async function AdminUsersPage() {
                             <TableHead>Name</TableHead>
                             <TableHead className="hidden sm:table-cell">Phone Number</TableHead>
                             <TableHead>Role</TableHead>
+                             <TableHead>Total Referrals</TableHead>
                             <TableHead className="text-right">Wallet Balance</TableHead>
                             <TableHead className="hidden md:table-cell">Referral Code</TableHead>
                             <TableHead className="hidden md:table-cell">Joined On</TableHead>
@@ -67,6 +85,12 @@ export default async function AdminUsersPage() {
                                     <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                                         {user.role}
                                     </Badge>
+                                </TableCell>
+                                 <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <Users className="h-4 w-4 text-muted-foreground" />
+                                        <span className="font-medium">{user.totalReferrals}</span>
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right">INR {user.walletBalance.toFixed(2)}</TableCell>
                                 <TableCell className="hidden md:table-cell">
