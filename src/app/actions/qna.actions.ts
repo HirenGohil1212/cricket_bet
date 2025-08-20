@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import {
@@ -21,7 +22,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { qnaFormSchema } from '@/lib/schemas';
-import type { Question, Sport, QnaFormValues, Winner } from '@/lib/types';
+import type { Question, Sport, QnaFormValues, Winner, DummyUser } from '@/lib/types';
 
 
 // --- Question Bank Actions ---
@@ -291,29 +292,98 @@ export async function settleMatchAndPayouts(matchId: string) {
         const betsRef = collection(db, 'bets');
         const pendingBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
         const pendingBetsSnapshot = await getDocs(pendingBetsQuery);
+        
+        // --- STEP 2: Process bets in memory ---
+        
+        const payouts = new Map<string, number>(); // Map<userId, totalPayout>
+        const betUpdates: { ref: any, data: any }[] = [];
 
-        if (pendingBetsSnapshot.empty) {
-            // No pending bets, just finish the match and questions
-            const batch = writeBatch(db);
-            batch.update(matchRef, { status: 'Finished' });
-            activeQuestions.forEach(q => {
-                const qRef = doc(questionsRef, q.id);
-                batch.update(qRef, { status: 'settled' });
-            });
-            await batch.commit();
-            revalidatePath('/admin/q-and-a');
-            return { success: 'No pending bets found. Match has been marked as Finished.', winners: [] };
+        if (!pendingBetsSnapshot.empty) {
+            for (const betDoc of pendingBetsSnapshot.docs) {
+                const betData = betDoc.data();
+                const betRef = doc(db, 'bets', betDoc.id);
+                const betType = betData.betType || 'qna';
+
+                // AGGRESSIVE VALIDATION
+                if (!betData.userId || !Array.isArray(betData.predictions) || typeof betData.potentialWin !== 'number') {
+                    betUpdates.push({ ref: betRef, data: { status: 'Lost', reason: 'Invalid bet data.' }});
+                    continue;
+                }
+                
+                let isWinner = true;
+
+                if (betType === 'player') {
+                    // For player bets, every single prediction must match
+                    for (const prediction of betData.predictions) {
+                        const [playerName, questionId] = prediction.questionId.split(':');
+                        const teamSide = matchData.teamA.players.some((p: any) => p.name === playerName) ? 'teamA' : 'teamB';
+                        
+                        const question = activeQuestions.find(q => q.id === questionId);
+                        if (!question || !question.playerResult) {
+                            isWinner = false;
+                            break;
+                        }
+                        
+                        const correctAnswer = (question.playerResult as any)?.[teamSide]?.[playerName];
+                        const predictedAnswer = teamSide === 'teamA' ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
+                        
+                        if (String(correctAnswer).toLowerCase() !== String(predictedAnswer).toLowerCase()) {
+                            isWinner = false;
+                            break;
+                        }
+                    }
+                } else { // QnA mode
+                    if (betData.predictions.length !== activeQuestions.length) {
+                        isWinner = false;
+                    } else {
+                        for (const prediction of betData.predictions) {
+                            if (!isWinner) break; // No need to check further if already lost
+
+                            const question = activeQuestions.find(q => q.id === prediction.questionId);
+                            if (!question) {
+                                isWinner = false;
+                                continue;
+                            }
+                            
+                            const predictedAnswer = prediction.predictedAnswer;
+                            if (!predictedAnswer || typeof predictedAnswer.teamA !== 'string' || typeof predictedAnswer.teamB !== 'string') {
+                                isWinner = false;
+                                continue;
+                            }
+
+                            const normalizedPredictedA = predictedAnswer.teamA.trim().toLowerCase();
+                            const normalizedPredictedB = predictedAnswer.teamB.trim().toLowerCase();
+                            
+                            const correctA = (question.result?.teamA ?? '').trim().toLowerCase();
+                            const correctB = (question.result?.teamB ?? '').trim().toLowerCase();
+
+                            if (normalizedPredictedA !== correctA || normalizedPredictedB !== correctB) {
+                                isWinner = false;
+                            }
+                        }
+                    }
+                }
+
+                if (isWinner) {
+                    betUpdates.push({ ref: betRef, data: { status: 'Won' }});
+                    const currentPayout = payouts.get(betData.userId) || 0;
+                    payouts.set(betData.userId, currentPayout + betData.potentialWin);
+                } else {
+                    betUpdates.push({ ref: betRef, data: { status: 'Lost' }});
+                }
+            }
         }
         
-        // Fetch user data for winner names
-        const userIds = [...new Set(pendingBetsSnapshot.docs.map(doc => doc.data().userId).filter(Boolean))];
-        const usersMap = new Map<string, string>();
-        if (userIds.length > 0) {
+        let finalWinners: Winner[] = [];
+        
+        // Handle real user payouts
+        if (payouts.size > 0) {
+            const userIds = Array.from(payouts.keys());
+            const usersMap = new Map<string, string>();
             const userBatches = [];
             for (let i = 0; i < userIds.length; i += 30) {
                 userBatches.push(userIds.slice(i, i + 30));
             }
-
             for (const idBatch of userBatches) {
                  const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', idBatch));
                 const usersSnapshot = await getDocs(usersQuery);
@@ -321,87 +391,30 @@ export async function settleMatchAndPayouts(matchId: string) {
                     usersMap.set(userDoc.id, userDoc.data().name || 'Unknown User');
                 });
             }
-        }
 
-        // --- STEP 2: Process bets in memory ---
-        
-        const payouts = new Map<string, number>(); // Map<userId, totalPayout>
-        const betUpdates: { ref: any, data: any }[] = [];
-
-        for (const betDoc of pendingBetsSnapshot.docs) {
-            const betData = betDoc.data();
-            const betRef = doc(db, 'bets', betDoc.id);
-            const betType = betData.betType || 'qna';
-
-            // AGGRESSIVE VALIDATION
-            if (!betData.userId || !Array.isArray(betData.predictions) || typeof betData.potentialWin !== 'number') {
-                betUpdates.push({ ref: betRef, data: { status: 'Lost', reason: 'Invalid bet data.' }});
-                continue;
-            }
-            
-            let isWinner = true;
-
-            if (betType === 'player') {
-                // For player bets, every single prediction must match
-                for (const prediction of betData.predictions) {
-                    const [playerName, questionId] = prediction.questionId.split(':');
-                    const teamSide = matchData.teamA.players.some((p: any) => p.name === playerName) ? 'teamA' : 'teamB';
-                    
-                    const question = activeQuestions.find(q => q.id === questionId);
-                    if (!question || !question.playerResult) {
-                        isWinner = false;
-                        break;
-                    }
-                    
-                    const correctAnswer = (question.playerResult as any)?.[teamSide]?.[playerName];
-                    const predictedAnswer = teamSide === 'teamA' ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
-                    
-                    if (String(correctAnswer).toLowerCase() !== String(predictedAnswer).toLowerCase()) {
-                        isWinner = false;
-                        break;
-                    }
-                }
-            } else { // QnA mode
-                if (betData.predictions.length !== activeQuestions.length) {
-                    isWinner = false;
-                } else {
-                    for (const prediction of betData.predictions) {
-                        if (!isWinner) break; // No need to check further if already lost
-
-                        const question = activeQuestions.find(q => q.id === prediction.questionId);
-                        if (!question) {
-                            isWinner = false;
-                            continue;
-                        }
-                        
-                        const predictedAnswer = prediction.predictedAnswer;
-                        if (!predictedAnswer || typeof predictedAnswer.teamA !== 'string' || typeof predictedAnswer.teamB !== 'string') {
-                            isWinner = false;
-                            continue;
-                        }
-
-                        const normalizedPredictedA = predictedAnswer.teamA.trim().toLowerCase();
-                        const normalizedPredictedB = predictedAnswer.teamB.trim().toLowerCase();
-                        
-                        const correctA = (question.result?.teamA ?? '').trim().toLowerCase();
-                        const correctB = (question.result?.teamB ?? '').trim().toLowerCase();
-
-                        if (normalizedPredictedA !== correctA || normalizedPredictedB !== correctB) {
-                            isWinner = false;
-                        }
-                    }
-                }
-            }
-
-            if (isWinner) {
-                betUpdates.push({ ref: betRef, data: { status: 'Won' }});
-                const currentPayout = payouts.get(betData.userId) || 0;
-                payouts.set(betData.userId, currentPayout + betData.potentialWin);
-            } else {
-                betUpdates.push({ ref: betRef, data: { status: 'Lost' }});
+            for (const [userId, payoutAmount] of payouts.entries()) {
+                finalWinners.push({
+                    userId,
+                    name: usersMap.get(userId) || `User ID: ${userId}`,
+                    payoutAmount
+                });
             }
         }
-        
+
+        // --- NEW DUMMY USER LOGIC ---
+        // If there are no real winners, check for a dummy user.
+        if (finalWinners.length === 0 && matchData.dummyUserId && matchData.dummyAmount > 0) {
+            const dummyUserRef = doc(db, 'dummyUsers', matchData.dummyUserId);
+            const dummyUserDoc = await getDoc(dummyUserRef);
+            if (dummyUserDoc.exists()) {
+                finalWinners.push({
+                    userId: 'dummy',
+                    name: `(Dummy) ${dummyUserDoc.data().name}`,
+                    payoutAmount: matchData.dummyAmount
+                });
+            }
+        }
+
         // --- STEP 3: Execute writes ---
         
         // Use a batch to update all bet documents
@@ -411,7 +424,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         });
 
         // Update match and questions status in the same batch
-        batch.update(matchRef, { status: 'Finished' });
+        batch.update(matchRef, { status: 'Finished', winners: finalWinners }); // Save winners to match
         activeQuestions.forEach(q => {
             const qRef = doc(questionsRef, q.id);
             batch.update(qRef, { status: 'settled' });
@@ -420,8 +433,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         // Commit all non-financial updates
         await batch.commit();
 
-        // Now, process financial payouts transactionally per user
-        const winners: Winner[] = [];
+        // Now, process financial payouts for REAL users transactionally
         for (const [userId, payoutAmount] of payouts.entries()) {
             if (payoutAmount <= 0) continue;
             
@@ -437,15 +449,8 @@ export async function settleMatchAndPayouts(matchId: string) {
                     const newBalance = currentBalance + payoutAmount;
                     transaction.update(userRef, { walletBalance: newBalance });
                 });
-                // If transaction is successful, add to winners list
-                winners.push({
-                    userId,
-                    name: usersMap.get(userId) || `User ID: ${userId}`,
-                    payoutAmount
-                });
             } catch (e) {
                 console.error(`Failed to process payout for user ${userId}. Error:`, e);
-                // The transaction for this user failed, but we continue with others.
             }
         }
         
@@ -461,7 +466,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         
         return { 
             success: 'Match settled and payouts processed successfully!',
-            winners,
+            winners: finalWinners,
             totalBetsProcessed: pendingBetsSnapshot.size,
         };
 
@@ -477,6 +482,12 @@ export async function getWinnersForMatch(matchId: string): Promise<Winner[]> {
     if (!matchId) return [];
 
     try {
+        const matchDoc = await getDoc(doc(db, 'matches', matchId));
+        if (matchDoc.exists() && matchDoc.data().winners) {
+            return matchDoc.data().winners as Winner[];
+        }
+        
+        // Fallback for older matches settled before winners were stored on the match
         const betsRef = collection(db, 'bets');
         const winningBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Won'));
         const winningBetsSnapshot = await getDocs(winningBetsQuery);

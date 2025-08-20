@@ -18,6 +18,8 @@ interface MatchServerPayload {
     isSpecialMatch: boolean;
     allowOneSidedBets: boolean;
     questions: { question: string }[];
+    dummyUserId?: string;
+    dummyAmount?: number;
 }
 
 // Server action to create a new match
@@ -31,6 +33,8 @@ export async function createMatch(payload: MatchServerPayload) {
             isSpecialMatch,
             allowOneSidedBets,
             questions,
+            dummyUserId,
+            dummyAmount,
         } = payload;
 
         const now = new Date();
@@ -46,6 +50,8 @@ export async function createMatch(payload: MatchServerPayload) {
             winner: '',
             isSpecialMatch,
             allowOneSidedBets,
+            dummyUserId,
+            dummyAmount,
         });
 
         // ** NEW LOGIC **: Add questions directly from the payload
@@ -148,6 +154,8 @@ export async function getMatches(): Promise<Match[]> {
                 winner: data.winner || '',
                 isSpecialMatch: data.isSpecialMatch || false,
                 allowOneSidedBets: data.allowOneSidedBets || false,
+                dummyUserId: data.dummyUserId,
+                dummyAmount: data.dummyAmount,
             } as Match;
         });
         return matchList;
@@ -193,6 +201,8 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
             winner: data.winner || '',
             isSpecialMatch: data.isSpecialMatch || false,
             allowOneSidedBets: data.allowOneSidedBets || false,
+            dummyUserId: data.dummyUserId,
+            dummyAmount: data.dummyAmount,
         } as Match;
     } catch (error) {
         console.error("Error fetching match by ID:", error);
@@ -217,6 +227,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             isSpecialMatch,
             allowOneSidedBets,
             questions,
+            dummyUserId,
+            dummyAmount,
         } = payload;
 
         // If a new logo was uploaded for team A, delete the old one
@@ -242,6 +254,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             ...(existingMatchData.status !== 'Finished' && { status }),
             isSpecialMatch,
             allowOneSidedBets,
+            dummyUserId,
+            dummyAmount,
         });
         
         // ** NEW LOGIC **: Overwrite the questions for this match

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,7 +34,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { sports, type Player } from "@/lib/types";
+import { sports, type Player, type DummyUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { createMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
@@ -48,6 +49,7 @@ import type { Question } from "@/lib/types";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { ScrollArea } from "../ui/scroll-area";
+import { getDummyUsersBySport } from "@/app/actions/dummy-user.actions";
 
 
 export function AddMatchForm() {
@@ -63,6 +65,8 @@ export function AddMatchForm() {
   const [isLoadingPlayers, setIsLoadingPlayers] = React.useState(false);
   const [questionBank, setQuestionBank] = React.useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(false);
+  const [availableDummyUsers, setAvailableDummyUsers] = React.useState<DummyUser[]>([]);
+  const [isLoadingDummyUsers, setIsLoadingDummyUsers] = React.useState(false);
 
 
   const form = useForm<MatchFormValues>({
@@ -75,22 +79,27 @@ export function AddMatchForm() {
         teamBPlayers: [],
         isSpecialMatch: false,
         allowOneSidedBets: false,
-        questions: []
+        questions: [],
+        dummyAmount: 0,
     }
   });
 
   const selectedSport = useWatch({ control: form.control, name: 'sport' });
 
   React.useEffect(() => {
-    const fetchPlayers = async () => {
+    const fetchSportSpecificData = async () => {
         if(selectedSport) {
             setIsLoadingPlayers(true);
+            setIsLoadingDummyUsers(true);
             const players = await getPlayersBySport(selectedSport);
+            const dummyUsers = await getDummyUsersBySport(selectedSport);
             setAvailablePlayers(players);
+            setAvailableDummyUsers(dummyUsers);
             setIsLoadingPlayers(false);
+            setIsLoadingDummyUsers(false);
         }
     }
-    fetchPlayers();
+    fetchSportSpecificData();
   }, [selectedSport]);
 
   React.useEffect(() => {
@@ -192,6 +201,8 @@ export function AddMatchForm() {
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
             questions: data.questions,
+            dummyUserId: data.dummyUserId,
+            dummyAmount: data.dummyAmount,
             teamA: {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
@@ -709,6 +720,51 @@ export function AddMatchForm() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <QuestionManager />
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Dummy Winner (Optional)</CardTitle>
+                <CardDescription>If no real user wins, this dummy user will be shown as the winner on the summary page.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="dummyUserId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dummy User</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingDummyUsers}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a dummy user"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {availableDummyUsers.map(user => (
+                                <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="dummyAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dummy Win Amount (INR)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 500" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </CardContent>
         </Card>
         

@@ -41,6 +41,9 @@ export const matchSchema = z.object({
   questions: z.array(z.object({
     question: z.string().min(1, "Question cannot be empty.")
   })).min(1, "At least one question is required."),
+
+  dummyUserId: z.string().optional(),
+  dummyAmount: z.coerce.number().min(0, "Dummy amount must be a positive number.").optional(),
 });
 
 export type MatchFormValues = z.infer<typeof matchSchema>;

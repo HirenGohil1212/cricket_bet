@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,7 +34,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { sports, type Match, type Player, type Question } from "@/lib/types";
+import { sports, type Match, type Player, type Question, type DummyUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { updateMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
@@ -48,6 +49,7 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "../ui/skeleton";
+import { getDummyUsersBySport } from "@/app/actions/dummy-user.actions";
 
 interface EditMatchFormProps {
     match: Match;
@@ -101,6 +103,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   const [isLoadingPlayers, setIsLoadingPlayers] = React.useState(false);
   const [questionBank, setQuestionBank] = React.useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(false);
+  const [availableDummyUsers, setAvailableDummyUsers] = React.useState<DummyUser[]>([]);
+  const [isLoadingDummyUsers, setIsLoadingDummyUsers] = React.useState(false);
   
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
@@ -122,6 +126,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
                 teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
                 questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [],
+                dummyUserId: match.dummyUserId || 'none',
+                dummyAmount: match.dummyAmount || 0,
             });
             setIsFormReady(true);
         } catch (error) {
@@ -136,15 +142,19 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   const selectedSport = useWatch({ control: form.control, name: 'sport' });
 
   React.useEffect(() => {
-    const fetchPlayers = async () => {
+    const fetchSportSpecificData = async () => {
         if(selectedSport) {
             setIsLoadingPlayers(true);
+            setIsLoadingDummyUsers(true);
             const players = await getPlayersBySport(selectedSport);
+            const dummyUsers = await getDummyUsersBySport(selectedSport);
             setAvailablePlayers(players);
+            setAvailableDummyUsers(dummyUsers);
             setIsLoadingPlayers(false);
+            setIsLoadingDummyUsers(false);
         }
     }
-    fetchPlayers();
+    fetchSportSpecificData();
   }, [selectedSport]);
 
   React.useEffect(() => {
@@ -235,6 +245,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
             questions: data.questions,
+            dummyUserId: data.dummyUserId === 'none' ? undefined : data.dummyUserId,
+            dummyAmount: data.dummyAmount,
             teamA: {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
@@ -745,6 +757,51 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             </CardHeader>
             <CardContent className="space-y-4">
                 <QuestionManager />
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Dummy Winner (Optional)</CardTitle>
+                <CardDescription>If no real user wins, this dummy user will be shown as the winner on the summary page.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="dummyUserId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dummy User</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingDummyUsers}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a dummy user"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                           {availableDummyUsers.map(user => (
+                                <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                           ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="dummyAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dummy Win Amount (INR)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 500" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </CardContent>
         </Card>
 

@@ -25,6 +25,7 @@ import {
   UsersRound,
   DatabaseZap,
   Settings,
+  UserRoundX,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -85,6 +86,7 @@ export default function AdminLayout({
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/matches", label: "Matches", icon: Swords },
     { href: "/admin/players", label: "Players", icon: UsersRound },
+    { href: "/admin/dummy-users", label: "Dummy Users", icon: UserRoundX },
     { href: "/admin/q-and-a", label: "Q & A", icon: MessageSquareQuote },
     { href: "/admin/deposits", label: "Deposits", icon: Wallet },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },

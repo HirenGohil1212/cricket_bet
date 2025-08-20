@@ -13,6 +13,12 @@ export type Player = {
   sport?: Sport;
 };
 
+export type DummyUser = {
+  id: string;
+  name: string;
+  sport: Sport;
+};
+
 export type Team = {
   name: string;
   logoUrl: string;
@@ -33,6 +39,8 @@ export type Match = {
   winners?: Winner[];
   isSpecialMatch?: boolean;
   allowOneSidedBets?: boolean;
+  dummyUserId?: string;
+  dummyAmount?: number;
 };
 
 export type Prediction = {
