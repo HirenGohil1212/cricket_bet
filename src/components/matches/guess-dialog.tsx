@@ -173,6 +173,15 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 }
             });
             form.trigger('predictions');
+        } else if (bettingMode === 'player') {
+            // Clear selections when switching sides
+            if (betOnSide === 'teamA') {
+                setSelectedPlayersB([]);
+                form.setValue('predictions.teamB', {});
+            } else if (betOnSide === 'teamB') {
+                setSelectedPlayersA([]);
+                form.setValue('predictions.teamA', {});
+            }
         }
     }
   }, [betOnSide, questions, form, match?.allowOneSidedBets, open, bettingMode]);
@@ -363,9 +372,32 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   const renderPlayerBetUI = () => (
     <div className="space-y-4">
+        {match.allowOneSidedBets && (
+            <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
+                <Label className="text-sm font-semibold text-center block">Bet on</Label>
+                <RadioGroup
+                    value={betOnSide}
+                    onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
+                    className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="teamA" id="pr-teamA" />
+                        <Label htmlFor="pr-teamA" className="text-xs truncate">{match.teamA.name}</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="teamB" id="pr-teamB" />
+                        <Label htmlFor="pr-teamB" className="text-xs truncate">{match.teamB.name}</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="both" id="pr-both" />
+                        <Label htmlFor="pr-both" className="text-xs">Both</Label>
+                    </div>
+                </RadioGroup>
+            </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <PlayerSelector team="A" />
-            <PlayerSelector team="B" />
+            {(betOnSide === 'teamA' || betOnSide === 'both') && <PlayerSelector team="A" />}
+            {(betOnSide === 'teamB' || betOnSide === 'both') && <PlayerSelector team="B" />}
         </div>
         
         {[...selectedPlayersA, ...selectedPlayersB].map(player => (
@@ -594,4 +626,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
