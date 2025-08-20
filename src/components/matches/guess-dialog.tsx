@@ -303,7 +303,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   const PlayerSelector = ({ team }: { team: 'A' | 'B'}) => {
     const players = team === 'A' ? match.teamA.players : match.teamB.players;
-    const selectedPlayers = team === 'A' ? selectedPlayersA : setSelectedPlayersB;
+    const selectedPlayers = team === 'A' ? selectedPlayersA : selectedPlayersB;
     const setSelectedPlayers = team === 'A' ? setSelectedPlayersA : setSelectedPlayersB;
     const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
     const [popoverOpen, setPopoverOpen] = useState(false);
@@ -381,7 +381,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                         <FormField
                             key={q.id}
                             control={form.control}
-                            name={`predictions.${selectedPlayersA.includes(player) ? 'teamA' : 'teamB'}.${player.name}.${q.id}`}
+                            name={`predictions.${selectedPlayersA.some(p => p.name === player.name) ? 'teamA' : 'teamB'}.${player.name}.${q.id}`}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs">{q.question}</FormLabel>
