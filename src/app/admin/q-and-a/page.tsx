@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getMatches } from "@/app/actions/match.actions";
 import { QandADashboard } from "@/components/admin/q-and-a-dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Question } from '@/lib/types';
+import type { Question, Sport } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,6 +24,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { sports } from '@/lib/types';
+import { SportIcon } from '@/components/icons';
 
 function QandAPageSkeleton() {
     return (
@@ -57,37 +59,44 @@ function QandAPageSkeleton() {
 
 function QuestionBankManager() {
     const { toast } = useToast();
-    const [questions, setQuestions] = React.useState<Question[]>([]);
-    const [newQuestion, setNewQuestion] = React.useState('');
+    const [allQuestions, setAllQuestions] = React.useState<Question[]>([]);
+    const [newQuestions, setNewQuestions] = React.useState<Record<Sport, string>>({
+        Cricket: '', Football: '', Tennis: '', 'Table Tennis': '', Badminton: ''
+    });
     const [isLoading, setIsLoading] = React.useState(true);
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState<Sport | null>(null);
 
     React.useEffect(() => {
         const loadQuestions = async () => {
             const fetchedQuestions = await getQuestionsFromBank();
-            setQuestions(fetchedQuestions);
+            setAllQuestions(fetchedQuestions);
             setIsLoading(false);
         };
         loadQuestions();
     }, []);
 
-    const handleAddQuestion = async (e: React.FormEvent) => {
+    const handleAddQuestion = async (e: React.FormEvent, sport: Sport) => {
         e.preventDefault();
-        if (newQuestion.trim().length < 5) {
-            toast({ variant: 'destructive', title: 'Invalid Question', description: 'Question must be at least 5 characters long.' });
+        const questionText = newQuestions[sport];
+        if (!questionText.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Question', description: 'Question cannot be empty.' });
             return;
         }
-        setIsSubmitting(true);
-        const result = await createQuestionInBank(newQuestion);
+        setIsSubmitting(sport);
+        const result = await createQuestionInBank(questionText, sport);
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
         } else {
             toast({ title: 'Success', description: 'New question added to the bank.' });
-            setQuestions(prev => [result.newQuestion as Question, ...prev]);
-            setNewQuestion('');
+            setAllQuestions(prev => [result.newQuestion as Question, ...prev]);
+            setNewQuestions(prev => ({...prev, [sport]: ''}));
         }
-        setIsSubmitting(false);
+        setIsSubmitting(null);
     };
+    
+    const handleNewQuestionChange = (sport: Sport, value: string) => {
+        setNewQuestions(prev => ({...prev, [sport]: value}));
+    }
 
     const handleDeleteQuestion = async (questionId: string) => {
         const result = await deleteQuestionFromBank(questionId);
@@ -95,36 +104,31 @@ function QuestionBankManager() {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
         } else {
             toast({ title: 'Success', description: 'Question removed from the bank.' });
-            setQuestions(prev => prev.filter(q => q.id !== questionId));
+            setAllQuestions(prev => prev.filter(q => q.id !== questionId));
         }
     };
-
-    return (
-         <Card>
-            <CardHeader>
-                <CardTitle>Question Bank</CardTitle>
-                <CardDescription>
-                    Manage the reusable list of questions that can be added to any match.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleAddQuestion} className="flex items-center gap-2 mb-4">
+    
+    const renderQuestionBankForSport = (sport: Sport) => {
+        const sportQuestions = allQuestions.filter(q => q.sport === sport);
+        return (
+            <div className="space-y-4">
+                 <form onSubmit={(e) => handleAddQuestion(e, sport)} className="flex items-center gap-2">
                     <Input 
-                        placeholder="Add a new question..."
-                        value={newQuestion}
-                        onChange={(e) => setNewQuestion(e.target.value)}
-                        disabled={isSubmitting}
+                        placeholder="Add a new question for this sport..."
+                        value={newQuestions[sport]}
+                        onChange={(e) => handleNewQuestionChange(sport, e.target.value)}
+                        disabled={isSubmitting === sport}
                     />
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting === sport}>
                         <PlusCircle className="h-4 w-4 mr-2" /> Add
                     </Button>
                 </form>
 
-                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
                     {isLoading ? (
                         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
-                    ) : questions.length > 0 ? (
-                        questions.map(q => (
+                    ) : sportQuestions.length > 0 ? (
+                        sportQuestions.map(q => (
                             <div key={q.id} className="flex items-center justify-between p-2 border rounded-md">
                                 <span className="text-sm">{q.question}</span>
                                 <AlertDialog>
@@ -145,9 +149,37 @@ function QuestionBankManager() {
                             </div>
                         ))
                     ) : (
-                        <p className="text-center text-muted-foreground py-8">No questions in the bank.</p>
+                        <p className="text-center text-muted-foreground py-8">No questions for {sport} in the bank.</p>
                     )}
                 </div>
+            </div>
+        )
+    }
+
+    return (
+         <Card>
+            <CardHeader>
+                <CardTitle>Question Bank</CardTitle>
+                <CardDescription>
+                    Manage the reusable list of questions, categorized by sport.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="Cricket" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto">
+                        {sports.map((sport) => (
+                        <TabsTrigger key={sport} value={sport} className="flex items-center gap-2">
+                           <SportIcon sport={sport} className="w-4 h-4" />
+                            {sport}
+                        </TabsTrigger>
+                        ))}
+                    </TabsList>
+                     {sports.map((sport) => (
+                        <TabsContent key={sport} value={sport} className="mt-4">
+                           {renderQuestionBankForSport(sport)}
+                        </TabsContent>
+                    ))}
+                </Tabs>
             </CardContent>
         </Card>
     );
@@ -176,7 +208,7 @@ export default function QandAPage() {
     return (
         <Tabs defaultValue="results" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="results">Match Results & Settlement</TabsTrigger>
+                <TabsTrigger value="results">Match Results &amp; Settlement</TabsTrigger>
                 <TabsTrigger value="bank">Question Bank</TabsTrigger>
             </TabsList>
             <TabsContent value="results" className="mt-4">

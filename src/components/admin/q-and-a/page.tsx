@@ -208,7 +208,7 @@ export default function QandAPage() {
     return (
         <Tabs defaultValue="results" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="results">Match Results & Settlement</TabsTrigger>
+                <TabsTrigger value="results">Match Results &amp; Settlement</TabsTrigger>
                 <TabsTrigger value="bank">Question Bank</TabsTrigger>
             </TabsList>
             <TabsContent value="results" className="mt-4">
