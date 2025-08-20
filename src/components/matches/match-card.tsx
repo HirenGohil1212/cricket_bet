@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from 'next/image';
@@ -105,10 +106,10 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                   <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-4 border-card shadow-lg bg-background group-hover:scale-110 transition-transform duration-300">
                     <Image src={teamA.logoUrl} alt={teamA.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
                   </div>
-                  {status === 'Finished' && (
+                  {status === 'Finished' && winner === teamA.name && (
                     <div className="flex items-center gap-1.5 mt-1">
-                        {winner === teamA.name && <Trophy className="h-4 w-4 text-amber-400" />}
-                        <p className={cn("font-bold text-sm", winner === teamA.name ? "text-primary" : "text-muted-foreground")}>{winner === teamA.name ? 'Winner' : 'Lost'}</p>
+                        <Trophy className="h-4 w-4 text-amber-400" />
+                        <p className="font-bold text-sm text-primary">Winner</p>
                     </div>
                   )}
               </div>
@@ -127,10 +128,10 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                   <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-4 border-card shadow-lg bg-background group-hover:scale-110 transition-transform duration-300">
                     <Image src={teamB.logoUrl} alt={teamB.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
                   </div>
-                   {status === 'Finished' && (
+                   {status === 'Finished' && winner === teamB.name && (
                     <div className="flex items-center gap-1.5 mt-1">
-                        {winner === teamB.name && <Trophy className="h-4 w-4 text-amber-400" />}
-                        <p className={cn("font-bold text-sm", winner === teamB.name ? "text-primary" : "text-muted-foreground")}>{winner === teamB.name ? 'Winner' : 'Lost'}</p>
+                        <Trophy className="h-4 w-4 text-amber-400" />
+                        <p className="font-bold text-sm text-primary">Winner</p>
                     </div>
                   )}
               </div>
