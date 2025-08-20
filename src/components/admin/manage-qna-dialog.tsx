@@ -15,6 +15,7 @@ import { SettlementResultsDialog } from './settlement-results-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
+import { Separator } from '../ui/separator';
 
 type ResultState = {
     questionId: string;
@@ -229,14 +230,16 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                     <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
                         <div className="space-y-6">
                            {questions.length > 0 ? (
-                                match.isSpecialMatch ? (
-                                    <div className="space-y-6">
-                                        <PlayerResultGrid team={match.teamA} teamSide="teamA" />
-                                        <PlayerResultGrid team={match.teamB} teamSide="teamB" />
-                                    </div>
-                                ) : (
+                                <div className="space-y-6">
+                                    {match.isSpecialMatch && (
+                                        <>
+                                            <PlayerResultGrid team={match.teamA} teamSide="teamA" />
+                                            <PlayerResultGrid team={match.teamB} teamSide="teamB" />
+                                            <Separator /> 
+                                        </>
+                                    )}
                                     <TeamResultGrid />
-                                )
+                                </div>
                            ) : (
                                 <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
                            )}

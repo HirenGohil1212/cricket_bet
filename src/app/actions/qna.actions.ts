@@ -277,13 +277,13 @@ export async function settleMatchAndPayouts(matchId: string) {
 
         // Validate that all active questions have results
         for (const q of activeQuestions) {
+             if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
+                return { error: `Question "${q.question}" is missing a valid team result. Please save all results before settling.` };
+             }
+
              if (isSpecialMatch) {
                 if (!q.playerResult || typeof q.playerResult !== 'object' || Object.keys(q.playerResult).length === 0) {
                     return { error: `Player results for question "${q.question}" are missing or invalid. Please save all player results before settling.` };
-                }
-            } else {
-                 if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
-                    return { error: `Question "${q.question}" is missing a valid text result. Please save all results before settling.` };
                 }
             }
         }
