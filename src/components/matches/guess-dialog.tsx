@@ -336,14 +336,18 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <CommandEmpty>No player found.</CommandEmpty>
                              <CommandGroup>
                                 {players.map(player => (
-                                    <CommandItem key={player.name} onSelect={() => {
-                                        const isSelected = selectedPlayers.some(p => p.name === player.name);
-                                        if (isSelected) {
-                                            setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
-                                        } else {
-                                            setSelectedPlayers([...selectedPlayers, player]);
-                                        }
-                                    }}>
+                                    <CommandItem 
+                                        key={player.name} 
+                                        onSelect={(e) => {
+                                            e.preventDefault(); // This is the crucial part to prevent closing
+                                            const isSelected = selectedPlayers.some(p => p.name === player.name);
+                                            if (isSelected) {
+                                                setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
+                                            } else {
+                                                setSelectedPlayers([...selectedPlayers, player]);
+                                            }
+                                        }}
+                                    >
                                          <Checkbox
                                             checked={selectedPlayers.some(p => p.name === player.name)}
                                             className="mr-2"
@@ -513,79 +517,50 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                           </div>
                         )}
 
-                        {bettingMode === 'qna' && match.allowOneSidedBets && (
-                            <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
-                                <Label className="text-sm font-semibold text-center block">Bet on</Label>
-                                <RadioGroup
-                                    value={betOnSide}
-                                    onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
-                                    className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="teamA" id="r-teamA" />
-                                        <Label htmlFor="r-teamA" className="text-xs truncate">{match.teamA.name}</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="teamB" id="r-teamB" />
-                                        <Label htmlFor="r-teamB" className="text-xs truncate">{match.teamB.name}</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="both" id="r-both" />
-                                        <Label htmlFor="r-both" className="text-xs">Both</Label>
-                                    </div>
-                                </RadioGroup>
-                            </div>
-                        )}
-
                         {bettingMode === 'player' ? renderPlayerBetUI() : (
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-3">
-                                <div className="font-semibold text-center">{match.teamA.name}</div>
-                                <div></div>
-                                <div className="font-semibold text-center">{match.teamB.name}</div>
-
-                                {questions.map((q) => (
-                                    <React.Fragment key={q.id}>
-                                    {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <FormField
-                                            control={form.control}
-                                            name={`predictions.${q.id}.teamA`}
-                                            render={({ field }) => (
-                                                <FormItem className="w-full">
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="Ans"
-                                                            {...field}
-                                                            className="text-center"
-                                                            onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    )}
-                                    
-                                    {betOnSide === 'teamB' && match.allowOneSidedBets && <div />}
-
-                                    <div className="text-sm font-semibold text-center text-muted-foreground shrink-0">
-                                        {q.question}
+                           <>
+                                {match.allowOneSidedBets && (
+                                    <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
+                                        <Label className="text-sm font-semibold text-center block">Bet on</Label>
+                                        <RadioGroup
+                                            value={betOnSide}
+                                            onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
+                                            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="teamA" id="r-teamA" />
+                                                <Label htmlFor="r-teamA" className="text-xs truncate">{match.teamA.name}</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="teamB" id="r-teamB" />
+                                                <Label htmlFor="r-teamB" className="text-xs truncate">{match.teamB.name}</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="both" id="r-both" />
+                                                <Label htmlFor="r-both" className="text-xs">Both</Label>
+                                            </div>
+                                        </RadioGroup>
                                     </div>
+                                )}
+                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-3">
+                                    <div className="font-semibold text-center">{match.teamA.name}</div>
+                                    <div></div>
+                                    <div className="font-semibold text-center">{match.teamB.name}</div>
 
-                                    {betOnSide === 'teamA' && match.allowOneSidedBets && <div />}
-                                    
-                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <FormField
+                                    {questions.map((q) => (
+                                        <React.Fragment key={q.id}>
+                                        {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                            <FormField
                                                 control={form.control}
-                                                name={`predictions.${q.id}.teamB`}
+                                                name={`predictions.${q.id}.teamA`}
                                                 render={({ field }) => (
                                                     <FormItem className="w-full">
                                                         <FormControl>
                                                             <Input
                                                                 type="number"
                                                                 placeholder="Ans"
-                                                                className="text-center"
                                                                 {...field}
+                                                                className="text-center"
                                                                 onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                                                             />
                                                         </FormControl>
@@ -593,10 +568,40 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                     </FormItem>
                                                 )}
                                             />
-                                    )}
-                                    </React.Fragment>
-                                ))}
-                            </div>
+                                        )}
+                                        
+                                        {betOnSide === 'teamB' && match.allowOneSidedBets && <div />}
+
+                                        <div className="text-sm font-semibold text-center text-muted-foreground shrink-0">
+                                            {q.question}
+                                        </div>
+
+                                        {betOnSide === 'teamA' && match.allowOneSidedBets && <div />}
+                                        
+                                        {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                            <FormField
+                                                    control={form.control}
+                                                    name={`predictions.${q.id}.teamB`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="w-full">
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    placeholder="Ans"
+                                                                    className="text-center"
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                        )}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </>
                         )}
                        </div>
                     ) : (
