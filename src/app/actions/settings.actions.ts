@@ -145,7 +145,6 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         { amount: 29, payout: 60 },
     ];
     
-    // Create the default structure, ensuring Cricket has the correct nested object.
     const defaultSettings: BettingSettings = {
         betOptions: {
             Cricket: {
@@ -153,7 +152,6 @@ export async function getBettingSettings(): Promise<BettingSettings> {
                 oneSided: [...defaultBetOptions],
                 player: [...defaultBetOptions],
             },
-            // Reduce other sports into the betOptions object
             ...sports.filter(s => s !== 'Cricket').reduce((acc, sport) => {
                 acc[sport] = [...defaultBetOptions];
                 return acc;
@@ -165,37 +163,39 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         const docRef = doc(db, 'adminSettings', 'betting');
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists() && docSnap.data().betOptions) {
-             const dbData = docSnap.data() as { betOptions: Partial<BettingSettings['betOptions']> };
-             const dbOptions = dbData.betOptions;
-
-             // Start with the correct default structure
-             const finalSettings = JSON.parse(JSON.stringify(defaultSettings));
-             
-             // Loop through all sports and apply saved settings if they exist and are valid
-             sports.forEach(sport => {
-                 if (sport === 'Cricket') {
-                    // Check if the saved Cricket data has the correct nested structure
-                    const cricketData = dbOptions.Cricket as CricketBetOptions;
-                    if (cricketData && cricketData.general && cricketData.oneSided && cricketData.player) {
-                        finalSettings.betOptions.Cricket = cricketData;
-                    }
-                 } else {
-                    // For other sports, check if the saved data is a valid array
-                    const sportData = dbOptions[sport] as BetOption[];
-                    if (Array.isArray(sportData) && sportData.length > 0) {
-                        finalSettings.betOptions[sport] = sportData;
-                    }
-                 }
-             });
-             
-             return finalSettings;
+        if (!docSnap.exists() || !docSnap.data()?.betOptions) {
+            // Document doesn't exist or is empty, create it with defaults
+            await setDoc(docRef, defaultSettings);
+            return defaultSettings;
         }
-        // Return default settings if document doesn't exist or is malformed
-        return defaultSettings;
+
+        const dbData = docSnap.data() as { betOptions: Partial<BettingSettings['betOptions']> };
+        const dbOptions = dbData.betOptions;
+
+        // Start with the correct default structure
+        const finalSettings = JSON.parse(JSON.stringify(defaultSettings));
+        
+        // Loop through all sports and apply saved settings if they exist and are valid
+        sports.forEach(sport => {
+            if (sport === 'Cricket') {
+               // Check if the saved Cricket data has the correct nested structure
+               const cricketData = dbOptions.Cricket as CricketBetOptions;
+               if (cricketData && cricketData.general && cricketData.oneSided && cricketData.player) {
+                   finalSettings.betOptions.Cricket = cricketData;
+               }
+            } else {
+               // For other sports, check if the saved data is a valid array
+               const sportData = dbOptions[sport] as BetOption[];
+               if (Array.isArray(sportData) && sportData.length > 0) {
+                   finalSettings.betOptions[sport] = sportData;
+               }
+            }
+        });
+        
+        return finalSettings;
+
     } catch (error) {
         console.error("Error fetching betting settings:", error);
-         // Default on error
         return defaultSettings;
     }
 }
@@ -213,7 +213,7 @@ export async function updateBettingSettings(data: BettingSettingsFormValues) {
     try {
         const docRef = doc(db, 'adminSettings', 'betting');
         // The data is already in the correct format { betOptions: { ... } }
-        await setDoc(docRef, validatedFields.data);
+        await setDoc(docRef, validatedFields.data, { merge: true });
         
         // Revalidate paths where these settings are used
         revalidatePath('/admin/betting-settings');

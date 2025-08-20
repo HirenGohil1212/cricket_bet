@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +6,6 @@ import { useFieldArray, useForm, FormProvider, useFormContext } from "react-hook
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2, CheckCircle, Loader2 } from "lucide-react";
-import { debounce } from 'lodash';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +21,10 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { BettingSettings, Sport } from "@/lib/types";
 import { sports } from "@/lib/data";
-import { bettingSettingsSchema, type BettingSettingsFormValues } from "@/lib/schemas";
+import { bettingSettingsSchema, type BettingSettingsFormValues, betOptionSchema } from "@/lib/schemas";
 import { updateBettingSettings } from "@/app/actions/settings.actions";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { SportIcon } from "../icons";
-import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 
 interface BettingSettingsFormProps {
@@ -36,9 +33,7 @@ interface BettingSettingsFormProps {
 
 const defaultOption = { amount: 10, payout: 20 };
 
-type SavingState = 'idle' | 'saving' | 'saved';
-
-function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, onFieldChange: () => void }) {
+function BetOptionFields({ namePrefix }: { namePrefix: string }) {
     const { control } = useFormContext<BettingSettingsFormValues>();
     const { fields, append, remove } = useFieldArray({
         control,
@@ -57,7 +52,7 @@ function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, on
                                 <FormItem>
                                     <FormLabel>Bet Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => { field.onChange(e.target.value === '' ? 0 : Number(e.target.value)); onFieldChange(); }}/>
+                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -70,7 +65,7 @@ function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, on
                                 <FormItem>
                                     <FormLabel>Payout Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => { field.onChange(e.target.value === '' ? 0 : Number(e.target.value)); onFieldChange(); }}/>
+                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -83,7 +78,7 @@ function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, on
                             variant="ghost"
                             size="icon"
                             className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => { remove(index); onFieldChange(); }}
+                            onClick={() => remove(index)}
                         >
                             <Trash2 className="h-4 w-4" />
                             <span className="sr-only">Remove Option</span>
@@ -96,7 +91,7 @@ function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, on
                 variant="outline"
                 size="sm"
                 className="mt-4"
-                onClick={() => { append(defaultOption); onFieldChange(); }}
+                onClick={() => append(defaultOption)}
                 disabled={fields.length >= 5}
             >
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -106,120 +101,100 @@ function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, on
     )
 }
 
-function SportBettingForm({ sport, onFieldChange }: { sport: Sport, onFieldChange: () => void }) {
+function SportBettingForm({ sport, initialData, onSave }: { sport: Sport, initialData: BettingSettings, onSave: (data: BettingSettingsFormValues) => Promise<any> }) {
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const form = useForm<BettingSettingsFormValues>({
+        resolver: zodResolver(bettingSettingsSchema),
+        defaultValues: initialData,
+    });
+    
+    async function onSubmit(data: BettingSettingsFormValues) {
+        setIsSubmitting(true);
+        await onSave(data);
+        setIsSubmitting(false);
+    }
+    
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <SportIcon sport={sport} className="w-5 h-5" />
-                        {sport} Settings
-                    </div>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-               {sport === 'Cricket' ? (
-                 <div className="space-y-6">
-                    <div>
-                        <h3 className="font-semibold text-lg">General Bets</h3>
-                        <p className="text-sm text-muted-foreground">For standard bets on Q&A where both team predictions are made.</p>
-                        <div className="mt-4">
-                           <BetOptionFields namePrefix="betOptions.Cricket.general" onFieldChange={onFieldChange} />
-                        </div>
-                    </div>
-                    <Separator />
-                    <div>
-                        <h3 className="font-semibold text-lg">One-Sided Bets</h3>
-                        <p className="text-sm text-muted-foreground">For bets where the user only predicts for one team (if enabled on the match).</p>
-                         <div className="mt-4">
-                            <BetOptionFields namePrefix="betOptions.Cricket.oneSided" onFieldChange={onFieldChange} />
+        <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <SportIcon sport={sport} className="w-5 h-5" />
+                                {sport} Settings
+                            </div>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                       {sport === 'Cricket' ? (
+                         <div className="space-y-6">
+                            <div>
+                                <h3 className="font-semibold text-lg">General Bet</h3>
+                                <p className="text-sm text-muted-foreground">For standard bets where both team predictions are made.</p>
+                                <div className="mt-4">
+                                   <BetOptionFields namePrefix="betOptions.Cricket.general" />
+                                </div>
+                            </div>
+                            <Separator />
+                            <div>
+                                <h3 className="font-semibold text-lg">One Side Bet</h3>
+                                <p className="text-sm text-muted-foreground">For bets where the user only predicts for one team (if enabled on the match).</p>
+                                 <div className="mt-4">
+                                    <BetOptionFields namePrefix="betOptions.Cricket.oneSided" />
+                                 </div>
+                            </div>
+                             <Separator />
+                            <div>
+                                <h3 className="font-semibold text-lg">Player Bet</h3>
+                                <p className="text-sm text-muted-foreground">For bets on individual player performance (if enabled on the match).</p>
+                                 <div className="mt-4">
+                                    <BetOptionFields namePrefix="betOptions.Cricket.player" />
+                                </div>
+                            </div>
                          </div>
-                    </div>
-                     <Separator />
-                    <div>
-                        <h3 className="font-semibold text-lg">Player Bets</h3>
-                        <p className="text-sm text-muted-foreground">For bets on individual player performance (if enabled on the match).</p>
-                         <div className="mt-4">
-                            <BetOptionFields namePrefix="betOptions.Cricket.player" onFieldChange={onFieldChange} />
-                        </div>
-                    </div>
-                 </div>
-               ) : (
-                  <BetOptionFields namePrefix={`betOptions.${sport}`} onFieldChange={onFieldChange} />
-               )}
-            </CardContent>
-        </Card>
+                       ) : (
+                          <BetOptionFields namePrefix={`betOptions.${sport}`} />
+                       )}
+                    </CardContent>
+                    <CardFooter className="flex justify-end">
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {isSubmitting ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </CardFooter>
+                 </Card>
+            </form>
+        </FormProvider>
     );
 }
 
 export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
-  
-  const [savingState, setSavingState] = React.useState<SavingState>('idle');
   const { toast } = useToast();
+  const router = useRouter();
 
-  const form = useForm<BettingSettingsFormValues>({
-    resolver: zodResolver(bettingSettingsSchema),
-    defaultValues: {
-        betOptions: initialData.betOptions
-    },
-  });
-
-  const { getValues } = form;
-
-  const debouncedSave = React.useCallback(
-    debounce(async () => {
-        const currentData = getValues();
-        const validation = bettingSettingsSchema.safeParse(currentData);
-        
-        if (!validation.success) {
-            // This can happen if a required field is emptied.
-            // We can show an error or just wait for the user to fix it.
-            // For now, we'll just log it and not save.
-            console.error("Validation failed on auto-save:", validation.error.flatten());
-            setSavingState('idle');
-            return;
-        }
-
-        setSavingState('saving');
-        const result = await updateBettingSettings(validation.data);
-        if (result.error) {
-            toast({ variant: "destructive", title: "Auto-save Failed", description: result.error });
-            setSavingState('idle');
-        } else {
-            setSavingState('saved');
-            setTimeout(() => setSavingState('idle'), 2000); // Reset after 2s
-        }
-    }, 1500),
-    [getValues, toast]
-  );
-  
-  const handleFieldChange = () => {
-      setSavingState('saving');
-      debouncedSave();
-  }
-
+  const handleSave = async (data: BettingSettingsFormValues) => {
+    const result = await updateBettingSettings(data);
+    if (result.error) {
+        toast({ variant: "destructive", title: "Save Failed", description: result.error });
+    } else {
+        toast({ title: "Success", description: result.success });
+        router.refresh();
+    }
+  };
 
   return (
-    <FormProvider {...form}>
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <FormDescription>
-                    Define the fixed bet amounts available to users and their corresponding payout. Changes are saved automatically.
-                </FormDescription>
-                <div className={cn("flex items-center gap-1.5 text-sm text-muted-foreground transition-opacity", savingState !== 'idle' ? 'opacity-100' : 'opacity-0')}>
-                    {savingState === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {savingState === 'saving' && <span>Saving...</span>}
-                    {savingState === 'saved' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                    {savingState === 'saved' && <span className="text-green-500">Saved</span>}
-                </div>
-            </div>
+    <div className="space-y-8">
+        <FormDescription>
+            Define the fixed bet amounts available to users and their corresponding payout.
+        </FormDescription>
 
-            <div className="space-y-6">
-                {sports.map((sport) => (
-                    <SportBettingForm key={sport} sport={sport} onFieldChange={handleFieldChange} />
-                ))}
-            </div>
+        <div className="space-y-6">
+            {sports.map((sport) => (
+                <SportBettingForm key={sport} sport={sport} initialData={initialData} onSave={handleSave}/>
+            ))}
         </div>
-    </FormProvider>
+    </div>
   )
 }
