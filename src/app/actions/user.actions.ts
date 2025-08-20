@@ -2,9 +2,9 @@
 
 'use server';
 
-import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { UserBankAccount } from '@/lib/types';
+import type { UserBankAccount, UserProfile } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 import { deleteFileByPath } from '@/lib/storage';
@@ -136,5 +136,35 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
     } catch (error: any) {
         console.error("Error deleting data history: ", error);
         return { error: 'Failed to delete data history. Check server logs for details.' };
+    }
+}
+
+
+// New function to get users referred by a specific user
+export async function getReferredUsers(referrerId: string): Promise<UserProfile[]> {
+    if (!referrerId) {
+        return [];
+    }
+    try {
+        const usersCol = collection(db, 'users');
+        const q = query(usersCol, where('referredBy', '==', referrerId), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const referredUsers = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                uid: doc.id,
+                name: data.name,
+                phoneNumber: data.phoneNumber,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+                walletBalance: data.walletBalance,
+                role: data.role,
+                referralCode: data.referralCode,
+            } as UserProfile;
+        });
+        return referredUsers;
+    } catch (error) {
+        console.error("Error fetching referred users:", error);
+        return [];
     }
 }
