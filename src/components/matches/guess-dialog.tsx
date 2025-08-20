@@ -280,6 +280,34 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         </DialogHeader>
         <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <div className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="amount"
+                      render={({ field }) => (
+                         <FormItem>
+                            <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
+                             <FormControl>
+                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                  {(betOptions || []).map((opt) => (
+                                    <Button
+                                      key={opt.amount}
+                                      type="button"
+                                      variant={amount === opt.amount ? "default" : "secondary"}
+                                      onClick={() => field.onChange(opt.amount)}
+                                      className="font-bold"
+                                    >
+                                      INR {opt.amount}
+                                    </Button>
+                                  ))}
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                         </FormItem>
+                      )}
+                    />
+                </div>
+                
                 <ScrollArea className="h-72 pr-4">
                   <div className="space-y-4">
                     {isLoading ? (
@@ -327,24 +355,82 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             </div>
                         )}
                         
-                        {questions.map((q) => (
-                          <div key={q.id} className="p-4 border rounded-lg space-y-3">
-                             <p className="text-sm font-semibold text-center block text-muted-foreground shrink-0 my-2 sm:my-0">
-                                {q.question}
-                            </p>
-                            {bettingMode === 'qna' ? (
-                                <div className={cn("flex items-center justify-around gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'flex-col' : 'flex-col sm:flex-row')}>
-                                    {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <FormField
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-3">
+                             <div className="font-semibold text-center">{match.teamA.name}</div>
+                             <div></div>
+                             <div className="font-semibold text-center">{match.teamB.name}</div>
+
+                             {questions.map((q) => (
+                                <React.Fragment key={q.id}>
+                                  {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                    bettingMode === 'qna' ? (
+                                      <FormField
+                                          control={form.control}
+                                          name={`predictions.${q.id}.teamA`}
+                                          render={({ field }) => (
+                                              <FormItem className="w-full">
+                                                  <FormControl>
+                                                      <Input
+                                                          type="number"
+                                                          placeholder="Ans"
+                                                          {...field}
+                                                          className="text-center"
+                                                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                                      />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                              </FormItem>
+                                          )}
+                                      />
+                                    ) : (
+                                       <FormField
                                             control={form.control}
                                             name={`predictions.${q.id}.teamA`}
                                             render={({ field }) => (
                                                 <FormItem className="w-full">
-                                                    <FormLabel className="text-xs">{match.teamA.name}</FormLabel>
+                                                    <FormControl>
+                                                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col items-center">
+                                                            {(match.teamA.players && match.teamA.players.length > 0) ? (
+                                                                match.teamA.players.map((player) => (
+                                                                    <FormItem key={`${player.name}-a`} className="flex items-center space-x-2">
+                                                                        <FormControl>
+                                                                            <RadioGroupItem value={player.name} id={`${q.id}-${player.name}-a`}/>
+                                                                        </FormControl>
+                                                                        <Label htmlFor={`${q.id}-${player.name}-a`} className="font-normal cursor-pointer">
+                                                                            <Avatar className="h-8 w-8"><AvatarImage src={player.imageUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
+                                                                        </Label>
+                                                                    </FormItem>
+                                                                ))
+                                                            ) : <div className="text-xs text-muted-foreground p-2">N/A</div>}
+                                                        </RadioGroup>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )
+                                  )}
+                                  
+                                  {betOnSide === 'teamB' && match.allowOneSidedBets && <div />}
+
+                                  <div className="text-sm font-semibold text-center text-muted-foreground shrink-0">
+                                      {q.question}
+                                  </div>
+
+                                  {betOnSide === 'teamA' && match.allowOneSidedBets && <div />}
+                                  
+                                  {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                     bettingMode === 'qna' ? (
+                                       <FormField
+                                            control={form.control}
+                                            name={`predictions.${q.id}.teamB`}
+                                            render={({ field }) => (
+                                                <FormItem className="w-full">
                                                     <FormControl>
                                                         <Input
                                                             type="number"
-                                                            placeholder="Team A prediction..."
+                                                            placeholder="Ans"
+                                                            className="text-center"
                                                             {...field}
                                                             onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                                                         />
@@ -353,97 +439,37 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                 </FormItem>
                                             )}
                                         />
-                                    )}
-                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
+                                     ) : (
                                         <FormField
                                             control={form.control}
                                             name={`predictions.${q.id}.teamB`}
                                             render={({ field }) => (
                                                 <FormItem className="w-full">
-                                                    <FormLabel className="text-xs">{match.teamB.name}</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="Team B prediction..."
-                                                            {...field}
-                                                            onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    )}
-                                </div>
-                            ) : ( // Player betting mode
-                                <div className={cn("flex items-center justify-around gap-4", betOnSide !== 'both' && match.allowOneSidedBets ? 'flex-col' : 'flex-col sm:flex-row')}>
-                                    {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <FormField
-                                            control={form.control}
-                                            name={`predictions.${q.id}.teamA`}
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-3 w-full">
-                                                    <FormLabel className="text-sm font-semibold text-center block">{match.teamA.name}</FormLabel>
-                                                    <FormControl>
-                                                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
-                                                            <ScrollArea className="h-40 w-full rounded-md border p-2">
-                                                                {(match.teamA.players && match.teamA.players.length > 0) ? (
-                                                                    match.teamA.players.map((player) => (
-                                                                        <FormItem key={`${player.name}-a`} className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted cursor-pointer">
-                                                                            <FormControl>
-                                                                                <RadioGroupItem value={player.name} id={`${q.id}-${player.name}-a`}/>
-                                                                            </FormControl>
-                                                                            <Label htmlFor={`${q.id}-${player.name}-a`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
-                                                                                <Avatar className="h-8 w-8"><AvatarImage src={player.imageUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                                                                <span className="truncate">{player.name}</span>
-                                                                            </Label>
-                                                                        </FormItem>
-                                                                    ))
-                                                                ) : <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>No players listed.</p></div>}
-                                                            </ScrollArea>
+                                                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col items-center">
+                                                            {(match.teamB.players && match.teamB.players.length > 0) ? (
+                                                                match.teamB.players.map((player) => (
+                                                                    <FormItem key={`${player.name}-b`} className="flex items-center space-x-2">
+                                                                        <FormControl>
+                                                                            <RadioGroupItem value={player.name} id={`${q.id}-${player.name}-b`}/>
+                                                                        </FormControl>
+                                                                        <Label htmlFor={`${q.id}-${player.name}-b`} className="font-normal cursor-pointer">
+                                                                            <Avatar className="h-8 w-8"><AvatarImage src={player.imageUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
+                                                                        </Label>
+                                                                    </FormItem>
+                                                                ))
+                                                            ) : <div className="text-xs text-muted-foreground p-2">N/A</div>}
                                                         </RadioGroup>
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
-                                    )}
-                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <FormField
-                                            control={form.control}
-                                            name={`predictions.${q.id}.teamB`}
-                                            render={({ field }) => (
-                                                <FormItem className="space-y-3 w-full">
-                                                    <FormLabel className="text-sm font-semibold text-center block">{match.teamB.name}</FormLabel>
-                                                    <FormControl>
-                                                        <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-1">
-                                                            <ScrollArea className="h-40 w-full rounded-md border p-2">
-                                                                {(match.teamB.players && match.teamB.players.length > 0) ? (
-                                                                    match.teamB.players.map((player) => (
-                                                                        <FormItem key={`${player.name}-b`} className="flex items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted cursor-pointer">
-                                                                            <FormControl>
-                                                                                <RadioGroupItem value={player.name} id={`${q.id}-${player.name}-b`}/>
-                                                                            </FormControl>
-                                                                            <Label htmlFor={`${q.id}-${player.name}-b`} className="font-normal flex items-center gap-2 cursor-pointer w-full">
-                                                                                <Avatar className="h-8 w-8"><AvatarImage src={player.imageUrl} alt={player.name} /><AvatarFallback>{player.name.charAt(0)}</AvatarFallback></Avatar>
-                                                                                <span className="truncate">{player.name}</span>
-                                                                            </Label>
-                                                                        </FormItem>
-                                                                    ))
-                                                                ) : <div className="flex items-center justify-center h-full text-sm text-muted-foreground"><p>No players listed.</p></div>}
-                                                            </ScrollArea>
-                                                        </RadioGroup>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    )}
-                                </div>
-                            )}
-                            <FormMessage>{form.formState.errors.predictions?.[q.id]?.root?.message}</FormMessage>
-                          </div>
-                        ))}
+                                     )
+                                  )}
+                                </React.Fragment>
+                            ))}
+                        </div>
                        </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-12">
@@ -452,36 +478,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     )}
                   </div>
                 </ScrollArea>
-
-                <div className="space-y-3 pt-4">
-                    <FormField
-                      control={form.control}
-                      name="amount"
-                      render={({ field }) => (
-                         <FormItem>
-                            <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
-                             <FormControl>
-                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                  {(betOptions || []).map((opt) => (
-                                    <Button
-                                      key={opt.amount}
-                                      type="button"
-                                      variant={amount === opt.amount ? "default" : "secondary"}
-                                      onClick={() => field.onChange(opt.amount)}
-                                      className="font-bold"
-                                    >
-                                      INR {opt.amount}
-                                    </Button>
-                                  ))}
-                                </div>
-                            </FormControl>
-                            <FormMessage />
-                         </FormItem>
-                      )}
-                    />
-                </div>
-
-                <div className="p-4 bg-accent/10 rounded-lg text-center">
+                
+                <div className="p-4 bg-accent/10 rounded-lg text-center mt-4">
                   <p className="text-sm text-muted-foreground">Potential Win</p>
                   <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
                 </div>
