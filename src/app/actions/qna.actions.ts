@@ -206,7 +206,7 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
 export async function saveQuestionResults(
     matchId: string, 
     results: Record<string, { teamA: string, teamB: string }>,
-    playerResults?: Record<string, { teamA: string, teamB: string }>
+    playerResults?: Record<string, any>
 ) {
     if (!matchId) return { error: 'Match ID is required.' };
 
@@ -220,12 +220,12 @@ export async function saveQuestionResults(
         const playerResultValue = playerResults?.[questionId];
         
         const updateData: { result?: any; playerResult?: any } = {};
-
+        
         if (resultValue && (resultValue.teamA?.trim() || resultValue.teamB?.trim())) {
             updateData.result = resultValue;
         }
 
-        if (playerResultValue && (playerResultValue.teamA?.trim() || playerResultValue.teamB?.trim())) {
+        if (playerResultValue && Object.keys(playerResultValue).length > 0) {
             updateData.playerResult = playerResultValue;
         }
 
@@ -277,18 +277,13 @@ export async function settleMatchAndPayouts(matchId: string) {
 
         // Validate that all active questions have results
         for (const q of activeQuestions) {
-             // Standard text result is always required for display purposes.
-            if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
-                return { error: `Question "${q.question}" is missing a valid text result. Please save all results before settling.` };
-            }
-             // For special matches, player results are also required for settlement.
-            if (isSpecialMatch) {
-                if (!q.playerResult || typeof q.playerResult.teamA !== 'string' || typeof q.playerResult.teamB !== 'string') {
-                    return { error: `Player result for question "${q.question}" is malformed. Please save results again.` };
+             if (isSpecialMatch) {
+                if (!q.playerResult || typeof q.playerResult !== 'object' || Object.keys(q.playerResult).length === 0) {
+                    return { error: `Player results for question "${q.question}" are missing or invalid. Please save all player results before settling.` };
                 }
-                // Only throw an error if BOTH are empty. Allows for one-sided results.
-                if (!q.playerResult.teamA && !q.playerResult.teamB) {
-                    return { error: `Player result for question "${q.question}" is missing. Please select at least one winning player before settling.` };
+            } else {
+                 if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
+                    return { error: `Question "${q.question}" is missing a valid text result. Please save all results before settling.` };
                 }
             }
         }
@@ -346,44 +341,57 @@ export async function settleMatchAndPayouts(matchId: string) {
             
             let isWinner = true;
 
-            if (betData.predictions.length !== activeQuestions.length) {
-                isWinner = false;
-            } else {
+            if (betType === 'player') {
+                // For player bets, every single prediction must match
                 for (const prediction of betData.predictions) {
-                    if (!isWinner) break; // No need to check further if already lost
-
-                    const question = activeQuestions.find(q => q.id === prediction.questionId);
-                    if (!question) {
+                    const [playerName, questionId] = prediction.questionId.split(':');
+                    const teamSide = matchData.teamA.players.some((p: any) => p.name === playerName) ? 'teamA' : 'teamB';
+                    
+                    const question = activeQuestions.find(q => q.id === questionId);
+                    if (!question || !question.playerResult) {
                         isWinner = false;
-                        continue;
+                        break;
                     }
                     
-                    const predictedAnswer = prediction.predictedAnswer;
-                    if (!predictedAnswer || typeof predictedAnswer.teamA !== 'string' || typeof predictedAnswer.teamB !== 'string') {
-                         isWinner = false;
-                         continue;
-                    }
-
-                    const normalizedPredictedA = predictedAnswer.teamA.trim().toLowerCase();
-                    const normalizedPredictedB = predictedAnswer.teamB.trim().toLowerCase();
+                    const correctAnswer = (question.playerResult as any)?.[teamSide]?.[playerName];
+                    const predictedAnswer = teamSide === 'teamA' ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
                     
-                    let correctA = '';
-                    let correctB = '';
-
-                    if (betType === 'player') {
-                        correctA = (question.playerResult?.teamA ?? '').trim().toLowerCase();
-                        correctB = (question.playerResult?.teamB ?? '').trim().toLowerCase();
-                    } else { // qna
-                        correctA = (question.result?.teamA ?? '').trim().toLowerCase();
-                        correctB = (question.result?.teamB ?? '').trim().toLowerCase();
-                    }
-
-                    if (normalizedPredictedA !== correctA || normalizedPredictedB !== correctB) {
+                    if (String(correctAnswer).toLowerCase() !== String(predictedAnswer).toLowerCase()) {
                         isWinner = false;
+                        break;
+                    }
+                }
+            } else { // QnA mode
+                if (betData.predictions.length !== activeQuestions.length) {
+                    isWinner = false;
+                } else {
+                    for (const prediction of betData.predictions) {
+                        if (!isWinner) break; // No need to check further if already lost
+
+                        const question = activeQuestions.find(q => q.id === prediction.questionId);
+                        if (!question) {
+                            isWinner = false;
+                            continue;
+                        }
+                        
+                        const predictedAnswer = prediction.predictedAnswer;
+                        if (!predictedAnswer || typeof predictedAnswer.teamA !== 'string' || typeof predictedAnswer.teamB !== 'string') {
+                            isWinner = false;
+                            continue;
+                        }
+
+                        const normalizedPredictedA = predictedAnswer.teamA.trim().toLowerCase();
+                        const normalizedPredictedB = predictedAnswer.teamB.trim().toLowerCase();
+                        
+                        const correctA = (question.result?.teamA ?? '').trim().toLowerCase();
+                        const correctB = (question.result?.teamB ?? '').trim().toLowerCase();
+
+                        if (normalizedPredictedA !== correctA || normalizedPredictedB !== correctB) {
+                            isWinner = false;
+                        }
                     }
                 }
             }
-
 
             if (isWinner) {
                 betUpdates.push({ ref: betRef, data: { status: 'Won' }});
