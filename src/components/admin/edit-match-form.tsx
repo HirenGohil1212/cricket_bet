@@ -245,7 +245,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
             questions: data.questions,
-            dummyUserId: data.dummyUserId === 'none' ? undefined : data.dummyUserId,
+            dummyUserId: data.dummyUserId,
             dummyAmount: data.dummyAmount,
             teamA: {
                 name: data.teamA || countryA!.name,
@@ -772,7 +772,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Dummy User</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingDummyUsers}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingDummyUsers}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a dummy user"} />

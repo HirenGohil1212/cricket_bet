@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where } from 'firebase/firestore';
@@ -254,8 +255,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             ...(existingMatchData.status !== 'Finished' && { status }),
             isSpecialMatch,
             allowOneSidedBets,
-            dummyUserId,
-            dummyAmount,
+            dummyUserId: dummyUserId === 'none' ? null : dummyUserId,
+            dummyAmount: dummyUserId === 'none' ? 0 : dummyAmount,
         });
         
         // ** NEW LOGIC **: Overwrite the questions for this match
