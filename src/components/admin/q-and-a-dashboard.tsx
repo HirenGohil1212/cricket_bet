@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +11,7 @@ import { useState, useCallback } from "react";
 import { QuestionTemplateDialog } from "./question-template-dialog";
 import { getMatches } from "@/app/actions/match.actions";
 import { Skeleton } from "../ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface QandADashboardProps {
     matches: Match[];
@@ -61,7 +63,14 @@ export function QandADashboard({ matches: initialMatches, initialTemplates }: Qa
       <Tabs defaultValue="Cricket" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto">
           {sports.map((sport) => (
-            <TabsTrigger key={sport} value={sport} className="flex flex-col sm:flex-row items-center gap-2 py-2">
+            <TabsTrigger 
+              key={sport} 
+              value={sport} 
+              className={cn(
+                "flex flex-col sm:flex-row items-center gap-2 py-2",
+                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg"
+              )}
+            >
               <span>{sport}</span>
             </TabsTrigger>
           ))}
