@@ -340,7 +340,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <CommandGroup>
                                 {players.map(player => (
                                     <CommandItem
-                                        key={player.name} 
+                                        key={player.name}
                                         onSelect={() => {
                                             const isSelected = selectedPlayers.some(p => p.name === player.name);
                                             if (isSelected) {
@@ -348,7 +348,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                             } else {
                                                 setSelectedPlayers([...selectedPlayers, player]);
                                             }
-                                            setPopoverOpen(true); // Keep it open
                                         }}
                                         className="cursor-pointer"
                                     >
@@ -636,3 +635,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
