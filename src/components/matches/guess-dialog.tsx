@@ -38,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 
 
 interface GuessDialogProps {
@@ -429,7 +430,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         </DialogHeader>
         <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                <div className="space-y-3">
+                 <div className="space-y-3">
                     <FormField
                       control={form.control}
                       name="amount"
@@ -593,3 +594,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
