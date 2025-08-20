@@ -252,7 +252,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }
 
   const amount = form.watch('amount');
-  const potentialWin = betOptions.find(opt => opt.amount === amount)?.payout || 0;
+  const potentialWin = betOptions?.find(opt => opt.amount === amount)?.payout || 0;
   if (!match) return null;
 
   return (
@@ -462,7 +462,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             <FormLabel className="font-headline text-lg">Select Bet Amount</FormLabel>
                              <FormControl>
                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                  {betOptions.map((opt) => (
+                                  {(betOptions || []).map((opt) => (
                                     <Button
                                       key={opt.amount}
                                       type="button"
