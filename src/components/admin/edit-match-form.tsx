@@ -1,11 +1,9 @@
-
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check } from "lucide-react";
+import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import Image from "next/image";
@@ -34,7 +32,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { sports, type Match, type Player } from "@/lib/types";
+import { sports, type Match, type Player, type Question } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { updateMatch } from "@/app/actions/match.actions";
 import { matchSchema, type MatchFormValues } from "@/lib/schemas";
@@ -43,6 +41,8 @@ import { Separator } from "../ui/separator";
 import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
 import { getPlayersBySport } from "@/app/actions/player.actions";
+import { getQuestionsForMatch } from "@/app/actions/qna.actions";
+import { Textarea } from "../ui/textarea";
 
 interface EditMatchFormProps {
     match: Match;
@@ -61,17 +61,21 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
   
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchSchema),
-    defaultValues: {
-        sport: match.sport,
-        teamA: match.teamA.name,
-        teamB: match.teamB.name,
-        teamACountry: match.teamA.countryCode,
-        teamBCountry: match.teamB.countryCode,
-        startTime: new Date(match.startTime),
-        isSpecialMatch: match.isSpecialMatch || false,
-        allowOneSidedBets: match.allowOneSidedBets || false,
-        teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
-        teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+    defaultValues: async () => {
+        const questions = await getQuestionsForMatch(match.id);
+        return {
+            sport: match.sport,
+            teamA: match.teamA.name,
+            teamB: match.teamB.name,
+            teamACountry: match.teamA.countryCode,
+            teamBCountry: match.teamB.countryCode,
+            startTime: new Date(match.startTime),
+            isSpecialMatch: match.isSpecialMatch || false,
+            allowOneSidedBets: match.allowOneSidedBets || false,
+            teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+            teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+            questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [{ question: "" }],
+        }
     }
   });
 
@@ -87,41 +91,12 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         }
     }
     fetchPlayers();
-  }, [selectedSport])
+  }, [selectedSport]);
   
-  React.useEffect(() => {
-    const defaultTeamAPlayers = match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [];
-    const defaultTeamBPlayers = match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [];
-
-    form.reset({
-        sport: match.sport,
-        teamA: match.teamA.name,
-        teamB: match.teamB.name,
-        teamACountry: match.teamA.countryCode,
-        teamBCountry: match.teamB.countryCode,
-        startTime: new Date(match.startTime),
-        isSpecialMatch: match.isSpecialMatch || false,
-        allowOneSidedBets: match.allowOneSidedBets || false,
-        teamAPlayers: defaultTeamAPlayers,
-        teamBPlayers: defaultTeamBPlayers,
-    });
-
-    setTeamAPreview(match.teamA.logoUrl);
-    setTeamBPreview(match.teamB.logoUrl);
-
-    const initialPlayerPreviewsA = defaultTeamAPlayers.reduce((acc, player, index) => {
-        if (player.playerImageUrl) acc[index] = player.playerImageUrl;
-        return acc;
-    }, {} as Record<number, string>);
-
-    const initialPlayerPreviewsB = defaultTeamBPlayers.reduce((acc, player, index) => {
-        if (player.playerImageUrl) acc[index] = player.playerImageUrl;
-        return acc;
-    }, {} as Record<number, string>);
-    
-    setPlayerPreviews({ teamA: initialPlayerPreviewsA, teamB: initialPlayerPreviewsB });
-
-  }, [match, form]);
+  const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({
+    control: form.control,
+    name: "questions"
+  });
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -195,6 +170,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             startTime: data.startTime,
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
+            questions: data.questions,
             teamA: {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
@@ -273,7 +249,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                         <CommandGroup>
                             {unselectedPlayers.map((player) => (
                                 <CommandItem
-                                    key={player.id}
+                                    key={player.name}
                                     value={player.name}
                                     onSelect={(currentValue) => {
                                         const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
@@ -600,6 +576,53 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             </Card>
         </div>
         
+        <Card>
+            <CardHeader>
+                <CardTitle>Betting Questions</CardTitle>
+                <CardDescription>Edit the questions for this match.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {questionFields.map((field, index) => (
+                    <FormField
+                        key={field.id}
+                        control={form.control}
+                        name={`questions.${index}.question`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className={cn(index !== 0 && "sr-only")}>
+                                    Question {index + 1}
+                                </FormLabel>
+                                <div className="flex items-center gap-2">
+                                    <FormControl>
+                                        <Textarea placeholder={`e.g., Which team will win the toss?`} {...field} />
+                                    </FormControl>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeQuestion(index)}
+                                        disabled={questionFields.length <= 1}
+                                    >
+                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                ))}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendQuestion({ question: "" })}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Question
+                </Button>
+            </CardContent>
+        </Card>
+
         <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>

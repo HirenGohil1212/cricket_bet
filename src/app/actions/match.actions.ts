@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where } from 'firebase/firestore';
@@ -19,6 +17,7 @@ interface MatchServerPayload {
     startTime: Date;
     isSpecialMatch: boolean;
     allowOneSidedBets: boolean;
+    questions: { question: string }[];
 }
 
 // Server action to create a new match
@@ -30,7 +29,8 @@ export async function createMatch(payload: MatchServerPayload) {
             teamB, 
             startTime, 
             isSpecialMatch,
-            allowOneSidedBets
+            allowOneSidedBets,
+            questions,
         } = payload;
 
         const now = new Date();
@@ -48,33 +48,27 @@ export async function createMatch(payload: MatchServerPayload) {
             allowOneSidedBets,
         });
 
-        const templateRef = doc(db, 'questionTemplates', sport);
-        const templateSnap = await getDoc(templateRef);
-
-        if (templateSnap.exists()) {
-            const templateData = templateSnap.data();
-            if (templateData.questions && Array.isArray(templateData.questions) && templateData.questions.length > 0) {
-                const batch = writeBatch(db);
-                const questionsCollectionRef = collection(db, `matches/${newMatchRef.id}/questions`);
-                
-                templateData.questions.forEach((q: any, index: number) => {
-                    const questionRef = doc(questionsCollectionRef);
-                    batch.set(questionRef, {
-                        question: q.question,
-                        order: index, // Add order field
-                        createdAt: Timestamp.now(),
-                        status: 'active',
-                        result: null,
-                    });
+        // ** NEW LOGIC **: Add questions directly from the payload
+        if (questions && questions.length > 0) {
+            const batch = writeBatch(db);
+            const questionsCollectionRef = collection(db, `matches/${newMatchRef.id}/questions`);
+            
+            questions.forEach((q, index) => {
+                const questionRef = doc(questionsCollectionRef);
+                batch.set(questionRef, {
+                    question: q.question,
+                    order: index,
+                    createdAt: Timestamp.now(),
+                    status: 'active',
+                    result: null,
                 });
-                await batch.commit();
-            }
+            });
+            await batch.commit();
         }
 
         revalidatePath('/admin/matches');
-        revalidatePath('/admin/q-and-a');
         revalidatePath('/');
-        return { success: 'Match created successfully and questions applied!' };
+        return { success: 'Match created successfully with custom questions!' };
     } catch (error: any) {
         console.error("Error creating match: ", error);
         return { error: 'An unknown error occurred while creating the match.' };
@@ -222,6 +216,7 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             startTime,
             isSpecialMatch,
             allowOneSidedBets,
+            questions,
         } = payload;
 
         // If a new logo was uploaded for team A, delete the old one
@@ -236,7 +231,10 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
-        await updateDoc(matchRef, {
+        const batch = writeBatch(db);
+
+        // Update the main match document
+        batch.update(matchRef, {
             sport,
             teamA,
             teamB,
@@ -245,6 +243,28 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             isSpecialMatch,
             allowOneSidedBets,
         });
+        
+        // ** NEW LOGIC **: Overwrite the questions for this match
+        const questionsCollectionRef = collection(db, `matches/${matchId}/questions`);
+        const existingQuestionsSnapshot = await getDocs(questionsCollectionRef);
+        existingQuestionsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        if (questions && questions.length > 0) {
+            questions.forEach((q, index) => {
+                const questionRef = doc(questionsCollectionRef);
+                batch.set(questionRef, {
+                    question: q.question,
+                    order: index,
+                    createdAt: Timestamp.now(),
+                    status: 'active',
+                    result: null,
+                });
+            });
+        }
+        
+        await batch.commit();
         
         revalidatePath('/admin/matches');
         revalidatePath(`/admin/matches/edit/${matchId}`);

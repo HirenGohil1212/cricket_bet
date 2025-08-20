@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,14 +7,12 @@ import { SportIcon } from "@/components/icons";
 import { MatchQnaCard } from "./match-qna-card";
 import { Button } from "../ui/button";
 import { useState, useCallback } from "react";
-import { QuestionTemplateDialog } from "./question-template-dialog";
 import { getMatches } from "@/app/actions/match.actions";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface QandADashboardProps {
     matches: Match[];
-    initialTemplates: Record<Sport, Pick<Question, 'question'>[]>;
 }
 
 function QnaDashboardSkeleton() {
@@ -32,10 +29,8 @@ function QnaDashboardSkeleton() {
     )
 }
 
-export function QandADashboard({ matches: initialMatches, initialTemplates }: QandADashboardProps) {
+export function QandADashboard({ matches: initialMatches }: QandADashboardProps) {
   const [matches, setMatches] = useState(initialMatches);
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshMatches = useCallback(async () => {
@@ -44,19 +39,6 @@ export function QandADashboard({ matches: initialMatches, initialTemplates }: Qa
     setMatches(updatedMatches);
     setIsLoading(false);
   }, []);
-  
-  const handleManageTemplate = (sport: Sport) => {
-    setSelectedSport(sport);
-    setIsTemplateDialogOpen(true);
-  };
-
-  const onDialogClose = (shouldRefresh: boolean) => {
-    setIsTemplateDialogOpen(false);
-    setSelectedSport(null);
-    if (shouldRefresh) {
-        refreshMatches();
-    }
-  }
 
   return (
     <>
@@ -76,32 +58,20 @@ export function QandADashboard({ matches: initialMatches, initialTemplates }: Qa
           ))}
         </TabsList>
         {sports.map((sport) => {
-          const upcomingMatches = matches.filter(m => m.sport === sport && (m.status === 'Upcoming' || m.status === 'Live'));
+          const sportMatches = matches.filter(m => m.sport === sport);
           return (
              <TabsContent key={sport} value={sport} className="mt-6 space-y-6">
-                <div className="flex justify-end">
-                    <Button onClick={() => handleManageTemplate(sport)}>Manage {sport} Questions</Button>
-                </div>
-                {isLoading ? <QnaDashboardSkeleton /> : upcomingMatches.length > 0 ? (
-                      upcomingMatches.map(match => <MatchQnaCard key={match.id} match={match} onUpdate={refreshMatches} />)
+                {isLoading ? <QnaDashboardSkeleton /> : sportMatches.length > 0 ? (
+                      sportMatches.map(match => <MatchQnaCard key={match.id} match={match} onUpdate={refreshMatches} />)
                  ) : (
                       <div className="text-center text-muted-foreground py-12 border rounded-md">
-                          <p>No upcoming or live matches found for this sport.</p>
-                          <p className="text-sm">You can still manage the question template.</p>
+                          <p>No matches found for this sport.</p>
                       </div>
                  )}
               </TabsContent>
           )
         })}
       </Tabs>
-      {selectedSport && (
-        <QuestionTemplateDialog
-          isOpen={isTemplateDialogOpen}
-          onClose={onDialogClose}
-          sport={selectedSport}
-          existingQuestions={initialTemplates[selectedSport] || []}
-        />
-      )}
     </>
   );
 }

@@ -1,5 +1,3 @@
-
-
 import { z } from "zod";
 import { sports, type Sport } from "@/lib/types";
 
@@ -39,6 +37,10 @@ export const matchSchema = z.object({
 
   isSpecialMatch: z.boolean().default(false),
   allowOneSidedBets: z.boolean().default(false),
+
+  questions: z.array(z.object({
+    question: z.string().min(1, "Question cannot be empty.")
+  })).min(1, "At least one question is required."),
 });
 
 export type MatchFormValues = z.infer<typeof matchSchema>;
@@ -109,7 +111,7 @@ export const withdrawalRequestSchema = z.object({
 export type WithdrawalRequestFormValues = z.infer<typeof withdrawalRequestSchema>;
 
 
-// Schema for Q&A Template (Admin Form)
+// Schema for Q&amp;A Template (Admin Form)
 export const qnaItemSchema = z.object({
   question: z.string().min(1, "Question cannot be empty."),
 });

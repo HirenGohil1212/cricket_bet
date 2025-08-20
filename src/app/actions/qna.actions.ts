@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -84,24 +83,7 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
     }
 }
 
-// Function to get all question templates
-export async function getQuestionTemplates(): Promise<Record<Sport, Pick<Question, 'question'>[]>> {
-    const templates: Partial<Record<Sport, Pick<Question, 'question'>[]>> = {};
-    try {
-        const templatesRef = collection(db, 'questionTemplates');
-        const querySnapshot = await getDocs(templatesRef);
-
-        querySnapshot.docs.forEach(doc => {
-            const data = doc.data();
-            templates[doc.id as Sport] = data.questions || [];
-        });
-        return templates as Record<Sport, Pick<Question, 'question'>[]>;
-    } catch (error) {
-        console.error("Error fetching question templates:", error);
-        return {} as Record<Sport, Pick<Question, 'question'>[]>;
-    }
-}
-
+// THIS ACTION IS NO LONGER USED in the new admin flow but kept for potential future use.
 // Function to save a template and apply it to all upcoming/live matches
 export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValues['questions']) {
     const validatedQuestions = qnaFormSchema.safeParse({ questions });
