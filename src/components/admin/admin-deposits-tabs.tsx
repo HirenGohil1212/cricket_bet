@@ -15,13 +15,16 @@ export function AdminDepositsTabs({ deposits }: AdminDepositsTabsProps) {
   const rejected = deposits.filter(d => d.status === 'Rejected');
 
   return (
-    <Tabs defaultValue="processing" className="w-full">
+    <Tabs defaultValue="all" className="w-full">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+        <TabsTrigger value="all">All ({deposits.length})</TabsTrigger>
         <TabsTrigger value="processing">Processing ({processing.length})</TabsTrigger>
         <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
         <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
-        <TabsTrigger value="all">All ({deposits.length})</TabsTrigger>
       </TabsList>
+       <TabsContent value="all" className="mt-4">
+        <DepositsTable deposits={deposits} />
+      </TabsContent>
       <TabsContent value="processing" className="mt-4">
         <DepositsTable deposits={processing} />
       </TabsContent>
@@ -30,9 +33,6 @@ export function AdminDepositsTabs({ deposits }: AdminDepositsTabsProps) {
       </TabsContent>
       <TabsContent value="rejected" className="mt-4">
         <DepositsTable deposits={rejected} />
-      </TabsContent>
-      <TabsContent value="all" className="mt-4">
-        <DepositsTable deposits={deposits} />
       </TabsContent>
     </Tabs>
   );
