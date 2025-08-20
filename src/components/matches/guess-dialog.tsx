@@ -334,13 +334,12 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                     <Command>
-                        <CommandInput placeholder="Search player..." />
                         <CommandList>
                              <CommandEmpty>No player found.</CommandEmpty>
                              <CommandGroup>
                                 {players.map(player => (
                                     <CommandItem
-                                        key={player.name}
+                                        key={player.name} 
                                         onSelect={() => {
                                             const isSelected = selectedPlayers.some(p => p.name === player.name);
                                             if (isSelected) {
@@ -635,4 +634,5 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
 
