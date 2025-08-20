@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, FormProvider } from "react-hook-form";
+import { useFieldArray, useForm, FormProvider, useFormContext } from "react-hook-form";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2, Loader2 } from "lucide-react";
@@ -34,9 +34,9 @@ interface BettingSettingsFormProps {
 const defaultOption = { amount: 10, payout: 20 };
 
 function BetOptionFields({ namePrefix }: { namePrefix: string }) {
-    const { control } = useForm<BettingSettingsFormValues>();
+    const { control } = useFormContext<BettingSettingsFormValues>();
     const { fields, append, remove } = useFieldArray({
-        control: useFormContext().control,
+        control,
         name: namePrefix as any,
     });
 
@@ -46,7 +46,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                 <div key={field.id} className="relative p-4 border rounded-md">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                            control={useFormContext().control}
+                            control={control}
                             name={`${namePrefix}.${index}.amount`}
                             render={({ field }) => (
                                 <FormItem>
@@ -59,7 +59,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                             )}
                         />
                         <FormField
-                            control={useFormContext().control}
+                            control={control}
                             name={`${namePrefix}.${index}.payout`}
                             render={({ field }) => (
                                 <FormItem>
