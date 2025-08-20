@@ -38,7 +38,6 @@ import { BettingSettings } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, ChevronsUpDown, X } from "lucide-react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 
 
@@ -333,41 +332,33 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
-                    <Command>
-                        <CommandList>
-                             <CommandEmpty>No player found.</CommandEmpty>
-                             <CommandGroup>
-                                {players.map(player => (
-                                    <CommandItem
-                                        key={player.name} 
-                                        onSelect={() => {
+                    <ScrollArea className="h-48">
+                        <div className="p-2 space-y-1">
+                            {players.map(player => (
+                                <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
+                                    <Checkbox
+                                        checked={selectedPlayers.some(p => p.name === player.name)}
+                                        onCheckedChange={(checked) => {
                                             const isSelected = selectedPlayers.some(p => p.name === player.name);
-                                            if (isSelected) {
-                                                setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
-                                            } else {
+                                            if (checked && !isSelected) {
                                                 setSelectedPlayers([...selectedPlayers, player]);
+                                            } else if (!checked && isSelected) {
+                                                setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
                                             }
                                         }}
-                                        className="cursor-pointer"
-                                    >
-                                         <Checkbox
-                                            checked={selectedPlayers.some(p => p.name === player.name)}
-                                            className="mr-2"
-                                            readOnly 
-                                        />
-                                        <span>{player.name}</span>
-                                    </CommandItem>
-                                ))}
-                             </CommandGroup>
-                        </CommandList>
-                    </Command>
+                                    />
+                                    <span>{player.name}</span>
+                                </Label>
+                            ))}
+                        </div>
+                    </ScrollArea>
                 </PopoverContent>
             </Popover>
             <div className="flex flex-wrap gap-2">
                 {selectedPlayers.map(player => (
                     <Badge key={player.name} variant="secondary" className="flex items-center gap-1">
                         {player.name}
-                        <button onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name))} className="rounded-full hover:bg-muted-foreground/20">
+                        <button type="button" onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name))} className="rounded-full hover:bg-muted-foreground/20">
                             <X className="h-3 w-3"/>
                         </button>
                     </Badge>
@@ -634,5 +625,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
 
 
