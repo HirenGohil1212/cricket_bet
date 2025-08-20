@@ -48,7 +48,7 @@ export async function getDummyUsersBySport(sport: Sport): Promise<DummyUser[]> {
     if (!sport) return [];
     try {
         const dummyUsersCol = collection(db, 'dummyUsers');
-        const q = query(dummyUsersCol, where('sport', '==', sport), orderBy('createdAt', 'desc'));
+        const q = query(dummyUsersCol, where('sport', '==', sport));
         const dummyUserSnapshot = await getDocs(q);
 
         const dummyUserList = dummyUserSnapshot.docs.map(doc => {
