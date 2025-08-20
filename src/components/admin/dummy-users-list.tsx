@@ -29,14 +29,14 @@ interface DummyUsersListProps {
 export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyUsersListProps) {
   const { toast } = useToast();
   const [dummyUsers, setDummyUsers] = useState(initialDummyUsers);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   useEffect(() => {
     setDummyUsers(initialDummyUsers);
   }, [initialDummyUsers]);
 
   const handleDelete = async (dummyUserId: string) => {
-    setIsDeleting(true);
+    setIsDeleting(dummyUserId);
     const result = await deleteDummyUser(dummyUserId);
     if (result.error) {
       toast({ variant: "destructive", title: "Error", description: result.error });
@@ -44,20 +44,20 @@ export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyU
       toast({ title: "Dummy User Deleted", description: result.success });
       onDummyUserDeleted(dummyUserId);
     }
-    setIsDeleting(false);
+    setIsDeleting(null);
   };
 
   const DummyUserItem = ({ user }: { user: DummyUser }) => (
     <div className="flex items-center justify-between p-2 border rounded-lg">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-muted rounded-full">
-            <User className="h-6 w-6 text-muted-foreground" />
+            <User className="h-4 w-4 text-muted-foreground" />
         </div>
-        <span className="font-medium">{user.name}</span>
+        <span className="font-medium text-sm">{user.name}</span>
       </div>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" disabled={isDeleting === user.id}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </AlertDialogTrigger>
@@ -70,8 +70,8 @@ export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyU
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(user.id)} disabled={isDeleting}>
-              {isDeleting ? "Deleting..." : "Delete"}
+            <AlertDialogAction onClick={() => handleDelete(user.id)} disabled={isDeleting === user.id} className="bg-destructive hover:bg-destructive/80">
+              {isDeleting === user.id ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

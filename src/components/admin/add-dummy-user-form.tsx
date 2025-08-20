@@ -10,13 +10,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { sports, type DummyUser } from "@/lib/types";
+import { sports as sportsData } from "@/lib/data";
+import { type DummyUser, type Sport } from "@/lib/types";
 import { createDummyUser } from "@/app/actions/dummy-user.actions";
 import { z } from "zod";
 
 const dummyUserFormSchema = z.object({
   name: z.string().min(2, "Dummy user name must be at least 2 characters."),
-  sport: z.enum(sports, { required_error: "Please select a sport." }),
+  sport: z.enum(sportsData, { required_error: "Please select a sport." }),
 });
 
 type DummyUserFormValues = z.infer<typeof dummyUserFormSchema>;
@@ -92,7 +93,7 @@ export function AddDummyUserForm({ onDummyUserAdded }: AddDummyUserFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {sports.map((sport) => (
+                  {sportsData.map((sport) => (
                     <SelectItem key={sport} value={sport}>{sport}</SelectItem>
                   ))}
                 </SelectContent>

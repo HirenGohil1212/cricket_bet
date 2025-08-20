@@ -45,6 +45,7 @@ export async function getDummyUsers(): Promise<DummyUser[]> {
 
 // Function to get dummy users by sport
 export async function getDummyUsersBySport(sport: Sport): Promise<DummyUser[]> {
+    if (!sport) return [];
     try {
         const dummyUsersCol = collection(db, 'dummyUsers');
         const q = query(dummyUsersCol, where('sport', '==', sport), orderBy('createdAt', 'desc'));
