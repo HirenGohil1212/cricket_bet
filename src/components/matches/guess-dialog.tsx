@@ -33,13 +33,14 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getBettingSettings } from "@/app/actions/settings.actions";
+import { BettingSettings } from "@/lib/types";
 
 
 interface GuessDialogProps {
   match: Match | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  betOptions: BetOption[];
 }
 
 // Dynamically create a Zod schema for the user's prediction form
@@ -110,7 +111,7 @@ const createPredictionSchema = (
 };
 
 
-export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDialogProps) {
+export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
@@ -119,6 +120,20 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
   const [isLoading, setIsLoading] = useState(true);
   const [betOnSide, setBetOnSide] = React.useState<'teamA' | 'teamB' | 'both'>('both');
   const [bettingMode, setBettingMode] = useState<'qna' | 'player'>('qna');
+  const [bettingSettings, setBettingSettings] = useState<BettingSettings | null>(null);
+
+  const betOptions = React.useMemo(() => {
+    if (!bettingSettings || !match) return [];
+    
+    if (match.sport === 'Cricket') {
+        const isOneSided = match.allowOneSidedBets && betOnSide !== 'both';
+        if (bettingMode === 'player') return bettingSettings.betOptions.Cricket.player;
+        if (isOneSided) return bettingSettings.betOptions.Cricket.oneSided;
+        return bettingSettings.betOptions.Cricket.general;
+    }
+    
+    return bettingSettings.betOptions[match.sport];
+  }, [bettingSettings, match, bettingMode, betOnSide]);
 
   const validBetAmounts = React.useMemo(() => betOptions.map(opt => opt.amount), [betOptions]);
   
@@ -145,7 +160,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
 
 
   useEffect(() => {
-    async function fetchQuestionsAndSetDefaults() {
+    async function fetchDialogData() {
       if (match) {
         setIsLoading(true);
         // Reset state on open
@@ -155,7 +170,12 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
         setBetOnSide(newBetOnSide);
         setQuestions([]);
         
-        const fetchedQuestions = await getQuestionsForMatch(match.id);
+        const [fetchedQuestions, fetchedSettings] = await Promise.all([
+            getQuestionsForMatch(match.id),
+            getBettingSettings()
+        ]);
+        
+        setBettingSettings(fetchedSettings);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
         setQuestions(validQuestions);
 
@@ -164,8 +184,16 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
           return acc;
         }, {} as Record<string, { teamA: string; teamB: string }>);
 
+        // Determine initial bet options to set a default amount
+        let initialBetOptions = [];
+        if (match.sport === 'Cricket') {
+            initialBetOptions = fetchedSettings.betOptions.Cricket.general;
+        } else {
+            initialBetOptions = fetchedSettings.betOptions[match.sport];
+        }
+
         form.reset({
-          amount: betOptions[0]?.amount || 0,
+          amount: initialBetOptions[0]?.amount || 0,
           predictions: defaultQnaPredictions,
         });
         
@@ -174,9 +202,9 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
     }
 
     if (open) {
-      fetchQuestionsAndSetDefaults();
+      fetchDialogData();
     }
-  }, [match, open, betOptions, form]);
+  }, [match, open, form]);
 
 
   async function handleSubmit(data: any) {
@@ -210,6 +238,7 @@ export function GuessDialog({ match, open, onOpenChange, betOptions }: GuessDial
       predictions: finalPredictions,
       amount: data.amount,
       betType: bettingMode,
+      isOneSidedBet: match.sport === 'Cricket' && betOnSide !== 'both',
     });
 
     if (result.error) {

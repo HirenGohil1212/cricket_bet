@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -10,13 +11,12 @@ import { GuessDialog } from './guess-dialog';
 
 interface PaginatedFinishedMatchesProps {
   matches: Match[];
-  betOptions: BetOption[];
   searchTerm: string;
 }
 
 const FINISHED_MATCHES_PER_PAGE = 8;
 
-export function PaginatedFinishedMatches({ matches, betOptions, searchTerm }: PaginatedFinishedMatchesProps) {
+export function PaginatedFinishedMatches({ matches, searchTerm }: PaginatedFinishedMatchesProps) {
   // State for dialogs, needed because MatchCard actions are here
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
@@ -103,7 +103,6 @@ export function PaginatedFinishedMatches({ matches, betOptions, searchTerm }: Pa
         match={selectedMatch} 
         open={isGuessDialogOpen} 
         onOpenChange={handleDialogChange}
-        betOptions={betOptions}
       />
       <BettingHistoryDialog 
         open={isHistoryDialogOpen} 

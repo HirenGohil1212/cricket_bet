@@ -160,9 +160,15 @@ const sportBetOptionsSchema = z.array(betOptionSchema)
   .min(1, "At least one bet option is required.")
   .max(5, "You can add a maximum of 5 bet options.");
 
+const cricketBetOptionsSchema = z.object({
+    general: sportBetOptionsSchema,
+    oneSided: sportBetOptionsSchema,
+    player: sportBetOptionsSchema,
+});
+
 export const bettingSettingsSchema = z.object({
   betOptions: z.object({
-    Cricket: sportBetOptionsSchema,
+    Cricket: cricketBetOptionsSchema,
     Football: sportBetOptionsSchema,
     Tennis: sportBetOptionsSchema,
     "Table Tennis": sportBetOptionsSchema,

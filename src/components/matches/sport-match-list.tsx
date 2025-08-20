@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Match, Sport, BetOption } from "@/lib/types";
@@ -12,10 +13,9 @@ interface SportMatchListProps {
   sport?: Sport;
   upcomingAndLiveMatches: Match[];
   finishedMatches: Match[];
-  betOptions: BetOption[];
 }
 
-export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches, betOptions }: SportMatchListProps) {
+export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches }: SportMatchListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   
   const noMatchesExistForSport = upcomingAndLiveMatches.length === 0 && finishedMatches.length === 0;
@@ -37,13 +37,11 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches,
       <MatchList
         matches={upcomingAndLiveMatches}
         sport={sport}
-        betOptions={betOptions}
         searchTerm={searchTerm}
       />
       
       <FinishedMatchesList
         matches={finishedMatches}
-        betOptions={betOptions}
         searchTerm={searchTerm}
       />
       

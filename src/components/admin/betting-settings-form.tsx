@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,13 +21,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { BettingSettings, Sport } from "@/lib/types";
+import type { BettingSettings, Sport, CricketBetOptions } from "@/lib/types";
 import { sports } from "@/lib/data";
 import { bettingSettingsSchema, type BettingSettingsFormValues } from "@/lib/schemas";
 import { updateBettingSettings } from "@/app/actions/settings.actions";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription as CardDesc } from "../ui/card";
 import { SportIcon } from "../icons";
 import { cn } from "@/lib/utils";
+import { Separator } from "../ui/separator";
 
 interface BettingSettingsFormProps {
     initialData: BettingSettings;
@@ -36,21 +38,82 @@ const defaultOption = { amount: 10, payout: 20 };
 
 type SavingState = 'idle' | 'saving' | 'saved';
 
+function BetOptionFields({ namePrefix }: { namePrefix: string }) {
+    const { control } = useFormContext<BettingSettingsFormValues>();
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: namePrefix as any,
+    });
+
+    return (
+        <div className="space-y-4">
+            {fields.map((field, index) => (
+                <div key={field.id} className="relative p-4 border rounded-md">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            control={control}
+                            name={`${namePrefix}.${index}.amount`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Bet Amount (INR)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={control}
+                            name={`${namePrefix}.${index}.payout`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Payout Amount (INR)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    {fields.length > 1 && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => remove(index)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Remove Option</span>
+                        </Button>
+                    )}
+                </div>
+            ))}
+             <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => append(defaultOption)}
+                disabled={fields.length >= 5}
+            >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Option
+            </Button>
+        </div>
+    )
+}
+
 function SportBettingForm({ sport }: { sport: Sport }) {
-    const { control, getValues, formState: { isDirty, dirtyFields } } = useFormContext<BettingSettingsFormValues>();
+    const { getValues, formState: { isDirty, dirtyFields } } = useFormContext<BettingSettingsFormValues>();
     const { toast } = useToast();
     const router = useRouter();
     const [savingState, setSavingState] = React.useState<SavingState>('idle');
     
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: `betOptions.${sport}`,
-    });
-
-    const watchedFields = useWatch({
-        control,
-        name: `betOptions.${sport}`
-    });
+    const watchPath = sport === 'Cricket' ? 'betOptions.Cricket' : `betOptions.${sport}`;
+    const watchedFields = useWatch({ name: watchPath as any });
 
     const debouncedSave = React.useCallback(
         debounce(async (data: BettingSettingsFormValues) => {
@@ -68,9 +131,14 @@ function SportBettingForm({ sport }: { sport: Sport }) {
     );
 
     React.useEffect(() => {
-        const sportIsDirty = dirtyFields.betOptions?.[sport];
-        if (isDirty && sportIsDirty) {
-             // We need to pass all betOptions to the server action, not just the ones for this sport
+        let isSportDirty = false;
+        if (sport === 'Cricket') {
+            isSportDirty = !!dirtyFields.betOptions?.Cricket;
+        } else {
+            isSportDirty = !!dirtyFields.betOptions?.[sport];
+        }
+
+        if (isDirty && isSportDirty) {
             const allValues = getValues();
             const validation = bettingSettingsSchema.safeParse(allValues);
             if(validation.success){
@@ -97,63 +165,35 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="relative p-4 border rounded-md">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField
-                                    control={control}
-                                    name={`betOptions.${sport}.${index}.amount`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Bet Amount (INR)</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={control}
-                                    name={`betOptions.${sport}.${index}.payout`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Payout Amount (INR)</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            {fields.length > 1 && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive"
-                                    onClick={() => remove(index)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Remove Option</span>
-                                </Button>
-                            )}
+               {sport === 'Cricket' ? (
+                 <div className="space-y-6">
+                    <div>
+                        <h3 className="font-semibold text-lg">General Bets</h3>
+                        <p className="text-sm text-muted-foreground">For standard bets on Q&A where both team predictions are made.</p>
+                        <div className="mt-4">
+                           <BetOptionFields namePrefix="betOptions.Cricket.general" />
                         </div>
-                    ))}
-                </div>
-                 <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => append(defaultOption)}
-                    disabled={fields.length >= 5}
-                >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Option
-                </Button>
+                    </div>
+                    <Separator />
+                    <div>
+                        <h3 className="font-semibold text-lg">One-Sided Bets</h3>
+                        <p className="text-sm text-muted-foreground">For bets where the user only predicts for one team (if enabled on the match).</p>
+                         <div className="mt-4">
+                            <BetOptionFields namePrefix="betOptions.Cricket.oneSided" />
+                         </div>
+                    </div>
+                     <Separator />
+                    <div>
+                        <h3 className="font-semibold text-lg">Player Bets</h3>
+                        <p className="text-sm text-muted-foreground">For bets on individual player performance (if enabled on the match).</p>
+                         <div className="mt-4">
+                            <BetOptionFields namePrefix="betOptions.Cricket.player" />
+                        </div>
+                    </div>
+                 </div>
+               ) : (
+                  <BetOptionFields namePrefix={`betOptions.${sport}`} />
+               )}
             </CardContent>
         </Card>
     );

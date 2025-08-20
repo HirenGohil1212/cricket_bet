@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { 
@@ -24,10 +25,11 @@ interface CreateBetParams {
     predictions: Prediction[];
     amount: number;
     betType: 'qna' | 'player';
+    isOneSidedBet?: boolean;
 }
 
 // Server action to create a new bet and update wallet
-export async function createBet({ userId, matchId, predictions, amount, betType }: CreateBetParams) {
+export async function createBet({ userId, matchId, predictions, amount, betType, isOneSidedBet = false }: CreateBetParams) {
     if (!userId) {
         return { error: 'You must be logged in to place a bet.' };
     }
@@ -39,7 +41,6 @@ export async function createBet({ userId, matchId, predictions, amount, betType 
         const userRef = doc(db, 'users', userId);
         const matchDocRef = doc(db, 'matches', matchId);
         
-        // Get the current betting options and the match details in parallel
         const [bettingSettings, match] = await Promise.all([
             getBettingSettings(),
             getMatchById(matchId)
@@ -49,19 +50,30 @@ export async function createBet({ userId, matchId, predictions, amount, betType 
              return { error: 'Match not found. Please try again.' };
         }
 
-        const sportBetOptions = bettingSettings.betOptions[match.sport];
+        let sportBetOptions;
+        if (match.sport === 'Cricket') {
+            if (betType === 'player') {
+                sportBetOptions = bettingSettings.betOptions.Cricket.player;
+            } else if (isOneSidedBet) {
+                sportBetOptions = bettingSettings.betOptions.Cricket.oneSided;
+            } else {
+                sportBetOptions = bettingSettings.betOptions.Cricket.general;
+            }
+        } else {
+             sportBetOptions = bettingSettings.betOptions[match.sport];
+        }
+
         const selectedOption = sportBetOptions.find(opt => opt.amount === amount);
 
         if (!selectedOption) {
-            return { error: 'The selected bet amount is not valid for this sport. Please refresh and try again.' };
+            return { error: 'The selected bet amount is not valid for this type of bet. Please refresh and try again.' };
         }
         
         const potentialWin = selectedOption.payout;
         
         const result = await runTransaction(db, async (transaction) => {
-            // All reads must come before writes in a transaction
             const userDoc = await transaction.get(userRef);
-            const matchDoc = await transaction.get(matchDocRef); // Re-read inside transaction
+            const matchDoc = await transaction.get(matchDocRef);
 
             if (!userDoc.exists()) {
                 throw new Error("User document not found.");
@@ -78,7 +90,6 @@ export async function createBet({ userId, matchId, predictions, amount, betType 
                 throw new Error("Insufficient wallet balance.");
             }
 
-            // All writes must come after reads
             const newBalance = currentBalance - amount;
             transaction.update(userRef, { 
                 walletBalance: newBalance,
@@ -101,11 +112,9 @@ export async function createBet({ userId, matchId, predictions, amount, betType 
                 betType,
             });
             
-            // Return data to be used outside the transaction
             return { isFirstBet, referredBy: userData.referredBy };
         });
 
-        // After the transaction is successful, check if a referral needs to be processed
         if (result.isFirstBet && result.referredBy) {
             await processReferral(userId, result.referredBy);
         }

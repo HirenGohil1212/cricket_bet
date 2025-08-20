@@ -174,6 +174,20 @@ export type BetOption = {
     payout: number;
 };
 
+// Specific structure for Cricket bet options
+export type CricketBetOptions = {
+    general: BetOption[];
+    oneSided: BetOption[];
+    player: BetOption[];
+};
+
+// Overloaded settings type
 export type BettingSettings = {
-    betOptions: Record<Sport, BetOption[]>;
+    betOptions: {
+        Cricket: CricketBetOptions;
+        Football: BetOption[];
+        Tennis: BetOption[];
+        "Table Tennis": BetOption[];
+        Badminton: BetOption[];
+    }
 };

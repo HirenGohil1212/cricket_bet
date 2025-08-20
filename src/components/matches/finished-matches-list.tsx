@@ -5,11 +5,10 @@ import { PaginatedFinishedMatches } from "./paginated-finished-matches";
 
 interface FinishedMatchesListProps {
   matches: Match[];
-  betOptions: BetOption[];
   searchTerm: string;
 }
 
-export function FinishedMatchesList({ matches, betOptions, searchTerm }: FinishedMatchesListProps) {
+export function FinishedMatchesList({ matches, searchTerm }: FinishedMatchesListProps) {
    if (matches.length === 0) {
     return null;
   }
@@ -17,7 +16,6 @@ export function FinishedMatchesList({ matches, betOptions, searchTerm }: Finishe
   return (
     <PaginatedFinishedMatches
       matches={matches}
-      betOptions={betOptions}
       searchTerm={searchTerm}
     />
   );

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,11 +11,10 @@ import { BettingHistoryDialog } from '../dashboard/betting-history-dialog';
 interface MatchListProps {
   matches: Match[];
   sport?: Sport;
-  betOptions: BetOption[];
   searchTerm: string;
 }
 
-export function MatchList({ matches, sport, betOptions, searchTerm }: MatchListProps) {
+export function MatchList({ matches, sport, searchTerm }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
   const [localMatches, setLocalMatches] = useState(matches);
@@ -119,7 +119,6 @@ export function MatchList({ matches, sport, betOptions, searchTerm }: MatchListP
         match={selectedMatch} 
         open={isGuessDialogOpen} 
         onOpenChange={handleDialogChange}
-        betOptions={betOptions}
       />
       <BettingHistoryDialog 
         open={isHistoryDialogOpen} 

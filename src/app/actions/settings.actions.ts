@@ -5,7 +5,7 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import type { BankAccount, BettingSettings, Sport, AppSettings } from '@/lib/types';
+import type { BankAccount, BettingSettings, Sport, AppSettings, BetOption } from '@/lib/types';
 import { bettingSettingsSchema, type BettingSettingsFormValues, appSettingsSchema, type AppSettingsFormValues } from '@/lib/schemas';
 import { sports } from '@/lib/data';
 import { deleteFileByPath } from '@/lib/storage';
@@ -139,7 +139,7 @@ export async function deleteBankAccount(accountId: string) {
 
 // Function to get betting settings
 export async function getBettingSettings(): Promise<BettingSettings> {
-    const defaultBetOptions = [
+    const defaultBetOptions: BetOption[] = [
         { amount: 9, payout: 18 },
         { amount: 19, payout: 40 },
         { amount: 29, payout: 60 },
@@ -147,10 +147,19 @@ export async function getBettingSettings(): Promise<BettingSettings> {
     
     // Ensure the default structure includes all sports defined in `lib/data`
     const defaultSettings: BettingSettings = {
-        betOptions: sports.reduce((acc, sport) => {
-            acc[sport] = [...defaultBetOptions];
-            return acc;
-        }, {} as Record<Sport, typeof defaultBetOptions>)
+        betOptions: {
+            // Cricket gets a special structure
+            Cricket: {
+                general: [...defaultBetOptions],
+                oneSided: [...defaultBetOptions],
+                player: [...defaultBetOptions],
+            },
+            // Other sports get the regular array
+            ...sports.filter(s => s !== 'Cricket').reduce((acc, sport) => {
+                acc[sport] = [...defaultBetOptions];
+                return acc;
+            }, {} as Record<Exclude<Sport, 'Cricket'>, BetOption[]>)
+        }
     };
 
     try {
@@ -161,15 +170,33 @@ export async function getBettingSettings(): Promise<BettingSettings> {
              const dataFromDb = docSnap.data() as BettingSettings;
              
              // Merge DB data with defaults to ensure all sports are present
+             // and cricket has its required structure
              const finalSettings: BettingSettings = {
-                 betOptions: sports.reduce((acc, sport) => {
-                     // Use data from DB if available, otherwise fall back to default
-                     acc[sport] = dataFromDb.betOptions[sport] && dataFromDb.betOptions[sport].length > 0 
-                                  ? dataFromDb.betOptions[sport]
-                                  : [...defaultBetOptions];
-                     return acc;
-                 }, {} as Record<Sport, typeof defaultBetOptions>)
+                 betOptions: {
+                    ...defaultSettings.betOptions, // Start with default structure
+                    ...dataFromDb.betOptions, // Overwrite with DB data
+                 }
              };
+             
+             // Ensure cricket substructure is fully present
+             if (!finalSettings.betOptions.Cricket.general) {
+                 finalSettings.betOptions.Cricket.general = [...defaultBetOptions];
+             }
+             if (!finalSettings.betOptions.Cricket.oneSided) {
+                 finalSettings.betOptions.Cricket.oneSided = [...defaultBetOptions];
+             }
+             if (!finalSettings.betOptions.Cricket.player) {
+                 finalSettings.betOptions.Cricket.player = [...defaultBetOptions];
+             }
+             
+             // Ensure other sports have valid arrays
+             sports.forEach(sport => {
+                 if (sport !== 'Cricket') {
+                     if (!finalSettings.betOptions[sport] || !Array.isArray(finalSettings.betOptions[sport]) || finalSettings.betOptions[sport].length === 0) {
+                         finalSettings.betOptions[sport] = [...defaultBetOptions];
+                     }
+                 }
+             })
 
              return finalSettings;
         }
