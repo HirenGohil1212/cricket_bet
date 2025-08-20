@@ -3,7 +3,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm, FormProvider, useFormContext, useWatch } from "react-hook-form";
+import { useFieldArray, useForm, FormProvider, useFormContext } from "react-hook-form";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2, CheckCircle, Loader2 } from "lucide-react";
@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { BettingSettings, Sport, CricketBetOptions } from "@/lib/types";
+import type { BettingSettings, Sport } from "@/lib/types";
 import { sports } from "@/lib/data";
 import { bettingSettingsSchema, type BettingSettingsFormValues } from "@/lib/schemas";
 import { updateBettingSettings } from "@/app/actions/settings.actions";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription as CardDesc } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { SportIcon } from "../icons";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
@@ -38,7 +38,7 @@ const defaultOption = { amount: 10, payout: 20 };
 
 type SavingState = 'idle' | 'saving' | 'saved';
 
-function BetOptionFields({ namePrefix }: { namePrefix: string }) {
+function BetOptionFields({ namePrefix, onFieldChange }: { namePrefix: string, onFieldChange: () => void }) {
     const { control } = useFormContext<BettingSettingsFormValues>();
     const { fields, append, remove } = useFieldArray({
         control,
@@ -57,7 +57,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                                 <FormItem>
                                     <FormLabel>Bet Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
+                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => { field.onChange(e.target.value === '' ? 0 : Number(e.target.value)); onFieldChange(); }}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -70,7 +70,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                                 <FormItem>
                                     <FormLabel>Payout Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
+                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => { field.onChange(e.target.value === '' ? 0 : Number(e.target.value)); onFieldChange(); }}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -83,7 +83,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                             variant="ghost"
                             size="icon"
                             className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => remove(index)}
+                            onClick={() => { remove(index); onFieldChange(); }}
                         >
                             <Trash2 className="h-4 w-4" />
                             <span className="sr-only">Remove Option</span>
@@ -96,7 +96,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                 variant="outline"
                 size="sm"
                 className="mt-4"
-                onClick={() => append(defaultOption)}
+                onClick={() => { append(defaultOption); onFieldChange(); }}
                 disabled={fields.length >= 5}
             >
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -106,44 +106,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
     )
 }
 
-// ** New Centralized Auto-Save Component **
-function AutoSaveWatcher({ setSavingState }: { setSavingState: React.Dispatch<React.SetState<SavingState>> }) {
-    const { control, getValues } = useFormContext<BettingSettingsFormValues>();
-    const { toast } = useToast();
-
-    // Watch all fields for changes
-    const watchedFields = useWatch({ control });
-
-    const debouncedSave = React.useCallback(
-        debounce(async (data: BettingSettingsFormValues) => {
-            setSavingState('saving');
-            const result = await updateBettingSettings(data);
-            if (result.error) {
-                toast({ variant: "destructive", title: "Auto-save Failed", description: result.error });
-                setSavingState('idle');
-            } else {
-                setSavingState('saved');
-                setTimeout(() => setSavingState('idle'), 2000); // Reset after 2s
-            }
-        }, 1500),
-    [toast, setSavingState]
-    );
-
-    React.useEffect(() => {
-        const allValues = getValues();
-        const validation = bettingSettingsSchema.safeParse(allValues);
-        if (validation.success) {
-            debouncedSave(validation.data);
-        }
-    // We only want to run this when watchedFields change, so we disable the exhaustive-deps lint warning
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watchedFields, debouncedSave, getValues]);
-
-    return null; // This component does not render anything
-}
-
-
-function SportBettingForm({ sport }: { sport: Sport }) {
+function SportBettingForm({ sport, onFieldChange }: { sport: Sport, onFieldChange: () => void }) {
     return (
         <Card>
             <CardHeader>
@@ -161,7 +124,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                         <h3 className="font-semibold text-lg">General Bets</h3>
                         <p className="text-sm text-muted-foreground">For standard bets on Q&A where both team predictions are made.</p>
                         <div className="mt-4">
-                           <BetOptionFields namePrefix="betOptions.Cricket.general" />
+                           <BetOptionFields namePrefix="betOptions.Cricket.general" onFieldChange={onFieldChange} />
                         </div>
                     </div>
                     <Separator />
@@ -169,7 +132,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                         <h3 className="font-semibold text-lg">One-Sided Bets</h3>
                         <p className="text-sm text-muted-foreground">For bets where the user only predicts for one team (if enabled on the match).</p>
                          <div className="mt-4">
-                            <BetOptionFields namePrefix="betOptions.Cricket.oneSided" />
+                            <BetOptionFields namePrefix="betOptions.Cricket.oneSided" onFieldChange={onFieldChange} />
                          </div>
                     </div>
                      <Separator />
@@ -177,12 +140,12 @@ function SportBettingForm({ sport }: { sport: Sport }) {
                         <h3 className="font-semibold text-lg">Player Bets</h3>
                         <p className="text-sm text-muted-foreground">For bets on individual player performance (if enabled on the match).</p>
                          <div className="mt-4">
-                            <BetOptionFields namePrefix="betOptions.Cricket.player" />
+                            <BetOptionFields namePrefix="betOptions.Cricket.player" onFieldChange={onFieldChange} />
                         </div>
                     </div>
                  </div>
                ) : (
-                  <BetOptionFields namePrefix={`betOptions.${sport}`} />
+                  <BetOptionFields namePrefix={`betOptions.${sport}`} onFieldChange={onFieldChange} />
                )}
             </CardContent>
         </Card>
@@ -192,6 +155,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
 export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
   
   const [savingState, setSavingState] = React.useState<SavingState>('idle');
+  const { toast } = useToast();
 
   const form = useForm<BettingSettingsFormValues>({
     resolver: zodResolver(bettingSettingsSchema),
@@ -200,9 +164,43 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
     },
   });
 
+  const { getValues } = form;
+
+  const debouncedSave = React.useCallback(
+    debounce(async () => {
+        const currentData = getValues();
+        const validation = bettingSettingsSchema.safeParse(currentData);
+        
+        if (!validation.success) {
+            // This can happen if a required field is emptied.
+            // We can show an error or just wait for the user to fix it.
+            // For now, we'll just log it and not save.
+            console.error("Validation failed on auto-save:", validation.error.flatten());
+            setSavingState('idle');
+            return;
+        }
+
+        setSavingState('saving');
+        const result = await updateBettingSettings(validation.data);
+        if (result.error) {
+            toast({ variant: "destructive", title: "Auto-save Failed", description: result.error });
+            setSavingState('idle');
+        } else {
+            setSavingState('saved');
+            setTimeout(() => setSavingState('idle'), 2000); // Reset after 2s
+        }
+    }, 1500),
+    [getValues, toast]
+  );
+  
+  const handleFieldChange = () => {
+      setSavingState('saving');
+      debouncedSave();
+  }
+
+
   return (
     <FormProvider {...form}>
-        <AutoSaveWatcher setSavingState={setSavingState} />
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <FormDescription>
@@ -218,7 +216,7 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
 
             <div className="space-y-6">
                 {sports.map((sport) => (
-                    <SportBettingForm key={sport} sport={sport} />
+                    <SportBettingForm key={sport} sport={sport} onFieldChange={handleFieldChange} />
                 ))}
             </div>
         </div>
