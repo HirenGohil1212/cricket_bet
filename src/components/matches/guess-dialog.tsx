@@ -314,12 +314,12 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   const PlayerSelector = ({ team }: { team: 'A' | 'B'}) => {
     const players = team === 'A' ? match.teamA.players : match.teamB.players;
-    
-    const selectedPlayers = team === 'A' ? selectedPlayersA : selectedPlayersB;
-    const setSelectedPlayers = team === 'A' ? setSelectedPlayersA : setSelectedPlayersB;
-
     const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
     const [popoverOpen, setPopoverOpen] = useState(false);
+    
+    const { selectedPlayers, setSelectedPlayers } = team === 'A' ? 
+        { selectedPlayers: selectedPlayersA, setSelectedPlayers: setSelectedPlayersA } : 
+        { selectedPlayers: selectedPlayersB, setSelectedPlayers: setSelectedPlayersB };
 
     if (!players || players.length === 0) return <p className="text-xs text-muted-foreground p-2 text-center">No players listed for {teamName}</p>;
 
@@ -339,9 +339,13 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                              <CommandEmpty>No player found.</CommandEmpty>
                              <CommandGroup>
                                 {players.map(player => (
-                                    <CommandItem 
-                                        key={player.name} 
-                                        onSelect={() => {
+                                    <CommandItem
+                                        key={player.name}
+                                        value={player.name}
+                                        onSelect={(currentValue) => {
+                                            // This onSelect is needed for keyboard navigation, but click is handled by onClick
+                                        }}
+                                        onClick={() => {
                                             const isSelected = selectedPlayers.some(p => p.name === player.name);
                                             if (isSelected) {
                                                 setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
@@ -349,10 +353,12 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                 setSelectedPlayers([...selectedPlayers, player]);
                                             }
                                         }}
+                                        className="cursor-pointer"
                                     >
                                          <Checkbox
                                             checked={selectedPlayers.some(p => p.name === player.name)}
                                             className="mr-2"
+                                            readOnly // The click is handled by the parent CommandItem
                                         />
                                         <span>{player.name}</span>
                                     </CommandItem>
