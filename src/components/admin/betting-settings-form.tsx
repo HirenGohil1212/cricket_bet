@@ -112,8 +112,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
     const router = useRouter();
     const [savingState, setSavingState] = React.useState<SavingState>('idle');
     
-    const watchPath = sport === 'Cricket' ? 'betOptions.Cricket' : `betOptions.${sport}`;
-    const watchedFields = useWatch({ name: watchPath as any });
+    const watchedFields = useWatch({ name: `betOptions.${sport}` as any });
 
     const debouncedSave = React.useCallback(
         debounce(async (data: BettingSettingsFormValues) => {
@@ -131,12 +130,7 @@ function SportBettingForm({ sport }: { sport: Sport }) {
     );
 
     React.useEffect(() => {
-        let isSportDirty = false;
-        if (sport === 'Cricket') {
-            isSportDirty = !!dirtyFields.betOptions?.Cricket;
-        } else {
-            isSportDirty = !!dirtyFields.betOptions?.[sport];
-        }
+        let isSportDirty = !!dirtyFields.betOptions?.[sport];
 
         if (isDirty && isSportDirty) {
             const allValues = getValues();
