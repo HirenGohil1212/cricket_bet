@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -45,7 +44,7 @@ function DummyUsersPageSkeleton() {
     )
 }
 
-export default function DummyUsersPage() {
+export default function HouseAccountsPage() {
     const [dummyUsers, setDummyUsers] = React.useState<DummyUser[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
@@ -75,9 +74,9 @@ export default function DummyUsersPage() {
             <div className="lg:col-span-1">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Add New Dummy User</CardTitle>
+                        <CardTitle>Add New House Account</CardTitle>
                         <CardDescription>
-                            Add a dummy user for display purposes when no real user wins a match.
+                            Add a house account for display purposes when no real user wins a match.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -88,9 +87,9 @@ export default function DummyUsersPage() {
             <div className="lg:col-span-2">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Dummy Users List</CardTitle>
+                        <CardTitle>House Accounts List</CardTitle>
                         <CardDescription>
-                            View and manage all dummy users in the database.
+                            View and manage all house accounts in the database.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

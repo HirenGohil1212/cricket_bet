@@ -29,7 +29,7 @@ interface DummyUsersListProps {
 export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyUsersListProps) {
   const { toast } = useToast();
   const [dummyUsers, setDummyUsers] = useState(initialDummyUsers);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting<string | null>(null);
   
   useEffect(() => {
     setDummyUsers(initialDummyUsers);
@@ -41,7 +41,7 @@ export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyU
     if (result.error) {
       toast({ variant: "destructive", title: "Error", description: result.error });
     } else {
-      toast({ title: "Dummy User Deleted", description: result.success });
+      toast({ title: "House Account Deleted", description: result.success });
       onDummyUserDeleted(dummyUserId);
     }
     setIsDeleting(null);
@@ -65,7 +65,7 @@ export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyU
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the dummy user from the database. This action cannot be undone.
+              This will permanently delete the house account from the database. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -94,7 +94,7 @@ export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyU
                 <DummyUserItem key={user.id} user={user} />
               ))
             ) : (
-              <p className="text-center text-muted-foreground py-10">No dummy users found for {sport}.</p>
+              <p className="text-center text-muted-foreground py-10">No house accounts found for {sport}.</p>
             )}
           </div>
         </TabsContent>

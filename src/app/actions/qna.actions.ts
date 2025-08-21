@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import {
@@ -412,23 +410,25 @@ export async function settleMatchAndPayouts(matchId: string) {
         // If there are no real winners, check for dummy winners.
         if (finalWinners.length === 0 && matchData.dummyWinners && matchData.dummyWinners.length > 0) {
             const dummyUserIds = matchData.dummyWinners.map((dw: any) => dw.userId);
-            const dummyUsersQuery = query(collection(db, 'dummyUsers'), where(documentId(), 'in', dummyUserIds));
-            const dummyUsersSnapshot = await getDocs(dummyUsersQuery);
-            const dummyUsersMap = new Map();
-            dummyUsersSnapshot.forEach(doc => {
-                dummyUsersMap.set(doc.id, doc.data());
-            });
+            if (dummyUserIds.length > 0) {
+                const dummyUsersQuery = query(collection(db, 'dummyUsers'), where(documentId(), 'in', dummyUserIds));
+                const dummyUsersSnapshot = await getDocs(dummyUsersQuery);
+                const dummyUsersMap = new Map();
+                dummyUsersSnapshot.forEach(doc => {
+                    dummyUsersMap.set(doc.id, doc.data());
+                });
 
-            matchData.dummyWinners.forEach((dw: any) => {
-                const dummyUser = dummyUsersMap.get(dw.userId);
-                if (dummyUser) {
-                    finalWinners.push({
-                        userId: `dummy-${dw.userId}`,
-                        name: `(Dummy) ${dummyUser.name}`,
-                        payoutAmount: dw.amount
-                    });
-                }
-            });
+                matchData.dummyWinners.forEach((dw: any) => {
+                    const dummyUser = dummyUsersMap.get(dw.userId);
+                    if (dummyUser) {
+                        finalWinners.push({
+                            userId: `dummy-${dw.userId}`,
+                            name: dummyUser.name,
+                            payoutAmount: dw.amount
+                        });
+                    }
+                });
+            }
         }
 
         // --- STEP 3: Execute writes ---

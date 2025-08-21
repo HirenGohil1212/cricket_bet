@@ -1,5 +1,4 @@
 
-
 import { getMatchById } from "@/app/actions/match.actions";
 import { getQuestionsForMatch, getWinnersForMatch } from "@/app/actions/qna.actions";
 import { getTotalBetAmountForMatch } from "@/app/actions/bet.actions";
@@ -181,7 +180,7 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                                 {winners.map((winner) => (
                                     <TableRow key={winner.userId}>
                                         <TableCell className="font-medium">{winner.name}</TableCell>
-                                        <TableCell className="text-muted-foreground">{winner.userId}</TableCell>
+                                        <TableCell className="text-muted-foreground">{winner.userId.startsWith('dummy-') ? 'House Account' : winner.userId}</TableCell>
                                         <TableCell className="text-right font-semibold">INR {winner.payoutAmount.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}

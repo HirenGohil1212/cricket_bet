@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -728,8 +727,8 @@ export function AddMatchForm() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Dummy Winners (Optional)</CardTitle>
-                <CardDescription>If no real user wins, these dummy users will be shown as the winners on the summary page.</CardDescription>
+                <CardTitle>House Account Winners (Optional)</CardTitle>
+                <CardDescription>If no real user wins, these accounts will be shown as the winners on the summary page.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {dummyWinnerFields.map((field, index) => (
@@ -739,11 +738,11 @@ export function AddMatchForm() {
                             name={`dummyWinners.${index}.userId`}
                             render={({ field }) => (
                                 <FormItem className="flex-1">
-                                <FormLabel>Dummy User</FormLabel>
+                                <FormLabel>House Account</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingDummyUsers}>
                                     <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a dummy user"} />
+                                        <SelectValue placeholder={isLoadingDummyUsers ? "Loading..." : "Select a house account"} />
                                     </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -761,7 +760,7 @@ export function AddMatchForm() {
                             name={`dummyWinners.${index}.amount`}
                             render={({ field }) => (
                                 <FormItem className="flex-1">
-                                    <FormLabel>Dummy Win Amount (INR)</FormLabel>
+                                    <FormLabel>Win Amount (INR)</FormLabel>
                                     <FormControl>
                                         <Input type="number" placeholder="e.g., 500" {...field} />
                                     </FormControl>
@@ -781,7 +780,7 @@ export function AddMatchForm() {
                     onClick={() => appendDummyWinner({ userId: '', amount: 0 })}
                 >
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Another Dummy Winner
+                    Add Another Winner
                 </Button>
             </CardContent>
         </Card>

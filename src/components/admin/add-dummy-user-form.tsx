@@ -16,7 +16,7 @@ import { createDummyUser } from "@/app/actions/dummy-user.actions";
 import { z } from "zod";
 
 const dummyUserFormSchema = z.object({
-  name: z.string().min(2, "Dummy user name must be at least 2 characters."),
+  name: z.string().min(2, "Account name must be at least 2 characters."),
   sport: z.enum(sportsData, { required_error: "Please select a sport." }),
 });
 
@@ -49,7 +49,7 @@ export function AddDummyUserForm({ onDummyUserAdded }: AddDummyUserFormProps) {
       if (result.error) {
         toast({ variant: "destructive", title: "Error", description: result.error });
       } else {
-        toast({ title: "Dummy User Added", description: `${data.name} has been added to the list.` });
+        toast({ title: "House Account Added", description: `${data.name} has been added to the list.` });
         onDummyUserAdded({ 
             id: result.id!,
             name: data.name,
@@ -58,7 +58,7 @@ export function AddDummyUserForm({ onDummyUserAdded }: AddDummyUserFormProps) {
         form.reset();
       }
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Operation Failed", description: error.message || "Could not add dummy user. Please try again." });
+      toast({ variant: "destructive", title: "Operation Failed", description: error.message || "Could not add account. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
@@ -72,9 +72,9 @@ export function AddDummyUserForm({ onDummyUserAdded }: AddDummyUserFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Dummy User Name</FormLabel>
+              <FormLabel>House Account Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. House Account" {...field} />
+                <Input placeholder="e.g. Jiren" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -103,7 +103,7 @@ export function AddDummyUserForm({ onDummyUserAdded }: AddDummyUserFormProps) {
           )}
         />
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Adding..." : "Add Dummy User"}
+          {isSubmitting ? "Adding..." : "Add House Account"}
         </Button>
       </form>
     </Form>
