@@ -84,60 +84,79 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
 
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
-            
-            // --- Backup Logic ---
-            const backupCollectionName = `delete_${collectionName}`;
-            const backupBatch = writeBatch(db);
-            snapshot.docs.forEach(docSnapshot => {
-                const backupDocRef = doc(db, backupCollectionName, docSnapshot.id);
-                backupBatch.set(backupDocRef, docSnapshot.data());
-            });
-            await backupBatch.commit();
-            
-            // --- Deletion Logic (after backup) ---
-            const deleteBatch = writeBatch(db);
 
+            const docsToDelete = [];
+            const docsToBackup = [];
+
+            // ** NEW ROBUST LOGIC **
+            // Filter out pending requests before processing
             for (const docSnapshot of snapshot.docs) {
                 const data = docSnapshot.data();
                 
-                // Special handling for deposits to delete associated storage file first
-                if (collectionName === 'deposits') {
-                    const pathToDelete = data.screenshotPath || data.screenshotUrl;
-                    if (pathToDelete) {
-                        try {
-                            await deleteFileByPath(pathToDelete);
-                        } catch (storageError) {
-                            console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
-                        }
-                    }
+                if ((collectionName === 'deposits' || collectionName === 'withdrawals') && data.status === 'Processing') {
+                    // Skip any pending requests
+                    continue;
                 }
                 
-                if (collectionName === 'matches') {
-                    if (data.teamA?.logoPath) {
-                        try {
-                            await deleteFileByPath(data.teamA.logoPath);
-                        } catch (storageError) {
-                             console.error(`Could not delete storage file for Team A logo in match ${docSnapshot.id}. Error:`, storageError);
-                        }
-                    }
-                     if (data.teamB?.logoPath) {
-                        try {
-                            await deleteFileByPath(data.teamB.logoPath);
-                        } catch (storageError) {
-                             console.error(`Could not delete storage file for Team B logo in match ${docSnapshot.id}. Error:`, storageError);
-                        }
-                    }
-                }
-                
-                deleteBatch.delete(docSnapshot.ref);
+                docsToBackup.push(docSnapshot);
+                docsToDelete.push(docSnapshot);
+            }
+
+            if (docsToBackup.length > 0) {
+                const backupCollectionName = `delete_${collectionName}`;
+                const backupBatch = writeBatch(db);
+                docsToBackup.forEach(docSnapshot => {
+                    const backupDocRef = doc(db, backupCollectionName, docSnapshot.id);
+                    backupBatch.set(backupDocRef, docSnapshot.data());
+                });
+                await backupBatch.commit();
             }
             
-            await deleteBatch.commit();
-            totalDeleted += snapshot.size;
+            if (docsToDelete.length > 0) {
+                const deleteBatch = writeBatch(db);
+
+                for (const docSnapshot of docsToDelete) {
+                    const data = docSnapshot.data();
+                    
+                    if (collectionName === 'deposits') {
+                        const pathToDelete = data.screenshotPath || data.screenshotUrl;
+                        if (pathToDelete) {
+                            try {
+                                await deleteFileByPath(pathToDelete);
+                            } catch (storageError) {
+                                console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
+                            }
+                        }
+                    }
+                    
+                    if (collectionName === 'matches') {
+                        if (data.teamA?.logoPath) {
+                            try {
+                                await deleteFileByPath(data.teamA.logoPath);
+                            } catch (storageError) {
+                                 console.error(`Could not delete storage file for Team A logo in match ${docSnapshot.id}. Error:`, storageError);
+                            }
+                        }
+                         if (data.teamB?.logoPath) {
+                            try {
+                                await deleteFileByPath(data.teamB.logoPath);
+                            } catch (storageError) {
+                                 console.error(`Could not delete storage file for Team B logo in match ${docSnapshot.id}. Error:`, storageError);
+                            }
+                        }
+                    }
+                    
+                    deleteBatch.delete(docSnapshot.ref);
+                }
+                
+                await deleteBatch.commit();
+                totalDeleted += docsToDelete.length;
+            }
         }
         
         revalidatePath('/admin/data-management');
-        return { success: `Successfully backed up and deleted ${totalDeleted} historical records.` };
+        revalidatePath('/admin/dashboard');
+        return { success: `Successfully backed up and deleted ${totalDeleted} historical records. Pending requests were preserved.` };
     } catch (error: any) {
         console.error("Error deleting data history: ", error);
         return { error: 'Failed to delete data history. Check server logs for details.' };
@@ -198,3 +217,4 @@ export async function resetFinancialStats() {
         return { error: 'Failed to reset statistics.' };
     }
 }
+
