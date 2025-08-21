@@ -48,13 +48,9 @@ export function QandADashboard({ matches: initialMatches }: QandADashboardProps)
           {sports.map((sport) => (
             <TabsTrigger 
               key={sport} 
-              value={sport} 
-              className={cn(
-                "flex flex-col sm:flex-row items-center gap-2 py-2",
-                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg"
-              )}
+              value={sport}
             >
-              <span>{sport}</span>
+              {sport}
             </TabsTrigger>
           ))}
         </TabsList>
