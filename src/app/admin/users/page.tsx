@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp, orderBy, query } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
@@ -31,8 +31,8 @@ export default function AdminUsersPage() {
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    React.useEffect(() => {
-        async function getUsers(): Promise<void> {
+    useEffect(() => {
+        async function fetchAndProcessUsers() {
             setIsLoading(true);
             const usersCol = collection(db, 'users');
             const q = query(usersCol, orderBy('createdAt', 'desc'));
@@ -67,7 +67,7 @@ export default function AdminUsersPage() {
             setUsers(usersWithReferrals);
             setIsLoading(false);
         }
-        getUsers();
+        fetchAndProcessUsers();
     }, []);
 
     const handleViewReferrals = (user: UserProfile) => {
