@@ -143,118 +143,6 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
 
     const hasActiveQuestions = questions.some(q => q.status === 'active');
     
-    const PlayerResultGrid = ({ team, teamSide }: { team: Match['teamA'], teamSide: 'teamA' | 'teamB' }) => {
-        if (!team.players || team.players.length === 0) return null;
-
-        return (
-             <div className="space-y-2">
-                <h4 className="font-semibold">{team.name} Player Results</h4>
-                <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[200px]">Question</TableHead>
-                            {team.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                         {questions.map((q) => (
-                            <TableRow key={q.id}>
-                                <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
-                                {team.players?.map(p => (
-                                    <TableCell key={p.name}>
-                                       <FormField
-                                            control={form.control}
-                                            name={`player_${q.id}.${teamSide}.${p.name}`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input
-                                                          type="text"
-                                                          className="min-w-[60px] text-center"
-                                                          placeholder="-"
-                                                          disabled={isSaving || isSettling || q.status === 'settled'}
-                                                          {...field}
-                                                        />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                         ))}
-                    </TableBody>
-                </Table>
-                </div>
-            </div>
-        )
-    };
-
-    const TeamResultGrid = () => {
-         return (
-             <div className="space-y-2">
-                <h4 className="font-semibold">Team Results</h4>
-                <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-1/2">Question</TableHead>
-                            <TableHead className="text-center">{match.teamA.name}</TableHead>
-                            <TableHead className="text-center">{match.teamB.name}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                         {questions.map((q) => (
-                            <TableRow key={q.id}>
-                                <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
-                                <TableCell>
-                                    <FormField
-                                        control={form.control}
-                                        name={`${q.id}.teamA`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Input
-                                                      type="text"
-                                                      className="min-w-[60px] text-center"
-                                                      placeholder="Result"
-                                                      disabled={isSaving || isSettling || q.status === 'settled'}
-                                                      {...field}
-                                                    />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                     <FormField
-                                        control={form.control}
-                                        name={`${q.id}.teamB`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Input
-                                                      type="text"
-                                                      className="min-w-[60px] text-center"
-                                                      placeholder="Result"
-                                                      disabled={isSaving || isSettling || q.status === 'settled'}
-                                                      {...field}
-                                                    />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                    />
-                                </TableCell>
-                            </TableRow>
-                         ))}
-                    </TableBody>
-                </Table>
-                </div>
-            </div>
-        )
-    };
-    
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
@@ -273,12 +161,134 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                     <div className="space-y-6">
                                         {match.isSpecialMatch && (
                                             <>
-                                                <PlayerResultGrid team={match.teamA} teamSide="teamA" />
-                                                <PlayerResultGrid team={match.teamB} teamSide="teamB" />
-                                                <Separator /> 
+                                                {/* Player Result Grid for Team A */}
+                                                {(match.teamA.players && match.teamA.players.length > 0) && (
+                                                    <div className="space-y-2">
+                                                        <h4 className="font-semibold">{match.teamA.name} Player Results</h4>
+                                                        <div className="rounded-md border">
+                                                            <Table>
+                                                                <TableHeader>
+                                                                    <TableRow>
+                                                                        <TableHead className="w-[200px]">Question</TableHead>
+                                                                        {match.teamA.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
+                                                                    </TableRow>
+                                                                </TableHeader>
+                                                                <TableBody>
+                                                                    {questions.map((q) => (
+                                                                        <TableRow key={`${q.id}-a`}>
+                                                                            <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
+                                                                            {match.teamA.players?.map(p => (
+                                                                                <TableCell key={p.name}>
+                                                                                    <FormField
+                                                                                        control={form.control}
+                                                                                        name={`player_${q.id}.teamA.${p.name}`}
+                                                                                        render={({ field }) => (
+                                                                                            <FormItem>
+                                                                                                <FormControl>
+                                                                                                    <Input type="text" className="min-w-[60px] text-center" placeholder="-" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
+                                                                                                </FormControl>
+                                                                                            </FormItem>
+                                                                                        )}
+                                                                                    />
+                                                                                </TableCell>
+                                                                            ))}
+                                                                        </TableRow>
+                                                                    ))}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* Player Result Grid for Team B */}
+                                                {(match.teamB.players && match.teamB.players.length > 0) && (
+                                                    <div className="space-y-2">
+                                                        <h4 className="font-semibold">{match.teamB.name} Player Results</h4>
+                                                        <div className="rounded-md border">
+                                                            <Table>
+                                                                <TableHeader>
+                                                                    <TableRow>
+                                                                        <TableHead className="w-[200px]">Question</TableHead>
+                                                                        {match.teamB.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
+                                                                    </TableRow>
+                                                                </TableHeader>
+                                                                <TableBody>
+                                                                    {questions.map((q) => (
+                                                                        <TableRow key={`${q.id}-b`}>
+                                                                            <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
+                                                                            {match.teamB.players?.map(p => (
+                                                                                <TableCell key={p.name}>
+                                                                                    <FormField
+                                                                                        control={form.control}
+                                                                                        name={`player_${q.id}.teamB.${p.name}`}
+                                                                                        render={({ field }) => (
+                                                                                            <FormItem>
+                                                                                                <FormControl>
+                                                                                                    <Input type="text" className="min-w-[60px] text-center" placeholder="-" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
+                                                                                                </FormControl>
+                                                                                            </FormItem>
+                                                                                        )}
+                                                                                    />
+                                                                                </TableCell>
+                                                                            ))}
+                                                                        </TableRow>
+                                                                    ))}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <Separator />
                                             </>
                                         )}
-                                        <TeamResultGrid />
+                                        
+                                        {/* Team Result Grid */}
+                                        <div className="space-y-2">
+                                            <h4 className="font-semibold">Team Results</h4>
+                                            <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-1/2">Question</TableHead>
+                                                        <TableHead className="text-center">{match.teamA.name}</TableHead>
+                                                        <TableHead className="text-center">{match.teamB.name}</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {questions.map((q) => (
+                                                        <TableRow key={q.id}>
+                                                            <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
+                                                            <TableCell>
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name={`${q.id}.teamA`}
+                                                                    render={({ field }) => (
+                                                                        <FormItem>
+                                                                            <FormControl>
+                                                                                <Input type="text" className="min-w-[60px] text-center" placeholder="Result" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
+                                                                            </FormControl>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name={`${q.id}.teamB`}
+                                                                    render={({ field }) => (
+                                                                        <FormItem>
+                                                                            <FormControl>
+                                                                                <Input type="text" className="min-w-[60px] text-center" placeholder="Result" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
+                                                                            </FormControl>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                            </div>
+                                        </div>
                                     </div>
                             ) : (
                                     <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
