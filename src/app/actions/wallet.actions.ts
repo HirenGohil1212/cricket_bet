@@ -89,6 +89,23 @@ export async function getUserDeposits(userId: string): Promise<DepositRequest[]>
     }
 }
 
+// New function to get the total approved deposit amount for a user
+export async function getTotalDepositsForUser(userId: string): Promise<number> {
+    if (!userId) return 0;
+    try {
+        const depositsCol = collection(db, 'deposits');
+        const q = query(depositsCol, where('userId', '==', userId), where('status', '==', 'Approved'));
+        const querySnapshot = await getDocs(q);
+        
+        const totalAmount = querySnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+        return totalAmount;
+
+    } catch (error) {
+        console.error(`Error fetching total deposits for user ${userId}:`, error);
+        return 0;
+    }
+}
+
 
 // Admin function to get all deposit requests
 export async function getAllDeposits(): Promise<DepositRequest[]> {

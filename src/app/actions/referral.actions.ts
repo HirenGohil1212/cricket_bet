@@ -19,6 +19,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { ReferralSettings, ReferralSettingsFormValues, Transaction } from '@/lib/types';
 import { referralSettingsSchema } from '@/lib/schemas';
+import { getTotalDepositsForUser } from './wallet.actions';
 
 // --- Admin Actions ---
 
@@ -104,29 +105,35 @@ export async function awardSignupBonus(newUserId: string) {
 
 // --- Payout Logic for the Referrer ---
 
-// This function is called from the createBet action when a referred user places their first bet.
+// This function is called from the createBet action when a referred user places a bet.
 export async function processReferral(newUserId: string, referrerId: string) {
     try {
-        // 1. Get referral settings
+        // 1. Get referral settings and user docs
         const settings = await getReferralSettings();
         if (!settings.isEnabled || settings.referrerBonus === 0) {
-            return; // Referrals disabled or no referrer bonus to give
+            return; // Referrals disabled or no bonus to give.
         }
-        
-        // 2. Check if referrer bonus was already awarded
+
         const newUserRef = doc(db, 'users', newUserId);
         const newUserDoc = await getDoc(newUserRef);
         if (!newUserDoc.exists() || newUserDoc.data()?.referralBonusAwarded) {
-            return; // Already processed or user not found
+            return; // Already processed or user not found.
         }
+
+        // 2. Get total bets and deposits for the new user
+        const betsQuery = query(collection(db, 'bets'), where('userId', '==', newUserId));
+        const betsSnapshot = await getDocs(betsQuery);
+        const totalWagered = betsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
         
-        // 3. Ensure the new user has made at least one successful deposit.
-        const depositsRef = collection(db, 'deposits');
-        const depositQuery = query(depositsRef, where('userId', '==', newUserId), where('status', '==', 'Approved'));
-        const depositSnapshot = await getDocs(depositQuery);
-        if (depositSnapshot.empty) {
-            // No successful deposit yet. Exit, this will be tried again on their next bet.
-            return;
+        const totalDeposited = await getTotalDepositsForUser(newUserId);
+        if (totalDeposited === 0) {
+            return; // User has not made their first deposit yet.
+        }
+
+        // 3. Check if the condition is met
+        const conditionMet = totalWagered >= (totalDeposited + settings.referredUserBonus);
+        if (!conditionMet) {
+            return; // Condition not yet met.
         }
 
         // 4. Perform transaction to award bonus to the REFERRER
@@ -135,10 +142,8 @@ export async function processReferral(newUserId: string, referrerId: string) {
 
         const referrerDoc = await getDoc(referrerRef);
         if(referrerDoc.exists()) {
-            // Update referrer's balance
             batch.update(referrerRef, { walletBalance: increment(settings.referrerBonus) });
 
-            // Log transaction for referrer
             const referrerTransactionRef = doc(collection(db, 'transactions'));
             batch.set(referrerTransactionRef, {
                 userId: referrerId,
@@ -149,7 +154,7 @@ export async function processReferral(newUserId: string, referrerId: string) {
             });
         }
         
-        // Mark the referral as completed on the new user's doc so we don't process this again
+        // Mark the referral as completed on the new user's doc to prevent double payout
         batch.update(newUserRef, { 
             referralBonusAwarded: true
         });
@@ -162,7 +167,7 @@ export async function processReferral(newUserId: string, referrerId: string) {
             referredUserId: newUserId,
             referredUserName: newUserDoc.data()?.name || 'Unknown',
             referrerBonus: settings.referrerBonus,
-            referredUserBonus: settings.referredUserBonus, // Log the bonus that was given
+            referredUserBonus: settings.referredUserBonus,
             completedAt: Timestamp.now()
         });
         
@@ -170,7 +175,6 @@ export async function processReferral(newUserId: string, referrerId: string) {
 
     } catch (error) {
         console.error("Error processing referral for referrer: ", error);
-        // Fail silently in the background, but log the error.
     }
 }
 
