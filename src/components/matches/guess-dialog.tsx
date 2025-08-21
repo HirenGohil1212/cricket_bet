@@ -143,30 +143,26 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }, [match, open]);
 
   const handleQnaInputChange = (qId: string, team: 'teamA' | 'teamB', value: string) => {
-    if (/^\d*$/.test(value)) { // Only allow digits
-        setQnaPredictions(prev => ({
-            ...prev,
-            [qId]: {
-                ...prev[qId],
-                [team]: value,
-            }
-        }));
-    }
+    setQnaPredictions(prev => ({
+        ...prev,
+        [qId]: {
+            ...prev[qId],
+            [team]: value,
+        }
+    }));
   };
 
   const handlePlayerInputChange = (team: 'teamA' | 'teamB', playerName: string, qId: string, value: string) => {
-      if (/^\d*$/.test(value)) {
-          setPlayerPredictions(prev => ({
-              ...prev,
-              [team]: {
-                  ...prev[team],
-                  [playerName]: {
-                      ...prev[team]?.[playerName],
-                      [qId]: value
-                  }
+      setPlayerPredictions(prev => ({
+          ...prev,
+          [team]: {
+              ...prev[team],
+              [playerName]: {
+                  ...prev[team]?.[playerName],
+                  [qId]: value
               }
-          }));
-      }
+          }
+      }));
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -348,8 +344,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             {(betOnSide === 'teamB' || betOnSide === 'both') && <PlayerSelector team="B" />}
         </div>
         
-        {[...selectedPlayersA, ...selectedPlayersB].map(player => (
-            <div key={player.name} className="p-3 border rounded-lg space-y-3">
+        {[...selectedPlayersA, ...selectedPlayersB].map((player, idx) => (
+            <div key={`${player.name}-${idx}`} className="p-3 border rounded-lg space-y-3">
                 <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={player.imageUrl} alt={player.name} />
