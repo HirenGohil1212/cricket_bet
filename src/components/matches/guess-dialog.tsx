@@ -45,6 +45,14 @@ interface GuessDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Function to create a string schema that disallows "0" but allows other numbers
+const numericStringDisallowingZero = z.string().refine(val => val !== '0', {
+    message: "Cannot be zero"
+}).refine(val => /^\d+$/.test(val), {
+    message: "Invalid number"
+});
+
+
 // Dynamically create a Zod schema for the user's prediction form
 const createPredictionSchema = (
     questions: Question[], 
@@ -64,38 +72,37 @@ const createPredictionSchema = (
     let predictionsSchema;
 
     if (bettingMode === 'player') {
-        const playerSchema = z.record(z.string(), z.string().min(1, "Required"));
-        const teamsSchema = z.object({
-            teamA: z.array(playerSchema).optional(),
-            teamB: z.array(playerSchema).optional(),
-        });
+        const playerSchema = z.record(z.string(), numericStringDisallowingZero.min(1, "Required"));
         
         predictionsSchema = z.object({
-            teamA: z.record(z.string(), z.record(z.string(), z.string().min(1, "Required"))).optional(),
-            teamB: z.record(z.string(), z.record(z.string(), z.string().min(1, "Required"))).optional(),
+            teamA: z.record(z.string(), playerSchema).optional(),
+            teamB: z.record(z.string(), playerSchema).optional(),
         }).refine(data => {
-            return (selectedPlayersA.length > 0 && data.teamA && Object.keys(data.teamA).length > 0) ||
-                   (selectedPlayersB.length > 0 && data.teamB && Object.keys(data.teamB).length > 0);
+            const hasTeamA = selectedPlayersA.length > 0 && data.teamA && Object.keys(data.teamA).length > 0;
+            const hasTeamB = selectedPlayersB.length > 0 && data.teamB && Object.keys(data.teamB).length > 0;
+            return hasTeamA || hasTeamB;
         }, { message: "Please make a prediction for at least one selected player." });
         
     } else { // qna mode
         const qnaSchemaObject = questions.reduce((acc, q) => {
             let questionFieldSchema = z.object({
-                teamA: z.string().optional(),
-                teamB: z.string().optional(),
+                teamA: z.optional(numericStringDisallowingZero),
+                teamB: z.optional(numericStringDisallowingZero),
             });
 
             if (allowOneSidedBets) {
                 questionFieldSchema = questionFieldSchema.refine(data => {
-                    if (betOnSide === 'both') return (data.teamA?.trim() ?? '') !== '' && (data.teamB?.trim() ?? '') !== '';
-                    if (betOnSide === 'teamA') return (data.teamA?.trim() ?? '') !== '';
-                    if (betOnSide === 'teamB') return (data.teamB?.trim() ?? '') !== '';
+                    const a = data.teamA?.trim() ?? '';
+                    const b = data.teamB?.trim() ?? '';
+                    if (betOnSide === 'both') return a !== '' && b !== '';
+                    if (betOnSide === 'teamA') return a !== '';
+                    if (betOnSide === 'teamB') return b !== '';
                     return false;
-                }, { message: "A prediction is required for the selected side.", path: ['root'] });
+                }, { message: "Required", path: ['root'] });
             } else {
                 questionFieldSchema = z.object({
-                    teamA: z.string().min(1, 'Prediction is required'),
-                    teamB: z.string().min(1, 'Prediction is required'),
+                    teamA: numericStringDisallowingZero.min(1, 'Required'),
+                    teamB: numericStringDisallowingZero.min(1, 'Required'),
                 });
             }
             acc[q.id] = questionFieldSchema;
@@ -411,14 +418,19 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             name={`predictions.${selectedPlayersA.some(p => p.name === player.name) ? 'teamA' : 'teamB'}.${player.name}.${q.id}`}
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-sm">{q.question}</FormLabel>
+                                    <FormLabel className="text-sm font-semibold">{q.question}</FormLabel>
                                     <FormControl>
                                         <Input
-                                            type="number"
+                                            type="text"
                                             placeholder="Prediction"
                                             {...field}
                                             value={field.value ?? ''}
-                                            onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (/^\d*$/.test(value)) { // only allow digits
+                                                    field.onChange(value);
+                                                }
+                                            }}
                                         />
                                     </FormControl>
                                     <FormMessage/>
@@ -548,12 +560,17 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                     <FormItem className="w-full">
                                                         <FormControl>
                                                             <Input
-                                                                type="number"
+                                                                type="text"
                                                                 placeholder="Ans"
                                                                 {...field}
                                                                 value={field.value ?? ''}
                                                                 className="text-center"
-                                                                onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    if (/^\d*$/.test(value)) { // only allow digits
+                                                                        field.onChange(value);
+                                                                    }
+                                                                }}
                                                             />
                                                         </FormControl>
                                                         <FormMessage />
@@ -578,12 +595,17 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                         <FormItem className="w-full">
                                                             <FormControl>
                                                                 <Input
-                                                                    type="number"
+                                                                    type="text"
                                                                     placeholder="Ans"
                                                                     className="text-center"
                                                                     {...field}
                                                                     value={field.value ?? ''}
-                                                                    onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
+                                                                    onChange={(e) => {
+                                                                        const value = e.target.value;
+                                                                        if (/^\d*$/.test(value)) { // only allow digits
+                                                                            field.onChange(value);
+                                                                        }
+                                                                    }}
                                                                 />
                                                             </FormControl>
                                                             <FormMessage />
@@ -624,3 +646,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
