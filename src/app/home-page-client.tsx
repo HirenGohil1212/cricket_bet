@@ -13,7 +13,6 @@ import type { AppSettings, ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
 import { BannerAd } from "@/components/banner-ad";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { InstallPwaDialog } from "@/components/install-pwa-dialog";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -42,45 +41,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
 
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallDialog, setShowInstallDialog] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-
   const promoVideoUrl = content?.smallVideoUrl || content?.youtubeUrl;
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
-
-      setIsIos(isIosDevice);
-      
-      if (isIosDevice && !isInStandaloneMode) {
-        setShowInstallDialog(true);
-      } else {
-        const handleBeforeInstallPrompt = (e: Event) => {
-          e.preventDefault();
-          setDeferredPrompt(e);
-          setShowInstallDialog(true);
-        };
-        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        return () => {
-          window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        };
-      }
-    }
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      return;
-    }
-    setShowInstallDialog(false);
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-  };
-
 
   useEffect(() => {
     setIsNavigating(false);
@@ -181,12 +142,6 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
                 onOpenChange={setIsPromoOpen}
             />
         )}
-        <InstallPwaDialog
-            isOpen={showInstallDialog}
-            isIos={isIos}
-            onOpenChange={setShowInstallDialog}
-            onInstall={handleInstallClick}
-        />
       </SidebarInset>
     </SidebarProvider>
   );

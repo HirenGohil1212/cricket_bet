@@ -14,13 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import Image from "next/image";
 import { ArrowUpSquare } from "lucide-react";
-
-interface InstallPwaDialogProps {
-  isOpen: boolean;
-  isIos: boolean;
-  onOpenChange: (open: boolean) => void;
-  onInstall: () => void;
-}
+import { usePwaInstall } from "@/context/pwa-install-context";
 
 const IosInstructions = () => (
   <div className="text-center text-sm space-y-4">
@@ -40,16 +34,13 @@ const DefaultInstructions = () => (
     </div>
 );
 
-
-export function InstallPwaDialog({ isOpen, onOpenChange, onInstall, isIos }: InstallPwaDialogProps) {
-
-  const handleInstall = () => {
-    onInstall();
-    onOpenChange(false);
-  };
+export function InstallPwaDialog() {
+  const { isDialogOpen, setIsDialogOpen, isIos } = usePwaInstall();
+  
+  // No need for a separate onInstall prop, the context handles it.
   
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex justify-center mb-4">
@@ -65,12 +56,7 @@ export function InstallPwaDialog({ isOpen, onOpenChange, onInstall, isIos }: Ins
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center">
-          <AlertDialogCancel onClick={() => onOpenChange(false)}>Not Now</AlertDialogCancel>
-           {!isIos && (
-              <AlertDialogAction onClick={handleInstall} asChild>
-                <Button>Install</Button>
-              </AlertDialogAction>
-           )}
+          <AlertDialogCancel onClick={() => setIsDialogOpen(false)}>Close</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

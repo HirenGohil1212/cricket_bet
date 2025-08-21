@@ -5,6 +5,9 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
+import { PwaInstallProvider } from '@/context/pwa-install-context';
+import { InstallPwaDialog } from '@/components/install-pwa-dialog';
+
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -39,7 +42,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn("font-body antialiased", ptSans.variable, poppins.variable)}>
         <AuthProvider>
-          {children}
+            <PwaInstallProvider>
+                {children}
+                <InstallPwaDialog />
+            </PwaInstallProvider>
         </AuthProvider>
         <Toaster />
       </body>

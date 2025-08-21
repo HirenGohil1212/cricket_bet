@@ -21,12 +21,13 @@ import {
 } from "@/components/ui/sidebar";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet } from "lucide-react";
+import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { usePwaInstall } from '@/context/pwa-install-context';
 
 interface AppSidebarProps {
   onNavigate: () => void;
@@ -39,6 +40,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
+  const { canInstall, promptInstall } = usePwaInstall();
 
   const handleLinkClick = (href: string) => {
     if (pathname !== href) {
@@ -88,6 +90,13 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       if (isMobile) {
         setOpenMobile(false);
       }
+  }
+
+  const handleInstallClick = () => {
+    promptInstall();
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   }
 
   const HeaderContent = () => (
@@ -149,6 +158,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             {canInstall && (
+               <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleInstallClick}>
+                    <Download />
+                    Install App
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+             )}
           </SidebarMenu>
           
           {userProfile?.role === 'admin' && (
