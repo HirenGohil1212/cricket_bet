@@ -16,49 +16,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
 import { Separator } from '../ui/separator';
+import { useForm, FormProvider } from 'react-hook-form';
+import { Form, FormControl, FormField, FormItem } from '../ui/form';
 
 type ResultState = {
-    questionId: string;
-    result: { teamA: string; teamB: string };
-    playerResult: Record<string, Record<string, string>>; // New structure: { [teamSide]: { [playerName]: result } }
+    [key: string]: { teamA: string; teamB: string } | Record<string, Record<string, string>>;
 };
-
-
-// New component to handle input state locally
-const EditableResultInput = ({
-  initialValue,
-  onBlur,
-  disabled,
-  placeholder = "-"
-}: {
-  initialValue: string;
-  onBlur: (value: string) => void;
-  disabled: boolean;
-  placeholder?: string;
-}) => {
-  const [value, setValue] = React.useState(initialValue);
-
-  React.useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  const handleBlur = () => {
-    onBlur(value);
-  };
-
-  return (
-    <Input
-      type="text"
-      className="min-w-[60px] text-center"
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={handleBlur}
-      disabled={disabled}
-    />
-  );
-};
-
 
 interface ManageQnaDialogProps {
     match: Match;
@@ -74,62 +37,74 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     const [isSaving, setIsSaving] = React.useState(false);
     const [isSettling, setIsSettling] = React.useState(false);
     
-    const [resultsState, setResultsState] = React.useState<ResultState[]>([]);
-    
-    // New state for the settlement results
     const [settlementResults, setSettlementResults] = React.useState<{ winners: Winner[]; totalBetsProcessed: number; } | null>(null);
     const [isResultsDialogOpen, setIsResultsDialogOpen] = React.useState(false);
 
     const isAdmin = userProfile?.role === 'admin';
 
-    // Initialize or update results state when questions change
+    const form = useForm({
+        defaultValues: React.useMemo(() => {
+            const defaults: ResultState = {};
+            questions.forEach(q => {
+                defaults[q.id] = {
+                    teamA: q.result?.teamA || '',
+                    teamB: q.result?.teamB || ''
+                };
+                if (match.isSpecialMatch) {
+                    const playerResultObject: Record<string, Record<string, string>> = { teamA: {}, teamB: {} };
+                    match.teamA.players?.forEach(p => {
+                        playerResultObject.teamA[p.name] = (q.playerResult as any)?.teamA?.[p.name] || '';
+                    });
+                    match.teamB.players?.forEach(p => {
+                        playerResultObject.teamB[p.name] = (q.playerResult as any)?.teamB?.[p.name] || '';
+                    });
+                    defaults[`player_${q.id}`] = playerResultObject;
+                }
+            });
+            return defaults;
+        }, [questions, match])
+    });
+    
     React.useEffect(() => {
-        if (questions) {
-            const initialResults = questions.map(q => ({
-                questionId: q.id,
-                result: q.result || { teamA: '', teamB: '' },
-                playerResult: q.playerResult || {},
-            }));
-            setResultsState(initialResults);
-        }
-    }, [questions]);
-    
-    const handleResultChange = (index: number, team: 'teamA' | 'teamB', value: string) => {
-        setResultsState(prev => {
-            const newState = [...prev];
-            newState[index].result[team] = value;
-            return newState;
-        });
-    };
-    
-    const handlePlayerGridResultChange = (qIndex: number, teamSide: 'teamA' | 'teamB', playerName: string, value: string) => {
-        setResultsState(prev => {
-            const newState = [...prev];
-            if (!newState[qIndex].playerResult[teamSide]) {
-                newState[qIndex].playerResult[teamSide] = {};
+        const defaults: ResultState = {};
+        questions.forEach(q => {
+            defaults[q.id] = {
+                teamA: q.result?.teamA || '',
+                teamB: q.result?.teamB || ''
+            };
+            if (match.isSpecialMatch) {
+                const playerResultObject: Record<string, Record<string, string>> = { teamA: {}, teamB: {} };
+                match.teamA.players?.forEach(p => {
+                    playerResultObject.teamA[p.name] = (q.playerResult as any)?.teamA?.[p.name] || '';
+                });
+                match.teamB.players?.forEach(p => {
+                    playerResultObject.teamB[p.name] = (q.playerResult as any)?.teamB?.[p.name] || '';
+                });
+                defaults[`player_${q.id}`] = playerResultObject;
             }
-            newState[qIndex].playerResult[teamSide][playerName] = value;
-            return newState;
         });
-    }
+        form.reset(defaults);
+    }, [questions, match, form]);
 
-    const handleSave = async () => {
+
+    const handleSave = async (data: ResultState) => {
         if (!isAdmin) {
             toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
             return;
         }
         setIsSaving(true);
         
-        const resultsToSave = resultsState.reduce((acc, state) => {
-            acc[state.questionId] = state.result;
-            return acc;
-        }, {} as Record<string, { teamA: string; teamB: string }>);
+        const resultsToSave: Record<string, { teamA: string; teamB: string }> = {};
+        const playerResultsToSave: Record<string, any> = {};
 
-        const playerResultsToSave = resultsState.reduce((acc, state) => {
-            acc[state.questionId] = state.playerResult;
-            return acc;
-        }, {} as Record<string, any>);
-
+        Object.keys(data).forEach(key => {
+            if (key.startsWith('player_')) {
+                const questionId = key.substring(7);
+                playerResultsToSave[questionId] = data[key];
+            } else {
+                resultsToSave[key] = data[key] as { teamA: string; teamB: string };
+            }
+        });
 
         const actionResult = await saveQuestionResults(match.id, resultsToSave, playerResultsToSave);
 
@@ -155,7 +130,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             toast({ variant: 'destructive', title: 'Settlement Failed', description: actionResult.error });
         } else {
             toast({ title: 'Success', description: actionResult.success });
-            onClose(true); // Close QNA dialog and trigger parent refresh
+            onClose(true); 
             if (actionResult.winners) {
                 setSettlementResults({ 
                     winners: actionResult.winners,
@@ -167,7 +142,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     };
 
     const hasActiveQuestions = questions.some(q => q.status === 'active');
-
+    
     const PlayerResultGrid = ({ team, teamSide }: { team: Match['teamA'], teamSide: 'teamA' | 'teamB' }) => {
         if (!team.players || team.players.length === 0) return null;
 
@@ -183,15 +158,27 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {questions.map((q, qIndex) => (
+                         {questions.map((q) => (
                             <TableRow key={q.id}>
                                 <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                 {team.players?.map(p => (
                                     <TableCell key={p.name}>
-                                        <EditableResultInput
-                                          initialValue={resultsState[qIndex]?.playerResult?.[teamSide]?.[p.name] || ''}
-                                          onBlur={(value) => handlePlayerGridResultChange(qIndex, teamSide, p.name, value)}
-                                          disabled={isSaving || isSettling || q.status === 'settled'}
+                                       <FormField
+                                            control={form.control}
+                                            name={`player_${q.id}.${teamSide}.${p.name}`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input
+                                                          type="text"
+                                                          className="min-w-[60px] text-center"
+                                                          placeholder="-"
+                                                          disabled={isSaving || isSettling || q.status === 'settled'}
+                                                          {...field}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
                                         />
                                     </TableCell>
                                 ))}
@@ -218,23 +205,45 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {questions.map((q, qIndex) => (
+                         {questions.map((q) => (
                             <TableRow key={q.id}>
                                 <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                 <TableCell>
-                                    <EditableResultInput
-                                      initialValue={resultsState[qIndex]?.result?.teamA || ''}
-                                      onBlur={(value) => handleResultChange(qIndex, 'teamA', value)}
-                                      disabled={isSaving || isSettling || q.status === 'settled'}
-                                      placeholder="Result"
+                                    <FormField
+                                        control={form.control}
+                                        name={`${q.id}.teamA`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input
+                                                      type="text"
+                                                      className="min-w-[60px] text-center"
+                                                      placeholder="Result"
+                                                      disabled={isSaving || isSettling || q.status === 'settled'}
+                                                      {...field}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
                                     />
                                 </TableCell>
                                 <TableCell>
-                                     <EditableResultInput
-                                      initialValue={resultsState[qIndex]?.result?.teamB || ''}
-                                      onBlur={(value) => handleResultChange(qIndex, 'teamB', value)}
-                                      disabled={isSaving || isSettling || q.status === 'settled'}
-                                      placeholder="Result"
+                                     <FormField
+                                        control={form.control}
+                                        name={`${q.id}.teamB`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input
+                                                      type="text"
+                                                      className="min-w-[60px] text-center"
+                                                      placeholder="Result"
+                                                      disabled={isSaving || isSettling || q.status === 'settled'}
+                                                      {...field}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
                                     />
                                 </TableCell>
                             </TableRow>
@@ -251,46 +260,50 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
                 <DialogContent className="sm:max-w-5xl">
                     <DialogHeader>
-                        <DialogTitle>Manage Q&A for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
+                        <DialogTitle>Manage Q&amp;A for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
                         <DialogDescription>
                            Enter and save the results for each question, then finalize to process payouts.
                         </DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
-                        <div className="space-y-6">
-                           {questions.length > 0 ? (
-                                <div className="space-y-6">
-                                    {match.isSpecialMatch && (
-                                        <>
-                                            <PlayerResultGrid team={match.teamA} teamSide="teamA" />
-                                            <PlayerResultGrid team={match.teamB} teamSide="teamB" />
-                                            <Separator /> 
-                                        </>
-                                    )}
-                                    <TeamResultGrid />
-                                </div>
-                           ) : (
-                                <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
-                           )}
+                    <FormProvider {...form}>
+                    <form onSubmit={form.handleSubmit(handleSave)}>
+                        <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
+                            <div className="space-y-6">
+                            {questions.length > 0 ? (
+                                    <div className="space-y-6">
+                                        {match.isSpecialMatch && (
+                                            <>
+                                                <PlayerResultGrid team={match.teamA} teamSide="teamA" />
+                                                <PlayerResultGrid team={match.teamB} teamSide="teamB" />
+                                                <Separator /> 
+                                            </>
+                                        )}
+                                        <TeamResultGrid />
+                                    </div>
+                            ) : (
+                                    <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
+                            )}
+                            </div>
+                        </ScrollArea>
+                        <DialogFooter className="mt-6 flex-col sm:flex-row items-center sm:justify-between w-full">
+                        <Alert className="sm:max-w-xs text-left">
+                                <Info className="h-4 w-4" />
+                                <AlertDescription className="text-xs">
+                                    Save results first, then Settle to pay winners. Payouts are irreversible.
+                                </AlertDescription>
+                        </Alert>
+                        <div className="flex justify-end gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                            <Button type="button" variant="ghost" onClick={() => onClose(false)} disabled={isSaving || isSettling}>Cancel</Button>
+                            <Button type="submit" variant="outline" disabled={isSaving || isSettling || match.status === 'Finished' || !isAdmin}>
+                                {isSaving ? 'Saving...' : 'Save Results'}
+                            </Button>
+                            <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
+                                {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
+                            </Button>
                         </div>
-                    </ScrollArea>
-                    <DialogFooter className="mt-6 flex-col sm:flex-row items-center sm:justify-between w-full">
-                       <Alert className="sm:max-w-xs text-left">
-                            <Info className="h-4 w-4" />
-                            <AlertDescription className="text-xs">
-                                Save results first, then Settle to pay winners. Payouts are irreversible.
-                            </AlertDescription>
-                       </Alert>
-                       <div className="flex justify-end gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-                         <Button type="button" variant="ghost" onClick={() => onClose(false)} disabled={isSaving || isSettling}>Cancel</Button>
-                         <Button type="button" variant="outline" onClick={handleSave} disabled={isSaving || isSettling || match.status === 'Finished' || !isAdmin}>
-                             {isSaving ? 'Saving...' : 'Save Results'}
-                         </Button>
-                         <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
-                             {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
-                         </Button>
-                       </div>
-                   </DialogFooter>
+                    </DialogFooter>
+                    </form>
+                    </FormProvider>
                 </DialogContent>
             </Dialog>
             <SettlementResultsDialog
