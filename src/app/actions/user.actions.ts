@@ -152,7 +152,7 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
     }
     try {
         const usersCol = collection(db, 'users');
-        const q = query(usersCol, where('referredBy', '==', referrerId), orderBy('createdAt', 'desc'));
+        const q = query(usersCol, where('referredBy', '==', referrerId));
         const querySnapshot = await getDocs(q);
 
         const referredUsers = querySnapshot.docs.map(doc => {
@@ -167,6 +167,10 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
                 referralCode: data.referralCode,
             } as UserProfile;
         });
+
+        // Sort after fetching
+        referredUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
         return referredUsers;
     } catch (error) {
         console.error("Error fetching referred users:", error);
