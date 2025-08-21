@@ -3,13 +3,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Users, Swords, Banknote, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
 import { getFinancialSummary } from "@/app/actions/financials.actions";
 
 async function getDashboardData() {
     try {
         const usersCol = collection(db, 'users');
         const matchesCol = collection(db, 'matches');
+        
+        // ** FIX: Query withdrawals and deposits without getCountFromServer to avoid index issues **
         const withdrawalsCol = collection(db, 'withdrawals');
         const depositsCol = collection(db, 'deposits');
 
@@ -22,15 +24,15 @@ async function getDashboardData() {
         ] = await Promise.all([
             getCountFromServer(usersCol),
             getCountFromServer(query(matchesCol, where('status', 'in', ['Live', 'Upcoming']))),
-            getCountFromServer(query(withdrawalsCol, where('status', '==', 'Processing'))),
-            getCountFromServer(query(depositsCol, where('status', '==', 'Processing'))),
+            getDocs(query(withdrawalsCol, where('status', '==', 'Processing'))),
+            getDocs(query(depositsCol, where('status', '==', 'Processing'))),
             getFinancialSummary()
         ]);
         
         const userCount = userSnapshot.data().count;
         const matchCount = activeMatchesSnapshot.data().count;
-        const pendingWithdrawals = pendingWithdrawalsSnapshot.data().count;
-        const pendingDeposits = pendingDepositsSnapshot.data().count;
+        const pendingWithdrawals = pendingWithdrawalsSnapshot.size;
+        const pendingDeposits = pendingDepositsSnapshot.size;
         const totalRevenue = financialSummary.grossRevenue;
 
         return { userCount, matchCount, totalRevenue, pendingWithdrawals, pendingDeposits };

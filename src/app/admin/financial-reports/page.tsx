@@ -38,7 +38,8 @@ export default async function FinancialReportsPage() {
 
     const summaryCards = [
         { title: "Total Deposits", value: summary.totalDeposits, icon: ArrowUpCircle, color: "text-green-500", description: "All funds added by users." },
-        { title: "Total Payouts", value: summary.totalPayouts, icon: TrendingDown, color: "text-orange-500", description: "All winnings paid out." },
+        { title: "Total Withdrawals", value: summary.totalWithdrawals, icon: ArrowDownCircle, color: "text-red-500", description: "All funds paid out to users." },
+        { title: "Total Payouts", value: summary.totalPayouts, icon: TrendingDown, color: "text-orange-500", description: "All winnings paid out for bets." },
     ];
 
     const profitLoss = summary.grossRevenue;
@@ -51,7 +52,7 @@ export default async function FinancialReportsPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                  {summaryCards.map(card => (
                     <Card key={card.title}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
