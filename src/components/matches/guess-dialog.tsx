@@ -48,7 +48,7 @@ interface GuessDialogProps {
 // Function to create a string schema that disallows "0" but allows other numbers
 const numericStringDisallowingZero = z.string().refine(val => val !== '0', {
     message: "Cannot be zero"
-}).refine(val => /^\d+$/.test(val), {
+}).refine(val => /^\d+$/.test(val) || val === '', { // Allow empty string
     message: "Invalid number"
 });
 
@@ -419,7 +419,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             name={`predictions.${selectedPlayersA.some(p => p.name === player.name) ? 'teamA' : 'teamB'}.${player.name}.${q.id}`}
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-sm font-semibold">{q.question}</FormLabel>
+                                    <FormLabel className="text-base font-semibold">{q.question}</FormLabel>
                                     <FormControl>
                                         <Input
                                             type="text"
@@ -647,4 +647,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
