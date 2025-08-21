@@ -24,6 +24,42 @@ type ResultState = {
 };
 
 
+// New component to handle input state locally
+const EditableResultInput = ({
+  initialValue,
+  onBlur,
+  disabled,
+  placeholder = "-"
+}: {
+  initialValue: string;
+  onBlur: (value: string) => void;
+  disabled: boolean;
+  placeholder?: string;
+}) => {
+  const [value, setValue] = React.useState(initialValue);
+
+  React.useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleBlur = () => {
+    onBlur(value);
+  };
+
+  return (
+    <Input
+      type="text"
+      className="min-w-[60px] text-center"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={handleBlur}
+      disabled={disabled}
+    />
+  );
+};
+
+
 interface ManageQnaDialogProps {
     match: Match;
     questions: Question[];
@@ -152,12 +188,9 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                 <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                 {team.players?.map(p => (
                                     <TableCell key={p.name}>
-                                        <Input
-                                          type="text"
-                                          className="min-w-[60px] text-center"
-                                          placeholder="-"
-                                          value={resultsState[qIndex]?.playerResult?.[teamSide]?.[p.name] || ''}
-                                          onChange={(e) => handlePlayerGridResultChange(qIndex, teamSide, p.name, e.target.value)}
+                                        <EditableResultInput
+                                          initialValue={resultsState[qIndex]?.playerResult?.[teamSide]?.[p.name] || ''}
+                                          onBlur={(value) => handlePlayerGridResultChange(qIndex, teamSide, p.name, value)}
                                           disabled={isSaving || isSettling || q.status === 'settled'}
                                         />
                                     </TableCell>
@@ -189,23 +222,19 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                             <TableRow key={q.id}>
                                 <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                 <TableCell>
-                                    <Input
-                                      type="text"
-                                      className="min-w-[80px] text-center"
-                                      placeholder="Result"
-                                      value={resultsState[qIndex]?.result?.teamA || ''}
-                                      onChange={(e) => handleResultChange(qIndex, 'teamA', e.target.value)}
+                                    <EditableResultInput
+                                      initialValue={resultsState[qIndex]?.result?.teamA || ''}
+                                      onBlur={(value) => handleResultChange(qIndex, 'teamA', value)}
                                       disabled={isSaving || isSettling || q.status === 'settled'}
+                                      placeholder="Result"
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <Input
-                                      type="text"
-                                      className="min-w-[80px] text-center"
-                                      placeholder="Result"
-                                      value={resultsState[qIndex]?.result?.teamB || ''}
-                                      onChange={(e) => handleResultChange(qIndex, 'teamB', e.target.value)}
+                                     <EditableResultInput
+                                      initialValue={resultsState[qIndex]?.result?.teamB || ''}
+                                      onBlur={(value) => handleResultChange(qIndex, 'teamB', value)}
                                       disabled={isSaving || isSettling || q.status === 'settled'}
+                                      placeholder="Result"
                                     />
                                 </TableCell>
                             </TableRow>
