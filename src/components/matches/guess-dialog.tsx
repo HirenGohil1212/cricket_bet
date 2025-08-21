@@ -152,6 +152,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const validBetAmounts = React.useMemo(() => (betOptions || []).map(opt => opt.amount), [betOptions]);
   
   const form = useForm<any>({ // Using `any` due to highly dynamic schema
+    mode: "onSubmit", // Validate only on submit
     resolver: (data, context, options) => {
       const schema = createPredictionSchema(
           questions, 
