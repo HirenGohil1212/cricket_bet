@@ -1,11 +1,10 @@
+
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sports } from "@/lib/types";
-import type { Sport, Match, Question } from "@/lib/types";
-import { SportIcon } from "@/components/icons";
+import type { Sport, Match, MatchStatus } from "@/lib/types";
 import { MatchQnaCard } from "./match-qna-card";
-import { Button } from "../ui/button";
 import { useState, useCallback } from "react";
 import { getMatches } from "@/app/actions/match.actions";
 import { Skeleton } from "../ui/skeleton";
@@ -28,6 +27,8 @@ function QnaDashboardSkeleton() {
         </div>
     )
 }
+
+const matchStatuses: MatchStatus[] = ["Upcoming", "Live", "Finished", "Cancelled"];
 
 export function QandADashboard({ matches: initialMatches }: QandADashboardProps) {
   const [matches, setMatches] = useState(initialMatches);
@@ -61,13 +62,29 @@ export function QandADashboard({ matches: initialMatches }: QandADashboardProps)
           const sportMatches = matches.filter(m => m.sport === sport);
           return (
              <TabsContent key={sport} value={sport} className="mt-6 space-y-6">
-                {isLoading ? <QnaDashboardSkeleton /> : sportMatches.length > 0 ? (
-                      sportMatches.map(match => <MatchQnaCard key={match.id} match={match} onUpdate={refreshMatches} />)
-                 ) : (
-                      <div className="text-center text-muted-foreground py-12 border rounded-md">
-                          <p>No matches found for this sport.</p>
-                      </div>
-                 )}
+                 <Tabs defaultValue="Upcoming" className="w-full">
+                    <TabsList>
+                        {matchStatuses.map(status => (
+                            <TabsTrigger key={status} value={status}>
+                                {status} ({sportMatches.filter(m => m.status === status).length})
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                     {matchStatuses.map(status => {
+                        const filteredMatches = sportMatches.filter(m => m.status === status);
+                        return (
+                            <TabsContent key={status} value={status} className="mt-4 space-y-4">
+                                {isLoading ? <QnaDashboardSkeleton /> : filteredMatches.length > 0 ? (
+                                    filteredMatches.map(match => <MatchQnaCard key={match.id} match={match} onUpdate={refreshMatches} />)
+                                ) : (
+                                    <div className="text-center text-muted-foreground py-12 border rounded-md">
+                                        <p>No {status.toLowerCase()} matches found for this sport.</p>
+                                    </div>
+                                )}
+                            </TabsContent>
+                        )
+                    })}
+                 </Tabs>
               </TabsContent>
           )
         })}
