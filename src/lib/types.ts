@@ -154,6 +154,17 @@ export type ReferralSettings = {
     isEnabled: boolean;
 };
 
+export type Referral = {
+    id: string;
+    referrerId: string;
+    referredUserId: string;
+    referredUserName: string;
+    status: 'pending' | 'completed';
+    potentialBonus: number;
+    createdAt: string;
+    completedAt?: string;
+};
+
 export type AppSettings = {
   whatsappNumber: string;
 };

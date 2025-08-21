@@ -3,17 +3,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
-import type { Transaction } from '@/lib/types';
-import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import type { Transaction, Referral } from '@/lib/types';
+import { getBonusTransactions, getPendingReferrals } from '@/app/actions/referral.actions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Gift } from 'lucide-react';
+import { Gift, Clock } from 'lucide-react';
 
 export function BonusHistoryTable() {
   const { user, loading: authLoading } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [completedBonuses, setCompletedBonuses] = useState<Transaction[]>([]);
+  const [pendingBonuses, setPendingBonuses] = useState<Referral[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,37 +24,19 @@ export function BonusHistoryTable() {
 
     if (user) {
       setIsLoading(true);
-      const transCol = collection(db, 'transactions');
-      const q = query(
-          transCol,
-          where('userId', '==', user.uid),
-          where('type', '==', 'referral_bonus')
-      );
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const userTransactions = querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
-            } as Transaction;
-        });
-        
-        // Sort on the client-side to avoid needing a composite index
-        userTransactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-        setTransactions(userTransactions);
+      const fetchBonuses = async () => {
+        const [completed, pending] = await Promise.all([
+          getBonusTransactions(user.uid),
+          getPendingReferrals(user.uid)
+        ]);
+        setCompletedBonuses(completed);
+        setPendingBonuses(pending);
         setIsLoading(false);
-      }, (error) => {
-          console.error("Error fetching real-time bonus transactions: ", error);
-          setIsLoading(false);
-      });
-
-      // Cleanup subscription on component unmount
-      return () => unsubscribe();
+      }
+      fetchBonuses();
     } else {
-      setTransactions([]);
+      setCompletedBonuses([]);
+      setPendingBonuses([]);
       setIsLoading(false);
     }
   }, [user, authLoading]);
@@ -70,7 +52,7 @@ export function BonusHistoryTable() {
       ));
     }
 
-    if (transactions.length === 0) {
+    if (completedBonuses.length === 0 && pendingBonuses.length === 0) {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
@@ -80,23 +62,47 @@ export function BonusHistoryTable() {
       );
     }
 
-    return transactions.map((tx) => (
-      <TableRow key={tx.id}>
-        <TableCell className="font-medium">
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <Gift className="h-3 w-3 mr-1" />
-                Bonus
-            </Badge>
-        </TableCell>
-        <TableCell>
-          <div className="font-semibold">INR {tx.amount.toFixed(2)}</div>
-          <div className="text-xs text-muted-foreground">{tx.description}</div>
-        </TableCell>
-        <TableCell className="hidden text-right md:table-cell">
-          {new Date(tx.timestamp).toLocaleString()}
-        </TableCell>
-      </TableRow>
-    ));
+    return (
+      <>
+        {/* Pending Bonuses */}
+        {pendingBonuses.map((referral) => (
+          <TableRow key={referral.id}>
+            <TableCell className="font-medium">
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Pending
+                </Badge>
+            </TableCell>
+            <TableCell>
+              <div className="font-semibold">INR {referral.potentialBonus.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground">For referring {referral.referredUserName}</div>
+            </TableCell>
+            <TableCell className="hidden text-right md:table-cell">
+              {new Date(referral.createdAt).toLocaleString()}
+            </TableCell>
+          </TableRow>
+        ))}
+      
+        {/* Completed Bonuses */}
+        {completedBonuses.map((tx) => (
+          <TableRow key={tx.id}>
+            <TableCell className="font-medium">
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Gift className="h-3 w-3 mr-1" />
+                    Credited
+                </Badge>
+            </TableCell>
+            <TableCell>
+              <div className="font-semibold">INR {tx.amount.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground">{tx.description}</div>
+            </TableCell>
+            <TableCell className="hidden text-right md:table-cell">
+              {new Date(tx.timestamp).toLocaleString()}
+            </TableCell>
+          </TableRow>
+        ))}
+      </>
+    );
   };
 
 
@@ -104,7 +110,7 @@ export function BonusHistoryTable() {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Type</TableHead>
+          <TableHead>Status</TableHead>
           <TableHead>Amount & Description</TableHead>
           <TableHead className="hidden text-right md:table-cell">Date</TableHead>
         </TableRow>

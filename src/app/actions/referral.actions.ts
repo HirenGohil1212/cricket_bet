@@ -13,11 +13,12 @@ import {
     Timestamp,
     orderBy,
     runTransaction,
-    increment
+    increment,
+    updateDoc
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import type { ReferralSettings, ReferralSettingsFormValues, Transaction } from '@/lib/types';
+import type { ReferralSettings, ReferralSettingsFormValues, Transaction, Referral } from '@/lib/types';
 import { referralSettingsSchema } from '@/lib/schemas';
 import { getTotalDepositsForUser } from './wallet.actions';
 
@@ -108,10 +109,9 @@ export async function awardSignupBonus(newUserId: string) {
 // This function is called from the createBet action when a referred user places a bet.
 export async function processReferral(newUserId: string, referrerId: string) {
     try {
-        // 1. Get referral settings and user docs
         const settings = await getReferralSettings();
         if (!settings.isEnabled || settings.referrerBonus === 0) {
-            return; // Referrals disabled or no bonus to give.
+            return;
         }
 
         const newUserRef = doc(db, 'users', newUserId);
@@ -120,7 +120,20 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return; // Already processed or user not found.
         }
 
-        // 2. Get total bets and deposits for the new user
+        // Find the pending referral document
+        const referralsRef = collection(db, 'referrals');
+        const q = query(referralsRef, 
+            where('referredUserId', '==', newUserId), 
+            where('referrerId', '==', referrerId),
+            where('status', '==', 'pending')
+        );
+        const referralSnapshot = await getDocs(q);
+
+        if (referralSnapshot.empty) {
+            return; // No pending referral found for this pair.
+        }
+        const referralDoc = referralSnapshot.docs[0];
+
         const betsQuery = query(collection(db, 'bets'), where('userId', '==', newUserId));
         const betsSnapshot = await getDocs(betsQuery);
         const totalWagered = betsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
@@ -130,13 +143,11 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return; // User has not made their first deposit yet.
         }
 
-        // 3. Check if the condition is met
         const conditionMet = totalWagered >= (totalDeposited + settings.referredUserBonus);
         if (!conditionMet) {
-            return; // Condition not yet met.
+            return;
         }
 
-        // 4. Perform transaction to award bonus to the REFERRER
         const referrerRef = doc(db, 'users', referrerId);
         const batch = writeBatch(db);
 
@@ -154,23 +165,14 @@ export async function processReferral(newUserId: string, referrerId: string) {
             });
         }
         
-        // Mark the referral as completed on the new user's doc to prevent double payout
-        batch.update(newUserRef, { 
-            referralBonusAwarded: true
-        });
-
-        // Log the successful referral itself for admin tracking
-        const referralLogRef = doc(collection(db, 'referrals'));
-        batch.set(referralLogRef, {
-            referrerId,
-            referrerName: referrerDoc.data()?.name || 'Unknown',
-            referredUserId: newUserId,
-            referredUserName: newUserDoc.data()?.name || 'Unknown',
-            referrerBonus: settings.referrerBonus,
-            referredUserBonus: settings.referredUserBonus,
+        batch.update(newUserRef, { referralBonusAwarded: true });
+        
+        // Update the referral document to 'completed'
+        batch.update(referralDoc.ref, {
+            status: 'completed',
             completedAt: Timestamp.now()
         });
-        
+
         await batch.commit();
 
     } catch (error) {
@@ -200,6 +202,32 @@ export async function getBonusTransactions(userId: string): Promise<Transaction[
     });
   } catch (error) {
     console.error("Error fetching bonus transactions:", error);
+    return [];
+  }
+}
+
+// New function to get pending referrals for a user
+export async function getPendingReferrals(userId: string): Promise<Referral[]> {
+  if (!userId) return [];
+  try {
+    const referralsCol = collection(db, 'referrals');
+    const q = query(
+      referralsCol,
+      where('referrerId', '==', userId),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+      } as Referral;
+    });
+  } catch (error) {
+    console.error("Error fetching pending referrals:", error);
     return [];
   }
 }

@@ -12,14 +12,14 @@ import {
     linkWithCredential
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs, writeBatch, Timestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { awardSignupBonus } from "@/app/actions/referral.actions";
+import { awardSignupBonus, getReferralSettings } from "@/app/actions/referral.actions";
 
 // Make recaptchaVerifier accessible to component functions
 declare global {
@@ -97,6 +97,8 @@ export default function SignupPage() {
             return;
         }
         setIsLoading(true);
+        const batch = writeBatch(db);
+
         try {
             // Confirm the OTP, this signs the user in via phone
             const phoneUserCredential = await window.confirmationResult.confirm(otp);
@@ -123,16 +125,32 @@ export default function SignupPage() {
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     referrerId = querySnapshot.docs[0].id;
-                    // ** NEW: Award signup bonus immediately **
+                    const referralSettings = await getReferralSettings();
+                    
+                    // Award signup bonus to the NEW user
                     await awardSignupBonus(phoneUser.uid);
                     toast({ title: "Referral Applied!", description: "Your welcome bonus has been added to your wallet!" });
+
+                    // Create a pending referral document for the REFERRER
+                    if (referralSettings.isEnabled && referrerId) {
+                        const referralRef = doc(collection(db, 'referrals'));
+                        batch.set(referralRef, {
+                            referrerId: referrerId,
+                            referredUserId: phoneUser.uid,
+                            referredUserName: name,
+                            status: 'pending',
+                            potentialBonus: referralSettings.referrerBonus,
+                            createdAt: Timestamp.now(),
+                        });
+                    }
                 } else {
                     toast({ variant: "destructive", title: "Invalid Referral Code", description: "The code you entered was not found. You can continue without it." });
                 }
             }
             
             // Save user data to Firestore
-            await setDoc(doc(db, "users", phoneUser.uid), {
+            const userDocRef = doc(db, "users", phoneUser.uid);
+            batch.set(userDocRef, {
                 uid: phoneUser.uid,
                 name: name,
                 phoneNumber: `+91${phoneNumber}`,
@@ -142,10 +160,11 @@ export default function SignupPage() {
                 role: 'user',
                 bankAccount: null,
                 isFirstBetPlaced: false,
-                referralBonusAwarded: false,
-                ...(referrerId && { referredBy: referrerId }), // Conditionally add referredBy
+                referralBonusAwarded: false, // This is for the referrer's bonus
+                ...(referrerId && { referredBy: referrerId }),
             });
 
+            await batch.commit();
 
             toast({ title: "Account Created!", description: "You have been successfully signed up." });
             router.push("/");
