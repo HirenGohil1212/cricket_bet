@@ -29,7 +29,7 @@ interface DummyUsersListProps {
 export function DummyUsersList({ initialDummyUsers, onDummyUserDeleted }: DummyUsersListProps) {
   const { toast } = useToast();
   const [dummyUsers, setDummyUsers] = useState(initialDummyUsers);
-  const [isDeleting, setIsDeleting<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   useEffect(() => {
     setDummyUsers(initialDummyUsers);
