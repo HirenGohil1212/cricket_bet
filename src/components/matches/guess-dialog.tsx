@@ -415,7 +415,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             name={`predictions.${selectedPlayersA.some(p => p.name === player.name) ? 'teamA' : 'teamB'}.${player.name}.${q.id}`}
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-xs">{q.question}</FormLabel>
+                                    <FormLabel className="text-sm">{q.question}</FormLabel>
                                     <FormControl>
                                         <Input
                                             type="number"
@@ -628,4 +628,5 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
 
