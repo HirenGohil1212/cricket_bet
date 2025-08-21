@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +53,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                                 <FormItem>
                                     <FormLabel>Bet Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
+                                        <Input type="text" pattern="[0-9]*" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value.replace(/\D/g, '')))}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -65,7 +66,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                                 <FormItem>
                                     <FormLabel>Payout Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}/>
+                                        <Input type="text" pattern="[0-9]*" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value.replace(/\D/g, '')))}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -189,7 +190,7 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
     <FormProvider {...formMethods}>
         <div className="space-y-8">
             <FormDescription>
-                Define the fixed bet amounts available to users and their corresponding payout for each sport.
+                Define the fixed bet amounts available to users and their corresponding payout for each sport. Changes will only apply to new matches created after saving.
             </FormDescription>
 
             <div className="space-y-6">

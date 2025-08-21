@@ -33,12 +33,10 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getBettingSettings } from "@/app/actions/settings.actions";
 import { BettingSettings } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, ChevronsUpDown, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 
 interface GuessDialogProps {
@@ -125,24 +123,24 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [betOnSide, setBetOnSide] = React.useState<'teamA' | 'teamB' | 'both'>('both');
   const [bettingMode, setBettingMode] = useState<'qna' | 'player'>('qna');
-  const [bettingSettings, setBettingSettings] = useState<BettingSettings | null>(null);
-
+  
   // State for new player bet UI
   const [selectedPlayersA, setSelectedPlayersA] = useState<Player[]>([]);
   const [selectedPlayersB, setSelectedPlayersB] = useState<Player[]>([]);
 
   const betOptions = React.useMemo(() => {
-    if (!bettingSettings || !match) return [];
+    if (!match?.bettingSettings) return [];
     
+    const settings = match.bettingSettings;
     if (match.sport === 'Cricket') {
         const isOneSided = match.allowOneSidedBets && betOnSide !== 'both';
-        if (bettingMode === 'player') return bettingSettings.betOptions.Cricket.player;
-        if (isOneSided) return bettingSettings.betOptions.Cricket.oneSided;
-        return bettingSettings.betOptions.Cricket.general;
+        if (bettingMode === 'player') return settings.betOptions.Cricket.player;
+        if (isOneSided) return settings.betOptions.Cricket.oneSided;
+        return settings.betOptions.Cricket.general;
     }
     
-    return bettingSettings.betOptions[match.sport];
-  }, [bettingSettings, match, bettingMode, betOnSide]);
+    return settings.betOptions[match.sport];
+  }, [match, bettingMode, betOnSide]);
 
   const validBetAmounts = React.useMemo(() => (betOptions || []).map(opt => opt.amount), [betOptions]);
   
@@ -200,12 +198,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         setSelectedPlayersB([]);
         setQuestions([]);
         
-        const [fetchedQuestions, fetchedSettings] = await Promise.all([
-            getQuestionsForMatch(match.id),
-            getBettingSettings()
-        ]);
+        const fetchedQuestions = await getQuestionsForMatch(match.id);
         
-        setBettingSettings(fetchedSettings);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
         setQuestions(validQuestions);
 
@@ -216,10 +210,12 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
         // Determine initial bet options to set a default amount
         let initialBetOptions = [];
-        if (match.sport === 'Cricket') {
-            initialBetOptions = fetchedSettings.betOptions.Cricket.general;
-        } else {
-            initialBetOptions = fetchedSettings.betOptions[match.sport];
+        if (match.bettingSettings) {
+             if (match.sport === 'Cricket') {
+                initialBetOptions = match.bettingSettings.betOptions.Cricket.general;
+            } else {
+                initialBetOptions = match.bettingSettings.betOptions[match.sport];
+            }
         }
 
         form.reset({
@@ -628,5 +624,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
-

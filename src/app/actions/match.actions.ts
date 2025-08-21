@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where } from 'firebase/firestore';
@@ -8,6 +9,7 @@ import type { Match, Player } from '@/lib/types';
 import { matchSchema, type MatchFormValues } from '@/lib/schemas';
 import { countries } from '@/lib/countries';
 import { deleteFileByPath } from '@/lib/storage';
+import { getBettingSettings } from './settings.actions';
 
 
 // This is a simplified payload that the server action will receive
@@ -36,6 +38,9 @@ export async function createMatch(payload: MatchServerPayload) {
             dummyWinners
         } = payload;
 
+        // ** NEW LOGIC **: Fetch current betting settings and snapshot them to the match
+        const currentBettingSettings = await getBettingSettings();
+
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
@@ -50,6 +55,7 @@ export async function createMatch(payload: MatchServerPayload) {
             isSpecialMatch,
             allowOneSidedBets,
             dummyWinners: dummyWinners || [],
+            bettingSettings: currentBettingSettings, // Store a snapshot of settings
         });
 
         // ** NEW LOGIC **: Add questions directly from the payload
@@ -153,6 +159,7 @@ export async function getMatches(): Promise<Match[]> {
                 isSpecialMatch: data.isSpecialMatch || false,
                 allowOneSidedBets: data.allowOneSidedBets || false,
                 dummyWinners: data.dummyWinners || [],
+                bettingSettings: data.bettingSettings, // Pass along the settings
             } as Match;
         });
         return matchList;
@@ -199,6 +206,7 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
             isSpecialMatch: data.isSpecialMatch || false,
             allowOneSidedBets: data.allowOneSidedBets || false,
             dummyWinners: data.dummyWinners || [],
+            bettingSettings: data.bettingSettings, // Pass along the settings
         } as Match;
     } catch (error) {
         console.error("Error fetching match by ID:", error);

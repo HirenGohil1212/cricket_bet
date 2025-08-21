@@ -16,7 +16,6 @@ import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Bet, Prediction } from '@/lib/types';
 import { processReferral } from './referral.actions';
-import { getBettingSettings } from './settings.actions';
 import { getMatchById } from './match.actions';
 
 interface CreateBetParams {
@@ -39,15 +38,17 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
 
     try {
         const userRef = doc(db, 'users', userId);
-        const matchDocRef = doc(db, 'matches', matchId);
         
-        const [bettingSettings, match] = await Promise.all([
-            getBettingSettings(),
-            getMatchById(matchId)
-        ]);
+        const match = await getMatchById(matchId);
         
         if (!match) {
              return { error: 'Match not found. Please try again.' };
+        }
+        
+        // ** NEW LOGIC: Use the betting settings stored on the match document **
+        const bettingSettings = match.bettingSettings;
+        if (!bettingSettings) {
+            return { error: 'Betting is not configured for this match. Please contact support.' };
         }
 
         let sportBetOptions;
@@ -73,13 +74,9 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
         
         const result = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
-            const matchDoc = await transaction.get(matchDocRef);
 
             if (!userDoc.exists()) {
                 throw new Error("User document not found.");
-            }
-            if (!matchDoc.exists()) {
-                throw new Error("Match document not found.");
             }
             
             const userData = userDoc.data();
@@ -96,8 +93,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 ...(isFirstBet && { isFirstBetPlaced: true })
             });
             
-            const matchData = matchDoc.data();
-            const matchDescription = `${matchData.teamA.name} vs ${matchData.teamB.name}`;
+            const matchDescription = `${match.teamA.name} vs ${match.teamB.name}`;
 
             const newBetRef = doc(collection(db, "bets"));
             transaction.set(newBetRef, {

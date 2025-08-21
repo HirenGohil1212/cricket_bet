@@ -40,6 +40,7 @@ export type Match = {
   isSpecialMatch?: boolean;
   allowOneSidedBets?: boolean;
   dummyWinners?: { userId: string; amount: number }[];
+  bettingSettings?: BettingSettings; // Snapshot of settings at match creation
 };
 
 export type Prediction = {
