@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import { awardSignupBonus } from "@/app/actions/referral.actions";
 
 // Make recaptchaVerifier accessible to component functions
 declare global {
@@ -122,7 +123,9 @@ export default function SignupPage() {
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     referrerId = querySnapshot.docs[0].id;
-                    toast({ title: "Referral Applied!", description: "You and your friend will receive a bonus soon." });
+                    // ** NEW: Award signup bonus immediately **
+                    await awardSignupBonus(phoneUser.uid);
+                    toast({ title: "Referral Applied!", description: "Your welcome bonus has been added to your wallet!" });
                 } else {
                     toast({ variant: "destructive", title: "Invalid Referral Code", description: "The code you entered was not found. You can continue without it." });
                 }
