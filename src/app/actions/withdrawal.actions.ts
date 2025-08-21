@@ -11,7 +11,8 @@ import {
     Timestamp,
     orderBy,
     updateDoc,
-    getDoc
+    getDoc,
+    increment
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
@@ -109,6 +110,7 @@ export async function approveWithdrawal(withdrawalId: string, userId: string, am
     try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
         const userRef = doc(db, 'users', userId);
+        const summaryRef = doc(db, 'statistics', 'financialSummary');
 
         await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
@@ -116,20 +118,29 @@ export async function approveWithdrawal(withdrawalId: string, userId: string, am
                 throw new Error("User not found.");
             }
 
+            // Update user balance
             const currentBalance = userDoc.data().walletBalance || 0;
             if (currentBalance < amount) {
                 throw new Error("User has insufficient funds for this withdrawal.");
             }
             const newBalance = currentBalance - amount;
-
             transaction.update(userRef, { walletBalance: newBalance });
+
+            // Update withdrawal status
             transaction.update(withdrawalRef, { 
                 status: 'Approved',
                 updatedAt: Timestamp.now(),
             });
+
+            // Update all-time financial summary
+            transaction.update(summaryRef, {
+                totalWithdrawals: increment(amount)
+            });
         });
 
         revalidatePath('/admin/withdrawals');
+        revalidatePath('/admin/financial-reports');
+        revalidatePath('/admin/dashboard');
         return { success: 'Withdrawal approved and wallet updated.' };
 
     } catch (error: any) {

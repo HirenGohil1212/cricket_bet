@@ -4,16 +4,11 @@ import { DataManagementForm } from "@/components/admin/data-management-form";
 
 export default async function DataManagementPage() {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Data Management</CardTitle>
-                <CardDescription>
-                    Delete historical user data to reduce database load. This action does not delete user accounts.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <DataManagementForm />
-            </CardContent>
-        </Card>
+        <div>
+            <div className="mb-4">
+                 <h1 className="text-lg font-semibold md:text-2xl">Data Management</h1>
+            </div>
+            <DataManagementForm />
+        </div>
     );
 }

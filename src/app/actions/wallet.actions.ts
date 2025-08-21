@@ -12,7 +12,8 @@ import {
     Timestamp,
     orderBy,
     updateDoc,
-    writeBatch
+    writeBatch,
+    increment
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
@@ -122,6 +123,7 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
     try {
         const depositRef = doc(db, 'deposits', depositId);
         const userRef = doc(db, 'users', userId);
+        const summaryRef = doc(db, 'statistics', 'financialSummary');
 
         await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
@@ -129,18 +131,27 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
                 throw new Error("User not found.");
             }
 
+            // Update user balance
             const currentBalance = userDoc.data().walletBalance || 0;
             const newBalance = currentBalance + amount;
-
             transaction.update(userRef, { walletBalance: newBalance });
+            
+            // Update deposit status
             transaction.update(depositRef, { 
                 status: 'Approved',
                 updatedAt: Timestamp.now(),
                 amount: amount // Update amount if admin changed it
             });
+
+            // Update all-time financial summary
+            transaction.update(summaryRef, {
+                totalDeposits: increment(amount)
+            });
         });
 
         revalidatePath('/admin/deposits');
+        revalidatePath('/admin/financial-reports');
+        revalidatePath('/admin/dashboard');
         return { success: 'Deposit approved and wallet updated.' };
 
     } catch (error: any) {

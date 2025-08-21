@@ -2,7 +2,7 @@
 
 'use server';
 
-import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserBankAccount, UserProfile } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
@@ -171,5 +171,26 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
     } catch (error) {
         console.error("Error fetching referred users:", error);
         return [];
+    }
+}
+
+// New action to reset financial statistics
+export async function resetFinancialStats() {
+    try {
+        const summaryRef = doc(db, 'statistics', 'financialSummary');
+        const initialSummary = {
+            totalDeposits: 0,
+            totalWithdrawals: 0,
+            totalWagered: 0,
+            totalPayouts: 0,
+        };
+        await setDoc(summaryRef, initialSummary);
+
+        revalidatePath('/admin/dashboard');
+        revalidatePath('/admin/financial-reports');
+        return { success: 'All-time financial statistics have been reset successfully.' };
+    } catch (error: any) {
+        console.error("Error resetting financial stats: ", error);
+        return { error: 'Failed to reset statistics.' };
     }
 }

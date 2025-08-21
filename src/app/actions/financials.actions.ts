@@ -1,47 +1,37 @@
 
 'use server';
 
-import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { DailyFinancialActivity } from '@/lib/types';
 import { subDays, startOfDay, format } from 'date-fns';
 
+// Gets all-time financial summary from the dedicated summary document.
 export async function getFinancialSummary() {
     try {
-        // Deposits - Fetch all and filter in code to avoid needing an index
-        const depositsSnapshot = await getDocs(collection(db, 'deposits'));
-        const totalDeposits = depositsSnapshot.docs
-            .filter(doc => doc.data().status === 'Approved')
-            .reduce((sum, doc) => sum + doc.data().amount, 0);
-
-        // Withdrawals - Fetch all and filter in code to avoid needing an index
-        const withdrawalsSnapshot = await getDocs(collection(db, 'withdrawals'));
-        const totalWithdrawals = withdrawalsSnapshot.docs
-            .filter(doc => doc.data().status === 'Approved')
-            .reduce((sum, doc) => sum + doc.data().amount, 0);
-
-        // Bets
-        const betsCol = collection(db, 'bets');
-        const betsSnapshot = await getDocs(betsCol);
+        const summaryRef = doc(db, 'statistics', 'financialSummary');
+        const summarySnap = await getDoc(summaryRef);
         
-        let totalWagered = 0;
-        let totalPayouts = 0;
-
-        betsSnapshot.docs.forEach(doc => {
-            const bet = doc.data();
-            totalWagered += bet.amount;
-            if (bet.status === 'Won') {
-                totalPayouts += bet.potentialWin;
-            }
-        });
+        if (!summarySnap.exists()) {
+             // If it doesn't exist, initialize it.
+            const initialSummary = {
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                totalWagered: 0,
+                totalPayouts: 0,
+            };
+            await setDoc(summaryRef, initialSummary);
+            return { ...initialSummary, grossRevenue: 0, error: null };
+        }
         
-        const grossRevenue = totalWagered - totalPayouts;
+        const summaryData = summarySnap.data();
+        const grossRevenue = summaryData.totalWagered - summaryData.totalPayouts;
         
         return {
-            totalDeposits,
-            totalWithdrawals,
-            totalWagered,
-            totalPayouts,
+            totalDeposits: summaryData.totalDeposits,
+            totalWithdrawals: summaryData.totalWithdrawals,
+            totalWagered: summaryData.totalWagered,
+            totalPayouts: summaryData.totalPayouts,
             grossRevenue,
             error: null,
         };

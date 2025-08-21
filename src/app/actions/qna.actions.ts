@@ -16,7 +16,8 @@ import {
     orderBy,
     documentId,
     addDoc,
-    deleteDoc
+    deleteDoc,
+    increment
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -255,6 +256,7 @@ export async function settleMatchAndPayouts(matchId: string) {
 
     const matchRef = doc(db, 'matches', matchId);
     const questionsRef = collection(db, `matches/${matchId}/questions`);
+    const summaryRef = doc(db, 'statistics', 'financialSummary');
 
     try {
         // --- STEP 1: Fetch all data needed, outside any transaction ---
@@ -295,6 +297,8 @@ export async function settleMatchAndPayouts(matchId: string) {
         
         // --- STEP 2: Process bets in memory ---
         
+        let totalMatchPayouts = 0;
+        let totalMatchWagered = 0;
         const payouts = new Map<string, number>(); // Map<userId, totalPayout>
         const betUpdates: { ref: any, data: any }[] = [];
 
@@ -303,6 +307,8 @@ export async function settleMatchAndPayouts(matchId: string) {
                 const betData = betDoc.data();
                 const betRef = doc(db, 'bets', betDoc.id);
                 const betType = betData.betType || 'qna';
+
+                totalMatchWagered += betData.amount;
 
                 // AGGRESSIVE VALIDATION
                 if (!betData.userId || !Array.isArray(betData.predictions) || typeof betData.potentialWin !== 'number') {
@@ -368,6 +374,7 @@ export async function settleMatchAndPayouts(matchId: string) {
                     betUpdates.push({ ref: betRef, data: { status: 'Won' }});
                     const currentPayout = payouts.get(betData.userId) || 0;
                     payouts.set(betData.userId, currentPayout + betData.potentialWin);
+                    totalMatchPayouts += betData.potentialWin;
                 } else {
                     betUpdates.push({ ref: betRef, data: { status: 'Lost' }});
                 }
@@ -442,26 +449,28 @@ export async function settleMatchAndPayouts(matchId: string) {
         // Commit all non-financial updates
         await batch.commit();
 
-        // Now, process financial payouts for REAL users transactionally
-        for (const [userId, payoutAmount] of payouts.entries()) {
-            if (payoutAmount <= 0) continue;
-            
-            const userRef = doc(db, 'users', userId);
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const userDoc = await transaction.get(userRef);
-                    if (!userDoc.exists()) {
-                        console.error(`Could not pay out ${payoutAmount} to non-existent user ${userId}`);
-                        return;
-                    }
-                    const currentBalance = userDoc.data().walletBalance || 0;
-                    const newBalance = currentBalance + payoutAmount;
-                    transaction.update(userRef, { walletBalance: newBalance });
-                });
-            } catch (e) {
-                console.error(`Failed to process payout for user ${userId}. Error:`, e);
+        // Now, process financial payouts for REAL users and update all-time summary transactionally
+        await runTransaction(db, async (transaction) => {
+            for (const [userId, payoutAmount] of payouts.entries()) {
+                if (payoutAmount <= 0) continue;
+                
+                const userRef = doc(db, 'users', userId);
+                const userDoc = await transaction.get(userRef);
+                if (!userDoc.exists()) {
+                    console.error(`Could not pay out ${payoutAmount} to non-existent user ${userId}`);
+                    continue;
+                }
+                const currentBalance = userDoc.data().walletBalance || 0;
+                const newBalance = currentBalance + payoutAmount;
+                transaction.update(userRef, { walletBalance: newBalance });
             }
-        }
+
+            // Update the all-time summary document
+            transaction.update(summaryRef, {
+                totalWagered: increment(totalMatchWagered),
+                totalPayouts: increment(totalMatchPayouts)
+            });
+        });
         
         try {
             if (typeof revalidatePath === 'function') {
