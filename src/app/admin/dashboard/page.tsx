@@ -43,6 +43,7 @@ async function getDashboardData() {
 
 export default async function AdminDashboardPage() {
     const { userCount, matchCount, totalRevenue, pendingWithdrawals, pendingDeposits } = await getDashboardData();
+    const isProfit = totalRevenue >= 0;
 
     return (
         <>
@@ -70,14 +71,14 @@ export default async function AdminDashboardPage() {
                         <p className="text-xs text-muted-foreground">Live and upcoming</p>
                     </CardContent>
                  </Card>
-                 <Card>
+                 <Card className={isProfit ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
-                        <Banknote className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">{isProfit ? 'Gross Revenue' : 'Total Loss'}</CardTitle>
+                        <Banknote className="h-4 w-4 text-white/70" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">INR {totalRevenue.toFixed(2)}</div>
-                        <p className="text-xs text-muted-foreground">All-time revenue</p>
+                        <p className="text-xs text-white/70">All-time profit/loss</p>
                     </CardContent>
                  </Card>
                  <Card>

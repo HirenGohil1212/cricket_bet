@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -36,11 +37,12 @@ export default async function FinancialReportsPage() {
     }
 
     const summaryCards = [
-        { title: "Total Deposits", value: summary.totalDeposits, icon: ArrowUpCircle, color: "text-green-500" },
-        { title: "Total Withdrawals", value: summary.totalWithdrawals, icon: ArrowDownCircle, color: "text-red-500" },
-        { title: "Total Wagered", value: summary.totalWagered, icon: TrendingUp, color: "text-blue-500" },
-        { title: "Total Payouts", value: summary.totalPayouts, icon: TrendingDown, color: "text-orange-500" },
+        { title: "Total Deposits", value: summary.totalDeposits, icon: ArrowUpCircle, color: "text-green-500", description: "All funds added by users." },
+        { title: "Total Payouts", value: summary.totalPayouts, icon: TrendingDown, color: "text-orange-500", description: "All winnings paid out." },
     ];
+
+    const profitLoss = summary.grossRevenue;
+    const isProfit = profitLoss >= 0;
 
     return (
         <div className="space-y-6">
@@ -49,7 +51,7 @@ export default async function FinancialReportsPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                  {summaryCards.map(card => (
                     <Card key={card.title}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -58,17 +60,18 @@ export default async function FinancialReportsPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">INR {card.value.toFixed(2)}</div>
+                            <p className="text-xs text-muted-foreground">{card.description}</p>
                         </CardContent>
                     </Card>
                  ))}
-                 <Card className="bg-primary text-primary-foreground">
+                 <Card className={isProfit ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
-                        <Banknote className="h-4 w-4 text-primary-foreground/70" />
+                        <CardTitle className="text-sm font-medium">{isProfit ? 'Total Revenue (Profit)' : 'Total Loss'}</CardTitle>
+                        <Banknote className="h-4 w-4 text-white/70" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">INR {summary.grossRevenue.toFixed(2)}</div>
-                        <p className="text-xs text-primary-foreground/70">Total Wagered - Total Payouts</p>
+                        <div className="text-2xl font-bold">INR {Math.abs(profitLoss).toFixed(2)}</div>
+                        <p className="text-xs text-white/70">Total Wagered - Total Payouts</p>
                     </CardContent>
                  </Card>
             </div>
