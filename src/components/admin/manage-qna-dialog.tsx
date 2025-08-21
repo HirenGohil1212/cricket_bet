@@ -10,18 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { saveQuestionResults, settleMatchAndPayouts } from '@/app/actions/qna.actions';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Info } from 'lucide-react';
-import { Label } from '../ui/label';
 import { SettlementResultsDialog } from './settlement-results-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
 import { Separator } from '../ui/separator';
-import { useForm, FormProvider } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem } from '../ui/form';
 
-type ResultState = {
-    [key: string]: { teamA: string; teamB: string } | Record<string, Record<string, string>>;
-};
+type ResultState = Record<string, any>;
 
 interface ManageQnaDialogProps {
     match: Match;
@@ -32,24 +27,24 @@ interface ManageQnaDialogProps {
 
 export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQnaDialogProps) {
     const { toast } = useToast();
-    const router = useRouter();
     const { userProfile } = useAuth();
     const [isSaving, setIsSaving] = React.useState(false);
     const [isSettling, setIsSettling] = React.useState(false);
+    const [results, setResults] = React.useState<ResultState>({});
     
     const [settlementResults, setSettlementResults] = React.useState<{ winners: Winner[]; totalBetsProcessed: number; } | null>(null);
     const [isResultsDialogOpen, setIsResultsDialogOpen] = React.useState(false);
 
     const isAdmin = userProfile?.role === 'admin';
 
-    const form = useForm({
-        defaultValues: React.useMemo(() => {
-            const defaults: ResultState = {};
+    React.useEffect(() => {
+        if (isOpen) {
+            const initialResults: ResultState = {};
             questions.forEach(q => {
-                defaults[q.id] = {
-                    teamA: q.result?.teamA || '',
-                    teamB: q.result?.teamB || ''
-                };
+                // Initialize team results
+                initialResults[q.id] = q.result || { teamA: '', teamB: '' };
+
+                // Initialize player results if special match
                 if (match.isSpecialMatch) {
                     const playerResultObject: Record<string, Record<string, string>> = { teamA: {}, teamB: {} };
                     match.teamA.players?.forEach(p => {
@@ -58,36 +53,28 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                     match.teamB.players?.forEach(p => {
                         playerResultObject.teamB[p.name] = (q.playerResult as any)?.teamB?.[p.name] || '';
                     });
-                    defaults[`player_${q.id}`] = playerResultObject;
+                    initialResults[`player_${q.id}`] = playerResultObject;
                 }
             });
-            return defaults;
-        }, [questions, match])
-    });
+            setResults(initialResults);
+        }
+    }, [isOpen, questions, match]);
     
-    React.useEffect(() => {
-        const defaults: ResultState = {};
-        questions.forEach(q => {
-            defaults[q.id] = {
-                teamA: q.result?.teamA || '',
-                teamB: q.result?.teamB || ''
-            };
-            if (match.isSpecialMatch) {
-                const playerResultObject: Record<string, Record<string, string>> = { teamA: {}, teamB: {} };
-                match.teamA.players?.forEach(p => {
-                    playerResultObject.teamA[p.name] = (q.playerResult as any)?.teamA?.[p.name] || '';
-                });
-                match.teamB.players?.forEach(p => {
-                    playerResultObject.teamB[p.name] = (q.playerResult as any)?.teamB?.[p.name] || '';
-                });
-                defaults[`player_${q.id}`] = playerResultObject;
+    const handleInputChange = (path: string, value: string) => {
+        setResults(prev => {
+            const newResults = { ...prev };
+            const keys = path.split('.');
+            let current = newResults;
+            for (let i = 0; i < keys.length - 1; i++) {
+                current = current[keys[i]];
             }
+            current[keys[keys.length - 1]] = value;
+            return newResults;
         });
-        form.reset(defaults);
-    }, [questions, match, form]);
-
-
-    const handleSave = async (data: ResultState) => {
+    };
+    
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!isAdmin) {
             toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
             return;
@@ -97,12 +84,12 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
         const resultsToSave: Record<string, { teamA: string; teamB: string }> = {};
         const playerResultsToSave: Record<string, any> = {};
 
-        Object.keys(data).forEach(key => {
+        Object.keys(results).forEach(key => {
             if (key.startsWith('player_')) {
                 const questionId = key.substring(7);
-                playerResultsToSave[questionId] = data[key];
+                playerResultsToSave[questionId] = results[key];
             } else {
-                resultsToSave[key] = data[key] as { teamA: string; teamB: string };
+                resultsToSave[key] = results[key] as { teamA: string; teamB: string };
             }
         });
 
@@ -116,7 +103,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
         }
         setIsSaving(false);
     };
-
+    
     const handleSettle = async () => {
         if (!isAdmin) {
             toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to perform this action.' });
@@ -140,7 +127,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             }
         }
     };
-
+    
     const hasActiveQuestions = questions.some(q => q.status === 'active');
     
     return (
@@ -153,8 +140,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                            Enter and save the results for each question, then finalize to process payouts.
                         </DialogDescription>
                     </DialogHeader>
-                    <FormProvider {...form}>
-                    <form onSubmit={form.handleSubmit(handleSave)}>
+                    <form onSubmit={handleSave}>
                         <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
                             <div className="space-y-6">
                             {questions.length > 0 ? (
@@ -179,16 +165,13 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                                             <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                                                             {match.teamA.players?.map(p => (
                                                                                 <TableCell key={p.name}>
-                                                                                    <FormField
-                                                                                        control={form.control}
-                                                                                        name={`player_${q.id}.teamA.${p.name}`}
-                                                                                        render={({ field }) => (
-                                                                                            <FormItem>
-                                                                                                <FormControl>
-                                                                                                    <Input type="text" className="min-w-[60px] text-center" placeholder="-" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
-                                                                                                </FormControl>
-                                                                                            </FormItem>
-                                                                                        )}
+                                                                                    <Input 
+                                                                                        type="text" 
+                                                                                        className="min-w-[60px] text-center" 
+                                                                                        placeholder="-" 
+                                                                                        disabled={isSaving || isSettling || q.status === 'settled'} 
+                                                                                        value={results[`player_${q.id}`]?.teamA?.[p.name] || ''}
+                                                                                        onChange={(e) => handleInputChange(`player_${q.id}.teamA.${p.name}`, e.target.value)}
                                                                                     />
                                                                                 </TableCell>
                                                                             ))}
@@ -217,16 +200,13 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                                             <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                                                             {match.teamB.players?.map(p => (
                                                                                 <TableCell key={p.name}>
-                                                                                    <FormField
-                                                                                        control={form.control}
-                                                                                        name={`player_${q.id}.teamB.${p.name}`}
-                                                                                        render={({ field }) => (
-                                                                                            <FormItem>
-                                                                                                <FormControl>
-                                                                                                    <Input type="text" className="min-w-[60px] text-center" placeholder="-" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
-                                                                                                </FormControl>
-                                                                                            </FormItem>
-                                                                                        )}
+                                                                                     <Input 
+                                                                                        type="text" 
+                                                                                        className="min-w-[60px] text-center" 
+                                                                                        placeholder="-" 
+                                                                                        disabled={isSaving || isSettling || q.status === 'settled'} 
+                                                                                        value={results[`player_${q.id}`]?.teamB?.[p.name] || ''}
+                                                                                        onChange={(e) => handleInputChange(`player_${q.id}.teamB.${p.name}`, e.target.value)}
                                                                                     />
                                                                                 </TableCell>
                                                                             ))}
@@ -258,29 +238,23 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                         <TableRow key={q.id}>
                                                             <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
                                                             <TableCell>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name={`${q.id}.teamA`}
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormControl>
-                                                                                <Input type="text" className="min-w-[60px] text-center" placeholder="Result" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
-                                                                            </FormControl>
-                                                                        </FormItem>
-                                                                    )}
+                                                                <Input 
+                                                                    type="text" 
+                                                                    className="min-w-[60px] text-center" 
+                                                                    placeholder="Result" 
+                                                                    disabled={isSaving || isSettling || q.status === 'settled'} 
+                                                                    value={results[q.id]?.teamA || ''}
+                                                                    onChange={(e) => handleInputChange(`${q.id}.teamA`, e.target.value)}
                                                                 />
                                                             </TableCell>
                                                             <TableCell>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name={`${q.id}.teamB`}
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormControl>
-                                                                                <Input type="text" className="min-w-[60px] text-center" placeholder="Result" disabled={isSaving || isSettling || q.status === 'settled'} {...field} />
-                                                                            </FormControl>
-                                                                        </FormItem>
-                                                                    )}
+                                                                <Input 
+                                                                    type="text" 
+                                                                    className="min-w-[60px] text-center" 
+                                                                    placeholder="Result" 
+                                                                    disabled={isSaving || isSettling || q.status === 'settled'} 
+                                                                    value={results[q.id]?.teamB || ''}
+                                                                    onChange={(e) => handleInputChange(`${q.id}.teamB`, e.target.value)}
                                                                 />
                                                             </TableCell>
                                                         </TableRow>
@@ -313,7 +287,6 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                         </div>
                     </DialogFooter>
                     </form>
-                    </FormProvider>
                 </DialogContent>
             </Dialog>
             <SettlementResultsDialog
