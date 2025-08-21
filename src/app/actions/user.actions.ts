@@ -97,6 +97,11 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                     // Skip any pending requests
                     continue;
                 }
+
+                // ** NEW **: Skip any upcoming or live matches
+                if (collectionName === 'matches' && (data.status === 'Upcoming' || data.status === 'Live')) {
+                    continue;
+                }
                 
                 docsToBackup.push(docSnapshot);
                 docsToDelete.push(docSnapshot);
@@ -156,7 +161,7 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
         
         revalidatePath('/admin/data-management');
         revalidatePath('/admin/dashboard');
-        return { success: `Successfully backed up and deleted ${totalDeleted} historical records. Pending requests were preserved.` };
+        return { success: `Successfully backed up and deleted ${totalDeleted} historical records. Pending requests and active matches were preserved.` };
     } catch (error: any) {
         console.error("Error deleting data history: ", error);
         return { error: 'Failed to delete data history. Check server logs for details.' };
@@ -217,4 +222,5 @@ export async function resetFinancialStats() {
         return { error: 'Failed to reset statistics.' };
     }
 }
+
 
