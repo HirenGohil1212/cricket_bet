@@ -68,16 +68,16 @@ export async function awardSignupBonus(newUserId: string, bonusAmount: number) {
     if (!newUserId || bonusAmount <= 0) return;
 
     try {
-        // This function now only creates the transaction log.
-        // The user's balance is set directly in the signup function.
+        const batch = writeBatch(db);
         const newUserTransactionRef = doc(collection(db, 'transactions'));
-        await setDoc(newUserTransactionRef, {
+        batch.set(newUserTransactionRef, {
             userId: newUserId,
             amount: bonusAmount,
             type: 'referral_bonus',
             description: 'Welcome bonus for using a referral code.',
             timestamp: Timestamp.now(),
         });
+        await batch.commit();
     } catch (error) {
         console.error(`Error logging signup bonus for ${newUserId}:`, error);
         // Fail silently to not disrupt the signup flow
@@ -130,13 +130,14 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return;
         }
         
-        const referrerRef = doc(db, 'users', referrerId);
         const batch = writeBatch(db);
-
+        
+        const referrerRef = doc(db, 'users', referrerId);
         const referrerDoc = await getDoc(referrerRef);
         if(referrerDoc.exists()) {
             batch.update(referrerRef, { walletBalance: increment(settings.referrerBonus) });
 
+            // Create transaction log for the referrer
             const referrerTransactionRef = doc(collection(db, 'transactions'));
             batch.set(referrerTransactionRef, {
                 userId: referrerId,
@@ -196,11 +197,10 @@ export async function getPendingReferrals(userId: string): Promise<Referral[]> {
     const q = query(
       referralsCol,
       where('referrerId', '==', userId),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'pending')
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    const referralList = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -208,6 +208,9 @@ export async function getPendingReferrals(userId: string): Promise<Referral[]> {
         createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
       } as Referral;
     });
+    // Sort on client-side to avoid composite index
+    referralList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return referralList;
   } catch (error) {
     console.error("Error fetching pending referrals:", error);
     return [];
