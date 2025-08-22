@@ -124,8 +124,8 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return; // User has not made their first deposit yet.
         }
         
-        // The condition now correctly includes the signup bonus
-        const conditionMet = totalWagered >= (totalDeposited + settings.referredUserBonus);
+        // ** FIX: The condition now correctly checks if total wagered amount is greater than or equal to total deposited amount.
+        const conditionMet = totalWagered >= totalDeposited;
         if (!conditionMet) {
             return;
         }
