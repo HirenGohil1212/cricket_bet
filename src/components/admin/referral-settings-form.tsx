@@ -49,6 +49,7 @@ export function ReferralSettingsForm({ initialData }: ReferralSettingsFormProps)
         toast({ variant: "destructive", title: "Error", description: result.error });
     } else {
         toast({ title: "Settings Saved", description: result.success });
+        form.reset(data); // Reset the form with the new values
         router.refresh();
     }
     setIsSubmitting(false);

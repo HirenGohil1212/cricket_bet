@@ -63,7 +63,7 @@ export async function updateReferralSettings(data: ReferralSettingsFormValues) {
 
 // --- Award Signup Bonus to New User ---
 
-// **FIX**: This function now only logs the transaction, as the balance is set on creation.
+// This function now only logs the transaction, as the balance is set on creation.
 export async function awardSignupBonus(newUserId: string, bonusAmount: number) {
     if (!newUserId || bonusAmount <= 0) return;
 
@@ -114,7 +114,7 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return; // No pending referral found for this pair.
         }
         const referralDoc = referralSnapshot.docs[0];
-
+        
         const betsQuery = query(collection(db, 'bets'), where('userId', '==', newUserId));
         const betsSnapshot = await getDocs(betsQuery);
         const totalWagered = betsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
@@ -124,7 +124,7 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return; // User has not made their first deposit yet.
         }
         
-        // **FIX**: The condition now correctly includes the signup bonus
+        // The condition now correctly includes the signup bonus
         const conditionMet = totalWagered >= (totalDeposited + settings.referredUserBonus);
         if (!conditionMet) {
             return;
