@@ -150,7 +150,7 @@ export default function SignupPage() {
                 ...(referrerId && { referredBy: referrerId }),
             });
             
-            // **FIX**: Now, if a bonus was awarded, create the transaction log and pending referral for the referrer.
+            // Now, if a bonus was awarded, create the transaction log and pending referral for the referrer.
             if (referrerId && signupBonus > 0) {
                  await awardSignupBonus(phoneUser.uid, signupBonus);
                  toast({ title: "Referral Applied!", description: `A bonus of ${signupBonus} has been added to your wallet!` });
