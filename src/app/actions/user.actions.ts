@@ -177,7 +177,7 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
     }
     try {
         const usersCol = collection(db, 'users');
-        const q = query(usersCol, where('referredBy', '==', referrerId), orderBy('createdAt', 'desc'));
+        const q = query(usersCol, where('referredBy', '==', referrerId));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -200,6 +200,9 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
                 referralBonusAwarded: data.referralBonusAwarded,
             } as UserProfile;
         });
+
+        // Sort on the client side to avoid needing a composite index
+        referredUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return referredUsers;
     } catch (error) {
