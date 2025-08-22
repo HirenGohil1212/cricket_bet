@@ -117,52 +117,55 @@ export default function SignupPage() {
             // Generate a simple referral code
             const ownReferralCode = `GUESSWIN${phoneUser.uid.substring(0, 6).toUpperCase()}`;
 
-            // Check if a valid referral code was entered
             let referrerId: string | null = null;
-            if (referralCode.trim()) {
+            let signupBonus = 0;
+            const referralSettings = await getReferralSettings();
+            
+            // Check if a valid referral code was entered
+            if (referralCode.trim() && referralSettings.isEnabled) {
                 const usersRef = collection(db, 'users');
                 const q = query(usersRef, where('referralCode', '==', referralCode.trim().toUpperCase()));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     referrerId = querySnapshot.docs[0].id;
-                    const referralSettings = await getReferralSettings();
-                    
-                    // Award signup bonus to the NEW user
-                    await awardSignupBonus(phoneUser.uid);
-                    toast({ title: "Referral Applied!", description: "Your welcome bonus has been added to your wallet!" });
-
-                    // Create a pending referral document for the REFERRER
-                    if (referralSettings.isEnabled && referrerId) {
-                        const referralRef = doc(collection(db, 'referrals'));
-                        batch.set(referralRef, {
-                            referrerId: referrerId,
-                            referredUserId: phoneUser.uid,
-                            referredUserName: name,
-                            status: 'pending',
-                            potentialBonus: referralSettings.referrerBonus,
-                            createdAt: Timestamp.now(),
-                        });
-                    }
+                    signupBonus = referralSettings.referredUserBonus; // Set the bonus amount
                 } else {
-                    toast({ variant: "destructive", title: "Invalid Referral Code", description: "The code you entered was not found. You can continue without it." });
+                    toast({ variant: "destructive", title: "Invalid Referral Code", description: "The code you entered was not found. Continuing without it." });
                 }
             }
             
-            // Save user data to Firestore
+            // **FIX**: Create the user document with the correct initial balance FIRST.
             const userDocRef = doc(db, "users", phoneUser.uid);
             batch.set(userDocRef, {
                 uid: phoneUser.uid,
                 name: name,
                 phoneNumber: `+91${phoneNumber}`,
-                createdAt: Timestamp.now(), // Use Firestore Timestamp for consistency
-                walletBalance: 0, // Initial balance is 0, bonus is added transactionally
+                createdAt: Timestamp.now(),
+                walletBalance: signupBonus, // Set initial balance directly
                 referralCode: ownReferralCode,
                 role: 'user',
                 bankAccount: null,
                 isFirstBetPlaced: false,
-                referralBonusAwarded: false, // This is for the referrer's bonus
+                referralBonusAwarded: false,
                 ...(referrerId && { referredBy: referrerId }),
             });
+            
+            // **FIX**: Now, if a bonus was awarded, create the transaction log and pending referral for the referrer.
+            if (referrerId && signupBonus > 0) {
+                 await awardSignupBonus(phoneUser.uid, signupBonus);
+                 toast({ title: "Referral Applied!", description: `A bonus of ${signupBonus} has been added to your wallet!` });
+
+                // Create a pending referral document for the REFERRER
+                const referralRef = doc(collection(db, 'referrals'));
+                batch.set(referralRef, {
+                    referrerId: referrerId,
+                    referredUserId: phoneUser.uid,
+                    referredUserName: name,
+                    status: 'pending',
+                    potentialBonus: referralSettings.referrerBonus,
+                    createdAt: Timestamp.now(),
+                });
+            }
 
             await batch.commit();
 

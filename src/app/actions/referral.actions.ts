@@ -63,43 +63,23 @@ export async function updateReferralSettings(data: ReferralSettingsFormValues) {
 
 // --- Award Signup Bonus to New User ---
 
-// This function is now called directly from the signup page.
-export async function awardSignupBonus(newUserId: string) {
-    if (!newUserId) return;
+// **FIX**: This function now only logs the transaction, as the balance is set on creation.
+export async function awardSignupBonus(newUserId: string, bonusAmount: number) {
+    if (!newUserId || bonusAmount <= 0) return;
 
     try {
-        const settings = await getReferralSettings();
-        if (!settings.isEnabled || settings.referredUserBonus === 0) {
-            return; // Referrals disabled or no signup bonus to give
-        }
-
-        const newUserRef = doc(db, 'users', newUserId);
-        
-        await runTransaction(db, async (transaction) => {
-            const newUserDoc = await transaction.get(newUserRef);
-            if (!newUserDoc.exists()) {
-                // The user document might not be committed yet when this is called from signup.
-                // We will add the bonus directly to the user object before setting it.
-                // This transaction will just log the bonus.
-            }
-
-            // Update new user's balance and log transaction
-            transaction.update(newUserRef, { 
-                walletBalance: increment(settings.referredUserBonus)
-            });
-
-            const newUserTransactionRef = doc(collection(db, 'transactions'));
-            transaction.set(newUserTransactionRef, {
-                userId: newUserId,
-                amount: settings.referredUserBonus,
-                type: 'referral_bonus',
-                description: 'Welcome bonus for using a referral code.',
-                timestamp: Timestamp.now(),
-            });
+        // This function now only creates the transaction log.
+        // The user's balance is set directly in the signup function.
+        const newUserTransactionRef = doc(collection(db, 'transactions'));
+        await setDoc(newUserTransactionRef, {
+            userId: newUserId,
+            amount: bonusAmount,
+            type: 'referral_bonus',
+            description: 'Welcome bonus for using a referral code.',
+            timestamp: Timestamp.now(),
         });
-
     } catch (error) {
-        console.error(`Error awarding signup bonus to ${newUserId}:`, error);
+        console.error(`Error logging signup bonus for ${newUserId}:`, error);
         // Fail silently to not disrupt the signup flow
     }
 }
@@ -144,6 +124,7 @@ export async function processReferral(newUserId: string, referrerId: string) {
             return; // User has not made their first deposit yet.
         }
         
+        // **FIX**: The condition now correctly includes the signup bonus
         const conditionMet = totalWagered >= (totalDeposited + settings.referredUserBonus);
         if (!conditionMet) {
             return;
