@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { awardSignupBonus, getReferralSettings } from "@/app/actions/referral.actions";
+import { getReferralSettings } from "@/app/actions/referral.actions";
 
 // Make recaptchaVerifier accessible to component functions
 declare global {
@@ -146,7 +146,6 @@ export default function SignupPage() {
                 }
             }
             
-            // **FIX**: Create the user document with the correct initial balance FIRST.
             const userDocRef = doc(db, "users", phoneUser.uid);
             batch.set(userDocRef, {
                 uid: phoneUser.uid,
@@ -160,14 +159,24 @@ export default function SignupPage() {
                 isFirstBetPlaced: false,
                 referralBonusAwarded: false,
                 ...(referrerId && { referredBy: referrerId }),
-            }, { merge: true }); // Use merge to prevent overwriting existing user data if they are re-signing up
+            }, { merge: true });
             
-            // Now, if a bonus was awarded, create the transaction log and pending referral for the referrer.
-            if (referrerId && signupBonus > 0) {
-                 await awardSignupBonus(phoneUser.uid, signupBonus);
+            // If a signup bonus was given, log the transaction for the new user
+            if (signupBonus > 0) {
+                 const newUserTransactionRef = doc(collection(db, 'transactions'));
+                 batch.set(newUserTransactionRef, {
+                    userId: phoneUser.uid,
+                    amount: signupBonus,
+                    type: 'referral_bonus',
+                    description: 'Welcome bonus for using a referral code.',
+                    timestamp: Timestamp.now(),
+                });
+            }
+
+            // If a referrer exists, create the pending referral document for them
+            if (referrerId && referralSettings.isEnabled) {
                  toast({ title: "Referral Applied!", description: `A bonus of ${signupBonus} has been added to your wallet!` });
 
-                // Create a pending referral document for the REFERRER
                 const referralRef = doc(collection(db, 'referrals'));
                 batch.set(referralRef, {
                     referrerId: referrerId,
