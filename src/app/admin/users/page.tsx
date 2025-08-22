@@ -117,30 +117,6 @@ export default function AdminUsersPage() {
                             <CardTitle>Users</CardTitle>
                             <CardDescription>A list of all the users in your app.</CardDescription>
                         </div>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline" disabled={isFixing}>
-                                    {isFixing ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Wrench className="mr-2 h-4 w-4" />
-                                    )}
-                                    Fix Missing Bonuses
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will scan for users who were referred but did not receive a signup bonus and award it to them. It is safe to run this multiple times.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleFixBonuses}>Confirm & Fix</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
                     </div>
                 </CardHeader>
                 <CardContent>
