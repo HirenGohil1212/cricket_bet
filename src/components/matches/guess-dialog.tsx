@@ -322,7 +322,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 <RadioGroup
                     value={betOnSide === 'both' ? 'teamA' : betOnSide}
                     onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
-                    className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+                    className="grid grid-cols-2 gap-4"
                 >
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="teamA" id="pr-teamA" />
