@@ -194,7 +194,6 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
                 referralCode: data.referralCode,
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 role: data.role || 'user',
-                // Explicitly add other fields even if they might be undefined to match the type
                 bankAccount: data.bankAccount,
                 referredBy: data.referredBy,
                 isFirstBetPlaced: data.isFirstBetPlaced,
