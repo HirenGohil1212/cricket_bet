@@ -168,14 +168,14 @@ export async function getBonusTransactions(userId: string): Promise<Transaction[
   if (!userId) return [];
   try {
     const transCol = collection(db, 'transactions');
+    // FIX: Removed orderBy to avoid needing a composite index. Sorting will be done client-side.
     const q = query(
       transCol,
       where('userId', '==', userId),
-      where('type', '==', 'referral_bonus'),
-      orderBy('timestamp', 'desc')
+      where('type', '==', 'referral_bonus')
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    const transactions = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -183,6 +183,9 @@ export async function getBonusTransactions(userId: string): Promise<Transaction[
         timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
       } as Transaction;
     });
+    // Sort on server-side after fetching
+    transactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return transactions;
   } catch (error) {
     console.error("Error fetching bonus transactions:", error);
     return [];
