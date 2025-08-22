@@ -320,7 +320,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
                 <Label className="text-sm font-semibold text-center block">Bet on</Label>
                 <RadioGroup
-                    value={betOnSide}
+                    value={betOnSide === 'both' ? 'teamA' : betOnSide}
                     onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
                     className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
                 >
@@ -331,10 +331,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="teamB" id="pr-teamB" />
                         <Label htmlFor="pr-teamB" className="text-xs truncate">{match.teamB.name}</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="both" id="pr-both" />
-                        <Label htmlFor="pr-both" className="text-xs">Both</Label>
                     </div>
                 </RadioGroup>
             </div>
