@@ -154,8 +154,8 @@ export default function SignupPage() {
                 uid: phoneUser.uid,
                 name: name,
                 phoneNumber: `+91${phoneNumber}`,
-                createdAt: new Date(),
-                walletBalance: 0,
+                createdAt: Timestamp.now(), // Use Firestore Timestamp for consistency
+                walletBalance: 0, // Initial balance is 0, bonus is added transactionally
                 referralCode: ownReferralCode,
                 role: 'user',
                 bankAccount: null,

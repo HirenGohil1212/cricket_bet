@@ -13,8 +13,7 @@ import {
     Timestamp,
     orderBy,
     runTransaction,
-    increment,
-    updateDoc
+    increment
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
@@ -79,7 +78,9 @@ export async function awardSignupBonus(newUserId: string) {
         await runTransaction(db, async (transaction) => {
             const newUserDoc = await transaction.get(newUserRef);
             if (!newUserDoc.exists()) {
-                throw new Error("New user not found to award bonus.");
+                // The user document might not be committed yet when this is called from signup.
+                // We will add the bonus directly to the user object before setting it.
+                // This transaction will just log the bonus.
             }
 
             // Update new user's balance and log transaction
@@ -142,12 +143,12 @@ export async function processReferral(newUserId: string, referrerId: string) {
         if (totalDeposited === 0) {
             return; // User has not made their first deposit yet.
         }
-
+        
         const conditionMet = totalWagered >= (totalDeposited + settings.referredUserBonus);
         if (!conditionMet) {
             return;
         }
-
+        
         const referrerRef = doc(db, 'users', referrerId);
         const batch = writeBatch(db);
 

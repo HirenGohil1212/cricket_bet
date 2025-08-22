@@ -25,13 +25,18 @@ export function BonusHistoryTable() {
     if (user) {
       setIsLoading(true);
       const fetchBonuses = async () => {
-        const [completed, pending] = await Promise.all([
-          getBonusTransactions(user.uid),
-          getPendingReferrals(user.uid)
-        ]);
-        setCompletedBonuses(completed);
-        setPendingBonuses(pending);
-        setIsLoading(false);
+        try {
+            const [completed, pending] = await Promise.all([
+                getBonusTransactions(user.uid),
+                getPendingReferrals(user.uid)
+            ]);
+            setCompletedBonuses(completed);
+            setPendingBonuses(pending);
+        } catch (error) {
+            console.error("Failed to fetch bonus history:", error);
+        } finally {
+            setIsLoading(false);
+        }
       }
       fetchBonuses();
     } else {
