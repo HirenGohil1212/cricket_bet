@@ -321,7 +321,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 <Label className="text-sm font-semibold text-center block">Bet on</Label>
                 <RadioGroup
                     value={betOnSide === 'both' ? 'teamA' : betOnSide}
-                    onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
+                    onValueChange={(value: 'teamA' | 'teamB') => setBetOnSide(value)}
                     className="grid grid-cols-2 gap-4"
                 >
                     <div className="flex items-center space-x-2">
@@ -336,8 +336,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {(betOnSide === 'teamA' || betOnSide === 'both') && <PlayerSelector team="A" />}
-            {(betOnSide === 'teamB' || betOnSide === 'both') && <PlayerSelector team="B" />}
+            {(betOnSide === 'teamA' || !match.allowOneSidedBets) && <PlayerSelector team="A" />}
+            {(betOnSide === 'teamB' || !match.allowOneSidedBets) && <PlayerSelector team="B" />}
         </div>
         
         {[...selectedPlayersA, ...selectedPlayersB].map((player, idx) => (
@@ -423,7 +423,18 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                         <Switch
                           id="betting-mode"
                           checked={bettingMode === 'player'}
-                          onCheckedChange={(checked) => setBettingMode(checked ? 'player' : 'qna')}
+                          onCheckedChange={(checked) => {
+                            const newMode = checked ? 'player' : 'qna';
+                            setBettingMode(newMode);
+                            // When switching to player mode, default to 'teamA' if one-sided bets are allowed
+                            if (newMode === 'player' && match.allowOneSidedBets) {
+                                setBetOnSide('teamA');
+                            }
+                            // When switching to Q&A mode, default to 'both'
+                            if (newMode === 'qna') {
+                                setBetOnSide('both');
+                            }
+                          }}
                           aria-label="Toggle between Q&A and Player prediction"
                         />
                         <Label htmlFor="betting-mode" className={cn('text-xs sm:text-sm', bettingMode === 'player' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
