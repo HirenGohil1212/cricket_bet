@@ -9,6 +9,7 @@ import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/sch
 import { revalidatePath } from 'next/cache';
 import { deleteFileByPath } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
+import { getReferralSettings } from './referral.actions';
 
 // Function to get user's bank account
 export async function getUserBankAccount(userId: string): Promise<UserBankAccount | null> {
@@ -176,7 +177,7 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
     }
     try {
         const usersCol = collection(db, 'users');
-        const q = query(usersCol, where('referredBy', '==', referrerId));
+        const q = query(usersCol, where('referredBy', '==', referrerId), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
 
         const referredUsers = querySnapshot.docs.map(doc => {
@@ -191,9 +192,6 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
                 referralCode: data.referralCode,
             } as UserProfile;
         });
-
-        // Sort after fetching
-        referredUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return referredUsers;
     } catch (error) {
@@ -224,3 +222,58 @@ export async function resetFinancialStats() {
 }
 
 
+// New action to fix missing signup bonuses
+export async function fixMissingSignupBonuses() {
+    try {
+        const referralSettings = await getReferralSettings();
+        if (!referralSettings.isEnabled || referralSettings.referredUserBonus <= 0) {
+            return { success: 'Referral program is disabled or bonus is zero. No action taken.', count: 0 };
+        }
+        
+        const bonusAmount = referralSettings.referredUserBonus;
+
+        const usersRef = collection(db, 'users');
+        // Find users who were referred, have a zero balance, and haven't placed a bet.
+        // This is a likely indicator of a user who missed their bonus.
+        const q = query(
+            usersRef, 
+            where('referredBy', '!=', null),
+            where('walletBalance', '==', 0),
+            where('isFirstBetPlaced', '==', false)
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            return { success: 'No users found who need a bonus fix.', count: 0 };
+        }
+
+        const batch = writeBatch(db);
+        let fixedCount = 0;
+
+        querySnapshot.forEach(userDoc => {
+            const userRef = doc(db, 'users', userDoc.id);
+            // Update their balance
+            batch.update(userRef, { walletBalance: bonusAmount });
+
+            // Create a transaction log for the bonus
+            const transactionRef = doc(collection(db, 'transactions'));
+            batch.set(transactionRef, {
+                userId: userDoc.id,
+                amount: bonusAmount,
+                type: 'referral_bonus',
+                description: 'Welcome bonus for using a referral code (Applied retroactively).',
+                timestamp: Timestamp.now(),
+            });
+            fixedCount++;
+        });
+
+        await batch.commit();
+        
+        revalidatePath('/admin/users');
+        return { success: `Successfully awarded signup bonuses to ${fixedCount} user(s).`, count: fixedCount };
+
+    } catch (error: any) {
+        console.error("Error fixing missing bonuses: ", error);
+        return { error: 'An error occurred while trying to fix bonuses.' };
+    }
+}

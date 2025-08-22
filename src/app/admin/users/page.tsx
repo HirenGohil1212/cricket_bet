@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,15 +22,30 @@ import {
     CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Loader2 } from 'lucide-react';
+import { Users, Loader2, Wrench, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReferredUsersDialog } from '@/components/admin/referred-users-dialog';
+import { fixMissingSignupBonuses } from '@/app/actions/user.actions';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isFixing, setIsFixing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         async function fetchAndProcessUsers() {
@@ -76,13 +92,56 @@ export default function AdminUsersPage() {
             setIsDialogOpen(true);
         }
     }
+    
+    const handleFixBonuses = async () => {
+        setIsFixing(true);
+        const result = await fixMissingSignupBonuses();
+        if (result.error) {
+            toast({ variant: "destructive", title: "Error", description: result.error });
+        } else {
+            toast({ 
+                title: "Process Complete", 
+                description: result.success,
+                action: result.count > 0 ? <Sparkles className="h-5 w-5 text-accent" /> : undefined,
+            });
+        }
+        setIsFixing(false);
+    };
 
     return (
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Users</CardTitle>
-                    <CardDescription>A list of all the users in your app.</CardDescription>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <CardTitle>Users</CardTitle>
+                            <CardDescription>A list of all the users in your app.</CardDescription>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" disabled={isFixing}>
+                                    {isFixing ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Wrench className="mr-2 h-4 w-4" />
+                                    )}
+                                    Fix Missing Bonuses
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will scan for users who were referred but did not receive a signup bonus and award it to them. It is safe to run this multiple times.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleFixBonuses}>Confirm & Fix</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -119,10 +178,10 @@ export default function AdminUsersPage() {
                                             size="sm" 
                                             className="flex items-center gap-2 -ml-3" 
                                             onClick={() => handleViewReferrals(user)}
-                                            disabled={user.totalReferrals === 0}
+                                            disabled={!user.totalReferrals || user.totalReferrals === 0}
                                         >
                                             <Users className="h-4 w-4 text-muted-foreground" />
-                                            <span className="font-medium">{user.totalReferrals}</span>
+                                            <span className="font-medium">{user.totalReferrals || 0}</span>
                                         </Button>
                                     </TableCell>
                                     <TableCell className="text-right">INR {user.walletBalance.toFixed(2)}</TableCell>
