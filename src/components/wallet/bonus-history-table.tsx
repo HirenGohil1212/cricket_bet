@@ -17,32 +17,32 @@ export function BonusHistoryTable() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) {
-      setIsLoading(true);
-      return;
-    }
-
-    if (user) {
-      setIsLoading(true);
-      const fetchBonuses = async () => {
-        try {
-            const [completed, pending] = await Promise.all([
-                getBonusTransactions(user.uid),
-                getPendingReferrals(user.uid)
-            ]);
-            setCompletedBonuses(completed);
-            setPendingBonuses(pending);
-        } catch (error) {
-            console.error("Failed to fetch bonus history:", error);
-        } finally {
-            setIsLoading(false);
-        }
+    // This function will be called to fetch data.
+    const fetchBonuses = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
       }
+      
+      setIsLoading(true);
+      try {
+        // Fetch both completed and pending bonuses in parallel.
+        const [completed, pending] = await Promise.all([
+          getBonusTransactions(user.uid),
+          getPendingReferrals(user.uid)
+        ]);
+        setCompletedBonuses(completed);
+        setPendingBonuses(pending);
+      } catch (error) {
+        console.error("Failed to fetch bonus history:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // If auth is not loading, fetch the bonuses.
+    if (!authLoading) {
       fetchBonuses();
-    } else {
-      setCompletedBonuses([]);
-      setPendingBonuses([]);
-      setIsLoading(false);
     }
   }, [user, authLoading]);
   
