@@ -104,12 +104,24 @@ export default function SignupPage() {
             const phoneUserCredential = await window.confirmationResult.confirm(otp);
             const phoneUser = phoneUserCredential.user;
 
-            // Create an email/password credential to link
-            const email = `+91${phoneNumber}@guessandwin.app`;
-            const emailPasswordCredential = EmailAuthProvider.credential(email, password);
+            try {
+                // Create an email/password credential to link
+                const email = `+91${phoneNumber}@guessandwin.app`;
+                const emailPasswordCredential = EmailAuthProvider.credential(email, password);
+    
+                // Link the email/password credential to the phone-authed user
+                await linkWithCredential(phoneUser, emailPasswordCredential);
+            } catch (linkError: any) {
+                if (linkError.code === 'auth/provider-already-linked' || linkError.code === 'auth/credential-already-in-use') {
+                    // This is okay, it means the user is likely signing in again.
+                    // We can proceed to create their profile if it doesn't exist.
+                    console.log("User already linked, proceeding with profile creation.");
+                } else {
+                    // For other linking errors, we should stop and show the error.
+                    throw linkError; 
+                }
+            }
 
-            // Link the email/password credential to the phone-authed user
-            await linkWithCredential(phoneUser, emailPasswordCredential);
 
             // Update the user's profile with their display name
             await updateProfile(phoneUser, { displayName: name });
@@ -148,7 +160,7 @@ export default function SignupPage() {
                 isFirstBetPlaced: false,
                 referralBonusAwarded: false,
                 ...(referrerId && { referredBy: referrerId }),
-            });
+            }, { merge: true }); // Use merge to prevent overwriting existing user data if they are re-signing up
             
             // Now, if a bonus was awarded, create the transaction log and pending referral for the referrer.
             if (referrerId && signupBonus > 0) {
