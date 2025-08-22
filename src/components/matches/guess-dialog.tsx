@@ -54,11 +54,11 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   
   // Predictions state
   const [qnaPredictions, setQnaPredictions] = useState<Record<string, { teamA: string, teamB: string }>>({});
-
-  // State for new player bet UI
+  const [playerPredictions, setPlayerPredictions] = useState<Record<string, Record<string, Record<string, string>>>>({}); // { teamA: { playerName: { qId: 'ans' } } }
+  
+  // State for Player Bet UI
   const [selectedPlayersA, setSelectedPlayersA] = useState<Player[]>([]);
   const [selectedPlayersB, setSelectedPlayersB] = useState<Player[]>([]);
-  const [playerPredictions, setPlayerPredictions] = useState<Record<string, Record<string, Record<string, string>>>>({}); // { teamA: { playerName: { qId: 'ans' } } }
   const [popoverOpenA, setPopoverOpenA] = useState(false);
   const [popoverOpenB, setPopoverOpenB] = useState(false);
 
@@ -320,8 +320,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
                 <Label className="text-sm font-semibold text-center block">Bet on</Label>
                 <RadioGroup
-                    value={betOnSide === 'both' ? 'teamA' : betOnSide}
-                    onValueChange={(value: 'teamA' | 'teamB') => setBetOnSide(value)}
+                    value={betOnSide}
+                    onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
                     className="grid grid-cols-2 gap-4"
                 >
                     <div className="flex items-center space-x-2">
@@ -534,4 +534,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
