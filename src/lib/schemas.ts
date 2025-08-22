@@ -128,9 +128,10 @@ export type QnAFormValues = z.infer<typeof qnaFormSchema>;
 
 // Schema for referral settings (Admin)
 export const referralSettingsSchema = z.object({
+  isEnabled: z.boolean(),
   referrerBonus: z.coerce.number().min(0, "Bonus must be a positive number."),
   referredUserBonus: z.coerce.number().min(0, "Bonus must be a positive number."),
-  isEnabled: z.boolean(),
+  minBetAmountForBonus: z.coerce.number().min(0, "Minimum bet amount must be a positive number."),
 });
 
 export type ReferralSettingsFormValues = z.infer<typeof referralSettingsSchema>;

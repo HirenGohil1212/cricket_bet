@@ -152,6 +152,7 @@ export type ReferralSettings = {
     referrerBonus: number;
     referredUserBonus: number;
     isEnabled: boolean;
+    minBetAmountForBonus: number; // New field
 };
 
 export type Referral = {

@@ -19,8 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import type { ReferralSettingsFormValues, ReferralSettings } from "@/lib/types";
-import { referralSettingsSchema } from "@/lib/schemas";
+import type { ReferralSettings } from "@/lib/types";
+import { referralSettingsSchema, type ReferralSettingsFormValues } from "@/lib/schemas";
 import { updateReferralSettings } from "@/app/actions/referral.actions";
 
 interface ReferralSettingsFormProps {
@@ -38,6 +38,7 @@ export function ReferralSettingsForm({ initialData }: ReferralSettingsFormProps)
       isEnabled: initialData.isEnabled || false,
       referrerBonus: initialData.referrerBonus || 100,
       referredUserBonus: initialData.referredUserBonus || 50,
+      minBetAmountForBonus: initialData.minBetAmountForBonus || 150,
     }
   });
 
@@ -106,6 +107,22 @@ export function ReferralSettingsForm({ initialData }: ReferralSettingsFormProps)
                   </FormControl>
                   <FormDescription>
                     Bonus amount for the new user who signs up with a code.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="minBetAmountForBonus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Minimum Bet for Referrer Bonus (INR)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g. 150" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    The total amount a new user must bet before the referrer gets their bonus.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

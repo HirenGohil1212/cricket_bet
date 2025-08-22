@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import type { ReferralSettings, ReferralSettingsFormValues, Transaction, Referral } from '@/lib/types';
+import type { ReferralSettings, Transaction, Referral } from '@/lib/types';
 import { referralSettingsSchema } from '@/lib/schemas';
 import { getTotalDepositsForUser } from './wallet.actions';
 
@@ -29,19 +29,26 @@ export async function getReferralSettings(): Promise<ReferralSettings> {
         const docRef = doc(db, 'adminSettings', 'referral');
         const docSnap = await getDoc(docRef);
 
+        const defaults = { 
+            isEnabled: false, 
+            referrerBonus: 100, 
+            referredUserBonus: 50, 
+            minBetAmountForBonus: 150 
+        };
+
         if (docSnap.exists()) {
-            return docSnap.data() as ReferralSettings;
+            return { ...defaults, ...docSnap.data() } as ReferralSettings;
         }
         // Return default settings if not found
-        return { isEnabled: false, referrerBonus: 100, referredUserBonus: 50 };
+        return defaults;
     } catch (error) {
         console.error("Error fetching referral settings:", error);
-        return { isEnabled: false, referrerBonus: 0, referredUserBonus: 0 };
+        return { isEnabled: false, referrerBonus: 0, referredUserBonus: 0, minBetAmountForBonus: 150 };
     }
 }
 
 // Server action to update referral settings
-export async function updateReferralSettings(data: ReferralSettingsFormValues) {
+export async function updateReferralSettings(data: Partial<ReferralSettings>) {
     const validatedFields = referralSettingsSchema.safeParse(data);
     if (!validatedFields.success) {
       return { error: 'Invalid data provided.' };
@@ -119,13 +126,9 @@ export async function processReferral(newUserId: string, referrerId: string) {
         const betsSnapshot = await getDocs(betsQuery);
         const totalWagered = betsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
         
-        const totalDeposited = await getTotalDepositsForUser(newUserId);
-        if (totalDeposited === 0) {
-            return; // User has not made their first deposit yet.
-        }
-        
-        // ** FIX: The condition now correctly checks if total wagered amount is greater than or equal to total deposited amount.
-        const conditionMet = totalWagered >= totalDeposited;
+        // ** NEW LOGIC: Use minBetAmountForBonus from settings **
+        const conditionMet = totalWagered >= settings.minBetAmountForBonus;
+
         if (!conditionMet) {
             return;
         }
