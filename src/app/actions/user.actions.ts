@@ -180,16 +180,25 @@ export async function getReferredUsers(referrerId: string): Promise<UserProfile[
         const q = query(usersCol, where('referredBy', '==', referrerId), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
 
+        if (querySnapshot.empty) {
+            return [];
+        }
+
         const referredUsers = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 uid: doc.id,
                 name: data.name,
                 phoneNumber: data.phoneNumber,
-                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 walletBalance: data.walletBalance,
-                role: data.role,
                 referralCode: data.referralCode,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+                role: data.role || 'user',
+                // Explicitly add other fields even if they might be undefined to match the type
+                bankAccount: data.bankAccount,
+                referredBy: data.referredBy,
+                isFirstBetPlaced: data.isFirstBetPlaced,
+                referralBonusAwarded: data.referralBonusAwarded,
             } as UserProfile;
         });
 
