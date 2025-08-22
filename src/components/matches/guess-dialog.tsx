@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -59,6 +59,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [selectedPlayersA, setSelectedPlayersA] = useState<Player[]>([]);
   const [selectedPlayersB, setSelectedPlayersB] = useState<Player[]>([]);
   const [playerPredictions, setPlayerPredictions] = useState<Record<string, Record<string, Record<string, string>>>>({}); // { teamA: { playerName: { qId: 'ans' } } }
+  const [popoverOpenA, setPopoverOpenA] = useState(false);
+  const [popoverOpenB, setPopoverOpenB] = useState(false);
 
   const betOptions = React.useMemo(() => {
     if (!match?.bettingSettings) return [];
@@ -103,7 +105,10 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         setIsLoading(true);
         // Reset state on open
         setBettingMode('qna');
-        setBetOnSide(match.allowOneSidedBets ? 'both' : 'both');
+        setBetOnSide(match.allowOneSidedBets ? 'teamA' : 'both');
+        if (bettingMode === 'player' && match.allowOneSidedBets) {
+          setBetOnSide('teamA');
+        }
         setSelectedPlayersA([]);
         setSelectedPlayersB([]);
         setQuestions([]);
@@ -260,8 +265,10 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const PlayerSelector = ({ team }: { team: 'A' | 'B'}) => {
     const players = team === 'A' ? match.teamA.players : match.teamB.players;
     const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
-    const [popoverOpen, setPopoverOpen] = useState(false);
-    
+    const { popoverOpen, setPopoverOpen } = team === 'A' ? 
+        { popoverOpen: popoverOpenA, setPopoverOpen: setPopoverOpenA } : 
+        { popoverOpen: popoverOpenB, setPopoverOpen: setPopoverOpenB };
+
     const { selectedPlayers, setSelectedPlayers } = team === 'A' ? 
         { selectedPlayers: selectedPlayersA, setSelectedPlayers: setSelectedPlayersA } : 
         { selectedPlayers: selectedPlayersB, setSelectedPlayers: setSelectedPlayersB };
@@ -274,42 +281,35 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
-                        Select Players <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                        {selectedPlayers.length > 0 ? selectedPlayers.map(p => p.name).join(', ') : "Select Player"}
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
-                    <ScrollArea className="h-48">
-                        <div className="p-2 space-y-1">
-                            {players.map(player => (
-                                <Label key={player.name} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer font-normal">
-                                    <Checkbox
-                                        checked={selectedPlayers.some(p => p.name === player.name)}
-                                        onCheckedChange={(checked) => {
-                                            const isSelected = selectedPlayers.some(p => p.name === player.name);
-                                            if (checked && !isSelected) {
-                                                setSelectedPlayers([...selectedPlayers, player]);
-                                            } else if (!checked && isSelected) {
-                                                setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name));
-                                            }
-                                        }}
-                                    />
-                                    <span>{player.name}</span>
-                                </Label>
-                            ))}
-                        </div>
-                    </ScrollArea>
+                   <Command>
+                     <CommandInput placeholder="Search player..." />
+                     <CommandList>
+                        <CommandEmpty>No player found.</CommandEmpty>
+                        <CommandGroup>
+                          {players.map(player => (
+                              <CommandItem
+                                  key={player.name} 
+                                  value={player.name}
+                                  onSelect={() => {
+                                      // Enforce single selection
+                                      setSelectedPlayers([player]);
+                                      setPopoverOpen(false);
+                                  }}
+                              >
+                                  <Check className={cn("mr-2 h-4 w-4", selectedPlayers.some(p => p.name === player.name) ? "opacity-100" : "opacity-0")} />
+                                  <span>{player.name}</span>
+                              </CommandItem>
+                          ))}
+                        </CommandGroup>
+                     </CommandList>
+                   </Command>
                 </PopoverContent>
             </Popover>
-            <div className="flex flex-wrap gap-2">
-                {selectedPlayers.map(player => (
-                    <Badge key={player.name} variant="secondary" className="flex items-center gap-1">
-                        {player.name}
-                        <button type="button" onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.name !== player.name))} className="rounded-full hover:bg-muted-foreground/20">
-                            <X className="h-3 w-3"/>
-                        </button>
-                    </Badge>
-                ))}
-            </div>
         </div>
     )
   }
@@ -534,3 +534,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
