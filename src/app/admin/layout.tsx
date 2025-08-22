@@ -68,7 +68,7 @@ export default function AdminLayout({
   }
 
   // **FIX**: The check now correctly waits for loading to be false before denying access.
-  if (!userProfile || userProfile.role !== "admin") {
+  if (!loading && (!userProfile || userProfile.role !== "admin")) {
     return <AccessDenied />;
   }
 
