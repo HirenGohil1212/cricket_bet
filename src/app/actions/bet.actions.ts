@@ -72,6 +72,9 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
         
         const potentialWin = selectedOption.payout;
         
+        // ** REVISED LOGIC **
+        // The transaction now only updates the user's balance and creates the bet.
+        // The referral processing is handled immediately after the transaction succeeds.
         const result = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
 
@@ -80,7 +83,9 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
             }
             
             const userData = userDoc.data();
-            const isFirstBet = userData.isFirstBetPlaced === false;
+            
+            // This flag is now ONLY used to determine if we should check referral status.
+            const wasFirstBet = userData.isFirstBetPlaced === false;
 
             const currentBalance = userData.walletBalance;
             if (currentBalance < amount) {
@@ -88,10 +93,15 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
             }
 
             const newBalance = currentBalance - amount;
-            transaction.update(userRef, { 
+            
+            // Only update isFirstBetPlaced once.
+            const userUpdateData: { walletBalance: number; isFirstBetPlaced?: boolean } = {
                 walletBalance: newBalance,
-                ...(isFirstBet && { isFirstBetPlaced: true })
-            });
+            };
+            if (wasFirstBet) {
+                userUpdateData.isFirstBetPlaced = true;
+            }
+            transaction.update(userRef, userUpdateData);
             
             const matchDescription = `${match.teamA.name} vs ${match.teamB.name}`;
 
@@ -100,7 +110,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 userId,
                 matchId,
                 matchDescription,
-                predictions, // This now correctly includes the full question text
+                predictions,
                 amount,
                 status: 'Pending',
                 timestamp: Timestamp.now(),
@@ -108,10 +118,13 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 betType,
             });
             
-            return { isFirstBet, referredBy: userData.referredBy };
+            // Return the necessary data for referral processing.
+            return { shouldCheckReferral: true, referredBy: userData.referredBy };
         });
 
-        if (result.isFirstBet && result.referredBy) {
+        // ** NEW ROBUST LOGIC **
+        // After the bet is successfully placed, check if a referral needs to be processed.
+        if (result.shouldCheckReferral && result.referredBy) {
             await processReferral(userId, result.referredBy);
         }
 

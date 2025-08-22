@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { 
@@ -122,22 +123,24 @@ export async function processReferral(newUserId: string, referrerId: string) {
         }
         const referralDoc = referralSnapshot.docs[0];
         
+        // ** ROBUST LOGIC: Calculate total wagered by summing up all bets **
         const betsQuery = query(collection(db, 'bets'), where('userId', '==', newUserId));
         const betsSnapshot = await getDocs(betsQuery);
         const totalWagered = betsSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
         
-        // ** NEW LOGIC: Use minBetAmountForBonus from settings **
         const conditionMet = totalWagered >= settings.minBetAmountForBonus;
 
         if (!conditionMet) {
-            return;
+            return; // Minimum bet amount not met, do nothing.
         }
         
+        // Use a transaction to ensure atomicity
         const batch = writeBatch(db);
         
         const referrerRef = doc(db, 'users', referrerId);
         const referrerDoc = await getDoc(referrerRef);
-        if(referrerDoc.exists()) {
+        
+        if (referrerDoc.exists()) {
             batch.update(referrerRef, { walletBalance: increment(settings.referrerBonus) });
 
             // Create transaction log for the referrer
@@ -151,9 +154,10 @@ export async function processReferral(newUserId: string, referrerId: string) {
             });
         }
         
+        // Mark that the new user's referral has been processed so this doesn't run again.
         batch.update(newUserRef, { referralBonusAwarded: true });
         
-        // Update the referral document to 'completed'
+        // Update the referral document status to 'completed'
         batch.update(referralDoc.ref, {
             status: 'completed',
             completedAt: Timestamp.now()
