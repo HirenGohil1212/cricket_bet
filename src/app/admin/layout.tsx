@@ -53,7 +53,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userProfile, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -62,13 +62,15 @@ export default function AdminLayout({
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
-
-  if (loading) {
+  
+  // **FIX**: The check now correctly waits for loading to be false AND for the userProfile
+  // to be loaded before denying access. If the user is logged in but the profile is still
+  // loading, it will show the skeleton.
+  if (loading || (user && !userProfile)) {
     return <AdminSkeleton />;
   }
 
-  // **FIX**: The check now correctly waits for loading to be false before denying access.
-  if (!loading && (!userProfile || userProfile.role !== "admin")) {
+  if (!user || userProfile.role !== "admin") {
     return <AccessDenied />;
   }
 
