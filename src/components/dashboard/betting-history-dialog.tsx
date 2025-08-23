@@ -159,19 +159,20 @@ export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHisto
                                   View {bet.predictions.length} predictions
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                    <ul className="space-y-2 pt-2">
+                                    <div className="space-y-2 pt-2 text-xs">
+                                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 text-center font-semibold">
+                                        <div>{teamAName}</div>
+                                        <div></div>
+                                        <div>{teamBName}</div>
+                                      </div>
                                       {bet.predictions.map((p, index) => (
-                                        <li key={index} className="text-xs border-l-2 pl-2 border-muted space-y-1">
-                                          <div className="text-muted-foreground">{p.questionText}</div>
-                                           <div className="font-medium">
-                                               {teamAName}: <span className="text-primary">{p.predictedAnswer?.teamA || 'N/A'}</span>
-                                           </div>
-                                           <div className="font-medium">
-                                               {teamBName}: <span className="text-primary">{p.predictedAnswer?.teamB || 'N/A'}</span>
-                                           </div>
-                                        </li>
+                                        <div key={index} className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 p-2 rounded-md bg-muted/50">
+                                            <div className="text-primary font-semibold text-center">{p.predictedAnswer?.teamA || 'N/A'}</div>
+                                            <div className="text-muted-foreground text-center truncate">{p.questionText}</div>
+                                            <div className="text-primary font-semibold text-center">{p.predictedAnswer?.teamB || 'N/A'}</div>
+                                        </div>
                                       ))}
-                                    </ul>
+                                    </div>
                                 </AccordionContent>
                               </AccordionItem>
                             </Accordion>
