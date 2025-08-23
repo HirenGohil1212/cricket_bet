@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -37,14 +38,21 @@ const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { predict
     const answer = isTeamA ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
 
     return (
-      <div className="text-xs space-y-1">
-          <div className="text-muted-foreground">{prediction.questionText}</div>
-          <div className="font-medium">
-             Answer: <span className="text-primary">{answer}</span>
-          </div>
-      </div>
-    )
-}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2">
+            {isTeamA ? (
+                <div className="text-primary font-semibold text-center">{answer}</div>
+            ) : (
+                <div></div>
+            )}
+            <div className="text-muted-foreground text-center text-xs truncate">{prediction.questionText}</div>
+            {!isTeamA ? (
+                <div className="text-primary font-semibold text-center">{answer}</div>
+            ) : (
+                <div></div>
+            )}
+        </div>
+    );
+};
 
 
 export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHistoryDialogProps) {
