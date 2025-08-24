@@ -58,8 +58,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   // State for Player Bet UI
   const [selectedPlayersA, setSelectedPlayersA] = useState<Player[]>([]);
   const [selectedPlayersB, setSelectedPlayersB] = useState<Player[]>([]);
-  const [popoverOpenA, setPopoverOpenA] = useState(false);
-  const [popoverOpenB, setPopoverOpenB] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
 
   const betOptions = React.useMemo(() => {
     if (!match?.bettingSettings) return [];
@@ -265,25 +265,26 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const PlayerSelector = ({ team }: { team: 'A' | 'B'}) => {
     const players = team === 'A' ? match.teamA.players : match.teamB.players;
     const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
-    const { popoverOpen, setPopoverOpen } = team === 'A' ? 
-        { popoverOpen: popoverOpenA, setPopoverOpen: setPopoverOpenA } : 
-        { popoverOpen: popoverOpenB, setPopoverOpen: setPopoverOpenB };
-
-    const { selectedPlayers, setSelectedPlayers } = team === 'A' ? 
-        { selectedPlayers: selectedPlayersA, setSelectedPlayers: setSelectedPlayersA } : 
-        { selectedPlayers: selectedPlayersB, setSelectedPlayers: setSelectedPlayersB };
+    const selectedPlayers = team === 'A' ? selectedPlayersA : selectedPlayersB;
+    const setSelectedPlayers = team === 'A' ? setSelectedPlayersA : setSelectedPlayersB;
     
-    const singleSelectedPlayer = selectedPlayers.length > 0 ? selectedPlayers[0] : null;
-
     if (!players || players.length === 0) return <p className="text-xs text-muted-foreground p-2 text-center">No players listed for {teamName}</p>;
-
+    
+    const handlePlayerSelect = (player: Player) => {
+        if (selectedPlayers.some(p => p.name === player.name)) {
+            setSelectedPlayers([]);
+        } else {
+            setSelectedPlayers([player]);
+        }
+    };
+    
     return (
         <div className="space-y-2">
             <h3 className="font-semibold text-sm">{teamName}</h3>
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
-                        {singleSelectedPlayer ? singleSelectedPlayer.name : "Select Player"}
+                        {selectedPlayers.length > 0 ? selectedPlayers[0].name : "Select Player"}
                         <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
@@ -296,12 +297,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                     variant="ghost"
                                     className={cn(
                                         "w-full justify-start font-normal",
-                                        singleSelectedPlayer?.name === player.name && "bg-accent text-accent-foreground"
+                                        selectedPlayers[0]?.name === player.name && "bg-accent text-accent-foreground"
                                     )}
-                                    onClick={() => {
-                                        setSelectedPlayers([player]);
-                                        setPopoverOpen(false);
-                                    }}
+                                    onClick={() => handlePlayerSelect(player)}
                                 >
                                     {player.name}
                                 </Button>
@@ -396,17 +394,17 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </div>
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               <Label className="font-headline text-lg">Select Bet Amount</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {(betOptions || []).map((opt) => (
                   <Button
                     key={opt.amount}
                     type="button"
                     variant={amount === opt.amount ? "default" : "secondary"}
                     onClick={() => setAmount(opt.amount)}
-                    className="font-bold"
+                    className="font-bold h-12"
                   >
                     INR {opt.amount}
                   </Button>
@@ -414,7 +412,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               </div>
             </div>
                 
-            <ScrollArea className="h-72 pr-4">
+            <ScrollArea className="h-64 pr-4">
               <div className="space-y-4">
                 {isLoading ? (
                   Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
@@ -453,7 +451,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                     <RadioGroup
                                         value={betOnSide}
                                         onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
-                                        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+                                        className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-x-6 justify-items-center"
                                     >
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="teamA" id="r-teamA" />
@@ -463,47 +461,48 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                             <RadioGroupItem value="teamB" id="r-teamB" />
                                             <Label htmlFor="r-teamB" className="text-xs truncate">{match.teamB.name}</Label>
                                         </div>
-                                        <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-2 col-span-2 sm:col-span-1 justify-center">
                                             <RadioGroupItem value="both" id="r-both" />
                                             <Label htmlFor="r-both" className="text-xs">Both</Label>
                                         </div>
                                     </RadioGroup>
                                 </div>
                             )}
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-3">
-                                <div className="font-semibold text-center">{match.teamA.name}</div>
-                                <div></div>
-                                <div className="font-semibold text-center">{match.teamB.name}</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-3">
+                                <div className="font-semibold text-center hidden sm:block">{match.teamA.name}</div>
+                                <div className="hidden sm:block"></div>
+                                <div className="font-semibold text-center hidden sm:block">{match.teamB.name}</div>
 
                                 {questions.map((q) => (
                                     <React.Fragment key={q.id}>
-                                    {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <Input
-                                            type="text"
-                                            placeholder="Ans"
-                                            value={qnaPredictions[q.id]?.teamA ?? ''}
-                                            className="text-center"
-                                            onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
-                                        />
-                                    )}
-                                    
-                                    {betOnSide === 'teamB' && match.allowOneSidedBets && <div />}
-
-                                    <div className="text-sm font-semibold text-center text-muted-foreground shrink-0">
+                                      <div className="sm:hidden col-span-full text-sm font-semibold text-center text-muted-foreground pt-2">
                                         {q.question}
-                                    </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 sm:col-span-full sm:grid-cols-[1fr_auto_1fr] items-center gap-x-2 w-full">
+                                        {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
+                                            <Input
+                                                type="text"
+                                                placeholder={`Ans for ${match.teamA.name}`}
+                                                value={qnaPredictions[q.id]?.teamA ?? ''}
+                                                className="text-center"
+                                                onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
+                                            />
+                                        ) : <div />}
+                                        
+                                        <div className="hidden sm:block text-sm font-semibold text-center text-muted-foreground shrink-0 px-2">
+                                            {q.question}
+                                        </div>
 
-                                    {betOnSide === 'teamA' && match.allowOneSidedBets && <div />}
-                                    
-                                    {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                        <Input
-                                            type="text"
-                                            placeholder="Ans"
-                                            className="text-center"
-                                            value={qnaPredictions[q.id]?.teamB ?? ''}
-                                            onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
-                                        />
-                                    )}
+                                        {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
+                                            <Input
+                                                type="text"
+                                                placeholder={`Ans for ${match.teamB.name}`}
+                                                className="text-center"
+                                                value={qnaPredictions[q.id]?.teamB ?? ''}
+                                                onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
+                                            />
+                                        ) : <div />}
+                                      </div>
                                     </React.Fragment>
                                 ))}
                             </div>
@@ -518,7 +517,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               </div>
             </ScrollArea>
                 
-            <div className="p-4 bg-accent/10 rounded-lg text-center mt-4">
+            <div className="p-3 bg-accent/10 rounded-lg text-center mt-4">
               <p className="text-sm text-muted-foreground">Potential Win</p>
               <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
             </div>
@@ -536,3 +535,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
