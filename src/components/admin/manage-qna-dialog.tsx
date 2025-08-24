@@ -273,7 +273,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                         <Alert className="sm:max-w-xs text-left">
                                 <Info className="h-4 w-4" />
                                 <AlertDescription className="text-xs">
-                                    Save results first, then Settle to pay winners. Payouts are irreversible.
+                                    Save results first, then Publish to process payouts. This action is irreversible.
                                 </AlertDescription>
                         </Alert>
                         <div className="flex justify-end gap-2 w-full sm:w-auto mt-4 sm:mt-0">
@@ -282,7 +282,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                 {isSaving ? 'Saving...' : 'Save Results'}
                             </Button>
                             <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
-                                {isSettling ? 'Settling...' : (match.status === 'Finished' ? 'Match Settled' : 'Settle & Payout')}
+                                {isSettling ? 'Publishing...' : (match.status === 'Finished' ? 'Match Settled' : 'Publish Result')}
                             </Button>
                         </div>
                     </DialogFooter>
