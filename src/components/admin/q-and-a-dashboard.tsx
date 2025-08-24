@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -59,7 +58,7 @@ export function QandADashboard({ matches: initialMatches }: QandADashboardProps)
           return (
              <TabsContent key={sport} value={sport} className="mt-6 space-y-6">
                  <Tabs defaultValue="Upcoming" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
                         {matchStatuses.map(status => (
                             <TabsTrigger key={status} value={status}>
                                 {status} ({sportMatches.filter(m => m.status === status).length})
