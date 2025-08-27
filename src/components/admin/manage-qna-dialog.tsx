@@ -155,19 +155,19 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                             <Table>
                                                                 <TableHeader>
                                                                     <TableRow>
-                                                                        <TableHead className="w-[150px]">Question</TableHead>
+                                                                        <TableHead className="w-[120px]">Question</TableHead>
                                                                         {match.teamA.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
                                                                     </TableRow>
                                                                 </TableHeader>
                                                                 <TableBody>
                                                                     {questions.map((q) => (
                                                                         <TableRow key={`${q.id}-a`}>
-                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate max-w-xs">{q.question}</TableCell>
+                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate">{q.question}</TableCell>
                                                                             {match.teamA.players?.map(p => (
-                                                                                <TableCell key={p.name}>
+                                                                                <TableCell key={p.name} className="px-2">
                                                                                     <Input 
                                                                                         type="text" 
-                                                                                        className="min-w-[60px] max-w-[80px] text-center" 
+                                                                                        className="w-16 h-8 text-center" 
                                                                                         placeholder="-" 
                                                                                         disabled={isSaving || isSettling || q.status === 'settled'} 
                                                                                         value={results[`player_${q.id}`]?.teamA?.[p.name] || ''}
@@ -190,19 +190,19 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                             <Table>
                                                                 <TableHeader>
                                                                     <TableRow>
-                                                                        <TableHead className="w-[150px]">Question</TableHead>
+                                                                        <TableHead className="w-[120px]">Question</TableHead>
                                                                         {match.teamB.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
                                                                     </TableRow>
                                                                 </TableHeader>
                                                                 <TableBody>
                                                                     {questions.map((q) => (
                                                                         <TableRow key={`${q.id}-b`}>
-                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate max-w-xs">{q.question}</TableCell>
+                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate">{q.question}</TableCell>
                                                                             {match.teamB.players?.map(p => (
-                                                                                <TableCell key={p.name}>
+                                                                                <TableCell key={p.name} className="px-2">
                                                                                      <Input 
                                                                                         type="text" 
-                                                                                        className="min-w-[60px] max-w-[80px] text-center" 
+                                                                                        className="w-16 h-8 text-center" 
                                                                                         placeholder="-" 
                                                                                         disabled={isSaving || isSettling || q.status === 'settled'} 
                                                                                         value={results[`player_${q.id}`]?.teamB?.[p.name] || ''}
