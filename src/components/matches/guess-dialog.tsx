@@ -51,7 +51,7 @@ const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'A' | 
     return (
         <div className="space-y-2">
             <h3 className="font-semibold text-sm">{teamName}</h3>
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
                         {selectedPlayer?.team === team ? selectedPlayer.name : `Select Player`}
@@ -60,13 +60,13 @@ const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'A' | 
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                     <ScrollArea className="h-48">
-                        <div className="p-1">
+                        <div className="p-1 space-y-1">
                             {players.map(player => (
                                 <Button
                                     key={player.name}
                                     variant="ghost"
                                     className={cn(
-                                        "w-full justify-start font-normal",
+                                        "w-full justify-start font-normal h-auto py-2",
                                         selectedPlayer?.name === player.name && "bg-accent text-accent-foreground"
                                     )}
                                     onClick={() => {
@@ -74,7 +74,13 @@ const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'A' | 
                                         setPopoverOpen(false);
                                     }}
                                 >
-                                    {player.name}
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={player.imageUrl} alt={player.name} />
+                                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{player.name}</span>
+                                    </div>
                                 </Button>
                             ))}
                         </div>
@@ -410,7 +416,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               </div>
             </div>
                 
-            <ScrollArea className="h-56 pr-4">
+            <ScrollArea className="h-52 pr-4">
               <GuessDialogContext.Provider value={{match, playerPredictions, handlePlayerInputChange, questions }}>
                 <div className="space-y-4">
                   {isLoading ? (
@@ -470,29 +476,30 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                               <div className="space-y-3">
                                   {questions.map((q) => (
                                       <div key={q.id} className="space-y-2">
-                                          <div className="text-sm font-semibold text-center text-muted-foreground">
-                                            {q.question}
-                                          </div>
-                                          <div className="grid grid-cols-2 gap-2">
+                                          <div className="flex items-center gap-2">
                                               {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
                                                   <Input
                                                       type="text"
                                                       placeholder={`${match.teamA.name}`}
                                                       value={qnaPredictions[q.id]?.teamA ?? ''}
-                                                      className="text-center h-9 text-sm"
+                                                      className="text-center h-9 text-sm flex-1 w-0"
                                                       onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
                                                   />
-                                              ) : <div />}
+                                              ) : <div className="flex-1 w-0" />}
+                                              
+                                              <div className="text-sm font-semibold text-center text-muted-foreground px-1 truncate shrink">
+                                                {q.question}
+                                              </div>
                                               
                                               {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
                                                   <Input
                                                       type="text"
                                                       placeholder={`${match.teamB.name}`}
-                                                      className="text-center h-9 text-sm"
+                                                      className="text-center h-9 text-sm flex-1 w-0"
                                                       value={qnaPredictions[q.id]?.teamB ?? ''}
                                                       onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
                                                   />
-                                              ) : <div />}
+                                              ) : <div className="flex-1 w-0" />}
                                           </div>
                                       </div>
                                   ))}
@@ -527,4 +534,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
