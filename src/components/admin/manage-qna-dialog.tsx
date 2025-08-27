@@ -162,7 +162,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                                 <TableBody>
                                                                     {questions.map((q) => (
                                                                         <TableRow key={`${q.id}-a`}>
-                                                                            <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
+                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate max-w-xs">{q.question}</TableCell>
                                                                             {match.teamA.players?.map(p => (
                                                                                 <TableCell key={p.name}>
                                                                                     <Input 
@@ -197,7 +197,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                                 <TableBody>
                                                                     {questions.map((q) => (
                                                                         <TableRow key={`${q.id}-b`}>
-                                                                            <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
+                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate max-w-xs">{q.question}</TableCell>
                                                                             {match.teamB.players?.map(p => (
                                                                                 <TableCell key={p.name}>
                                                                                      <Input 
