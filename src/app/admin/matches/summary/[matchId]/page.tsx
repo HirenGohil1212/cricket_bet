@@ -1,4 +1,5 @@
 
+
 import { getMatchById } from "@/app/actions/match.actions";
 import { getQuestionsForMatch, getWinnersForMatch } from "@/app/actions/qna.actions";
 import { getTotalBetAmountForMatch } from "@/app/actions/bet.actions";
@@ -9,6 +10,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Terminal, Trophy, Users, Banknote, HelpCircle } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
+import { Separator } from "@/components/ui/separator";
 
 interface MatchSummaryPageProps {
     params: {
@@ -61,6 +63,9 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
     }
 
     const totalPayout = winners.reduce((sum, winner) => sum + winner.payoutAmount, 0);
+
+    const hasPlayerResults = questions.some(q => q.playerResult && (Object.keys(q.playerResult.teamA).length > 0 || Object.keys(q.playerResult.teamB).length > 0));
+
 
     return (
         <div className="space-y-6">
@@ -152,6 +157,24 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                                         <span>{match.teamA.name}: {q.result?.teamA || 'N/A'}</span>
                                         <span>{match.teamB.name}: {q.result?.teamB || 'N/A'}</span>
                                     </div>
+                                    
+                                    {q.playerResult && (Object.keys(q.playerResult.teamA).length > 0 || Object.keys(q.playerResult.teamB).length > 0) && (
+                                        <div className="mt-3 pt-3 border-t border-dashed">
+                                            <h4 className="text-center text-xs font-semibold text-muted-foreground mb-2">PLAYER RESULTS</h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                                {Object.entries(q.playerResult.teamA).map(([playerName, result]) => result && (
+                                                    <div key={playerName} className="text-xs text-center">
+                                                        <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
+                                                    </div>
+                                                ))}
+                                                 {Object.entries(q.playerResult.teamB).map(([playerName, result]) => result && (
+                                                    <div key={playerName} className="text-xs text-center">
+                                                        <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
