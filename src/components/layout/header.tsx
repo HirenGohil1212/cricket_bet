@@ -26,6 +26,7 @@ const getTitle = (pathname: string) => {
     if (pathname.startsWith('/history')) return 'History';
     if (pathname.startsWith('/profile')) return 'My Profile';
     if (pathname.startsWith('/wallet')) return 'My Wallet';
+    if (pathname.startsWith('/game-history')) return 'Game History';
     return 'Matches';
 }
 

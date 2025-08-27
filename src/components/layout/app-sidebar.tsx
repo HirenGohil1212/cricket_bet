@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download } from "lucide-react";
+import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download, Swords } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,6 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ onNavigate }: AppSidebarProps) {
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const { toast } = useToast();
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
@@ -75,22 +74,6 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           });
       }
   };
-
-  const handleMyBetsClick = () => {
-      if(user) {
-          setIsHistoryOpen(true);
-      } else {
-          toast({
-              variant: "destructive",
-              title: "Not Logged In",
-              description: "Please login to see your betting history.",
-          });
-          router.push('/login');
-      }
-      if (isMobile) {
-        setOpenMobile(false);
-      }
-  }
 
   const handleInstallClick = () => {
     promptInstall();
@@ -145,9 +128,11 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleMyBetsClick}>
-                <Wallet />
-                My Games
+              <SidebarMenuButton onClick={() => handleLinkClick('/game-history')} asChild isActive={pathname === '/game-history'}>
+                <Link href="/game-history">
+                    <Swords />
+                    Game History
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
@@ -217,7 +202,6 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             </div>
         </SidebarFooter>
       </Sidebar>
-      {user && <BettingHistoryDialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen} />}
     </>
   );
 }
