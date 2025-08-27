@@ -75,7 +75,7 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
                              {deposit.status === 'Processing' ? (
                                 <Button size="sm" onClick={() => handleReview(deposit)} className="w-full">Review</Button>
                             ) : (
-                                 <Button size="sm" variant="outline" disabled className="w-full">Reviewed</Button>
+                                 <Button size="sm" variant="outline" onClick={() => handleReview(deposit)} className="w-full">View</Button>
                             )}
                         </div>
                     </div>
@@ -108,7 +108,7 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
                                 {deposit.status === 'Processing' ? (
                                     <Button size="sm" onClick={() => handleReview(deposit)}>Review</Button>
                                 ) : (
-                                     <Button size="sm" variant="outline" disabled>Reviewed</Button>
+                                     <Button size="sm" variant="outline" onClick={() => handleReview(deposit)}>View</Button>
                                 )}
                             </TableCell>
                         </TableRow>
@@ -141,9 +141,10 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isAdmin = userProfile?.role === 'admin';
+    const isProcessing = deposit.status === 'Processing';
 
     const handleApprove = async () => {
-        if (!isAdmin) {
+        if (!isAdmin || !isProcessing) {
             toast({ variant: 'destructive', title: 'Permission Denied' });
             return;
         }
@@ -160,7 +161,7 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
     };
 
     const handleReject = async () => {
-        if (!isAdmin) {
+        if (!isAdmin || !isProcessing) {
             toast({ variant: 'destructive', title: 'Permission Denied' });
             return;
         }
@@ -187,7 +188,7 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                 <DialogHeader>
                     <DialogTitle>Review Deposit from {deposit.userName}</DialogTitle>
                     <DialogDescription>
-                        Verify the payment screenshot and approve or reject the request.
+                        {isProcessing ? 'Verify the payment screenshot and approve or reject the request.' : 'Viewing details for a completed deposit.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -219,17 +220,24 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                             type="number" 
                             value={amount}
                             onChange={(e) => setAmount(Number(e.target.value))}
+                            disabled={!isProcessing}
                         />
                     </div>
                 </div>
-                <DialogFooter className="grid grid-cols-2 gap-2">
-                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !isAdmin}>
-                        {isSubmitting ? 'Rejecting...' : 'Reject'}
-                    </Button>
-                    <Button onClick={handleApprove} disabled={isSubmitting || !isAdmin}>
-                        {isSubmitting ? 'Approving...' : 'Approve'}
-                    </Button>
-                </DialogFooter>
+                {isProcessing ? (
+                    <DialogFooter className="grid grid-cols-2 gap-2">
+                        <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !isAdmin}>
+                            {isSubmitting ? 'Rejecting...' : 'Reject'}
+                        </Button>
+                        <Button onClick={handleApprove} disabled={isSubmitting || !isAdmin}>
+                            {isSubmitting ? 'Approving...' : 'Approve'}
+                        </Button>
+                    </DialogFooter>
+                ) : (
+                    <DialogFooter>
+                        <Button variant="outline" onClick={onClose}>Close</Button>
+                    </DialogFooter>
+                )}
             </DialogContent>
         </Dialog>
     );
