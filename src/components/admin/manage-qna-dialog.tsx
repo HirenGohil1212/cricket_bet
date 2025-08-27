@@ -18,26 +18,19 @@ import { Separator } from '../ui/separator';
 
 type ResultState = Record<string, any>;
 
-interface ManageQnaDialogProps {
-    match: Match;
-    questions: Question[];
-    isOpen: boolean;
-    onClose: (shouldRefresh: boolean) => void;
-}
-
-const PlayerResultsGrid = ({ teamName, players, questions, results, onInputChange, disabled }: any) => {
+const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInputChange, disabled }: any) => {
     if (!players || players.length === 0) return null;
     
     return (
         <div className="space-y-2">
             <h4 className="font-semibold">{teamName} Player Results</h4>
-            <div className="rounded-md border p-4">
+            <div className="rounded-md border p-2">
                 <div 
-                    className="grid gap-x-2 gap-y-3"
-                    style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${players.length}, minmax(40px, 60px))` }}
+                    className="grid items-center gap-x-1 gap-y-2"
+                    style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${players.length}, minmax(40px, 1fr))` }}
                 >
                     {/* Header Row */}
-                    <div className="text-xs text-muted-foreground font-medium">Question</div>
+                    <div className="text-xs text-muted-foreground font-medium truncate">Question</div>
                     {players.map((p: any) => (
                         <div key={p.name} className="text-xs font-medium text-center truncate" title={p.name}>
                             {p.name}
@@ -52,7 +45,7 @@ const PlayerResultsGrid = ({ teamName, players, questions, results, onInputChang
                                 <Input
                                     key={p.name}
                                     type="text"
-                                    className="w-full h-8 text-center px-1"
+                                    className="w-full h-7 text-center px-1 text-xs"
                                     placeholder="-"
                                     disabled={disabled}
                                     value={results[`player_${q.id}`]?.[teamName === match.teamA.name ? 'teamA' : 'teamB']?.[p.name] || ''}
@@ -196,6 +189,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                         {match.isSpecialMatch && (
                                             <>
                                                 <PlayerResultsGrid 
+                                                    match={match}
                                                     teamName={match.teamA.name}
                                                     players={match.teamA.players}
                                                     questions={questions}
@@ -204,6 +198,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                     disabled={isSaving || isSettling || match.status === 'Finished'}
                                                 />
                                                 <PlayerResultsGrid 
+                                                    match={match}
                                                     teamName={match.teamB.name}
                                                     players={match.teamB.players}
                                                     questions={questions}
