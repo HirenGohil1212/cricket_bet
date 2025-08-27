@@ -14,14 +14,29 @@ export function TransactionHistory() {
         <CardTitle>Transaction History</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="deposits" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="wins">Wins</TabsTrigger>
+            <TabsTrigger value="losses">Losses</TabsTrigger>
             <TabsTrigger value="deposits">Deposits</TabsTrigger>
             <TabsTrigger value="withdrawals">
               Withdrawals
             </TabsTrigger>
             <TabsTrigger value="bonuses">Bonuses</TabsTrigger>
           </TabsList>
+          <TabsContent value="all" className="mt-4">
+            {/* Placeholder for All History Table */}
+             <p className="text-center text-muted-foreground p-8">Coming soon...</p>
+          </TabsContent>
+           <TabsContent value="wins" className="mt-4">
+             {/* Placeholder for Wins History Table */}
+             <p className="text-center text-muted-foreground p-8">Coming soon...</p>
+          </TabsContent>
+           <TabsContent value="losses" className="mt-4">
+             {/* Placeholder for Losses History Table */}
+             <p className="text-center text-muted-foreground p-8">Coming soon...</p>
+          </TabsContent>
           <TabsContent value="deposits" className="mt-4">
             <DepositHistoryTable />
           </TabsContent>

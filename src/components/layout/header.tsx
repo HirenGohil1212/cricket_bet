@@ -23,8 +23,9 @@ import { useToast } from "@/hooks/use-toast";
 
 
 const getTitle = (pathname: string) => {
-    if (pathname.startsWith('/wallet')) return 'My Wallet';
+    if (pathname.startsWith('/history')) return 'History';
     if (pathname.startsWith('/profile')) return 'My Profile';
+    if (pathname.startsWith('/wallet')) return 'My Wallet';
     return 'Matches';
 }
 

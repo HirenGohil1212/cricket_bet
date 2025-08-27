@@ -21,7 +21,6 @@ export default async function WalletPage() {
                 <Suspense fallback={<Skeleton className="h-[450px] w-full" />}>
                    <WalletActionsSection />
                 </Suspense>
-                <TransactionHistory />
             </div>
         </HomePageClient>
     );

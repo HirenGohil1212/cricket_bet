@@ -137,16 +137,16 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => handleLinkClick('/wallet')} asChild isActive={pathname === '/wallet'}>
-                <Link href="/wallet">
-                    <Wallet />
-                    My Wallet
+              <SidebarMenuButton onClick={() => handleLinkClick('/history')} asChild isActive={pathname === '/history'}>
+                <Link href="/history">
+                    <History />
+                    History
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleMyBetsClick}>
-                <History />
+                <Wallet />
                 My Games
               </SidebarMenuButton>
             </SidebarMenuItem>
