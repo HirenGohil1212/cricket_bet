@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DepositHistoryTable } from "@/components/wallet/deposit-history-table";
 import { WithdrawalHistoryTable } from "./withdrawal-history-table";
 import { BonusHistoryTable } from "./bonus-history-table";
+import { AllHistoryTable } from "./all-history-table";
+import { WinsLossesHistoryTable } from "./wins-losses-history-table";
 
 export function TransactionHistory() {
   return (
@@ -26,16 +28,13 @@ export function TransactionHistory() {
             <TabsTrigger value="bonuses">Bonuses</TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="mt-4">
-            {/* Placeholder for All History Table */}
-             <p className="text-center text-muted-foreground p-8">Coming soon...</p>
+            <AllHistoryTable />
           </TabsContent>
            <TabsContent value="wins" className="mt-4">
-             {/* Placeholder for Wins History Table */}
-             <p className="text-center text-muted-foreground p-8">Coming soon...</p>
+             <WinsLossesHistoryTable type="Won" />
           </TabsContent>
            <TabsContent value="losses" className="mt-4">
-             {/* Placeholder for Losses History Table */}
-             <p className="text-center text-muted-foreground p-8">Coming soon...</p>
+             <WinsLossesHistoryTable type="Lost" />
           </TabsContent>
           <TabsContent value="deposits" className="mt-4">
             <DepositHistoryTable />

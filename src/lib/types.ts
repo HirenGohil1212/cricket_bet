@@ -1,5 +1,6 @@
 
 
+
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -57,7 +58,7 @@ export type Bet = {
   predictions: Prediction[];
   amount: number;
   status: "Won" | "Lost" | "Pending" | "Refunded";
-  timestamp: string; // Changed from Date to string
+  timestamp: string | { toDate: () => Date }; // Allow for Firestore Timestamp
   potentialWin: number;
   betType?: 'qna' | 'player';
 };
@@ -103,8 +104,8 @@ export type DepositRequest = {
   screenshotUrl: string;
   screenshotPath?: string;
   status: 'Processing' | 'Approved' | 'Rejected';
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | { toDate: () => Date }; // Allow for Firestore Timestamp
+  updatedAt: string | { toDate: () => Date };
 };
 
 export type WithdrawalRequest = {
@@ -113,8 +114,8 @@ export type WithdrawalRequest = {
   userName: string;
   amount: number;
   status: 'Processing' | 'Approved' | 'Rejected';
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | { toDate: () => Date }; // Allow for Firestore Timestamp
+  updatedAt: string | { toDate: () => Date };
   userBankAccount: UserBankAccount;
 };
 
@@ -145,7 +146,7 @@ export type Transaction = {
     type: 'referral_bonus';
     amount: number; // positive for credit
     description: string;
-    timestamp: string;
+    timestamp: string | { toDate: () => Date }; // Allow for Firestore Timestamp
 };
 
 export type ReferralSettings = {
@@ -162,7 +163,7 @@ export type Referral = {
     referredUserName: string;
     status: 'pending' | 'completed';
     potentialBonus: number;
-    createdAt: string;
+    createdAt: string | { toDate: () => Date }; // Allow for Firestore Timestamp
     completedAt?: string;
 };
 
