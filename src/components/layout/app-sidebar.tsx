@@ -147,7 +147,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleMyBetsClick}>
                 <History />
-                My Bets
+                My Games
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
