@@ -1,5 +1,4 @@
 
-
 import { getMatchById } from "@/app/actions/match.actions";
 import { getQuestionsForMatch, getWinnersForMatch } from "@/app/actions/qna.actions";
 import { getTotalBetAmountForMatch } from "@/app/actions/bet.actions";
@@ -172,7 +171,7 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><User className="h-5 w-5"/> Player Q&amp;A Results</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
                         {questions.map((q) => {
                              const teamAResults = Object.entries(q.playerResult?.teamA || {}).filter(([, result]) => result);
                              const teamBResults = Object.entries(q.playerResult?.teamB || {}).filter(([, result]) => result);
@@ -181,24 +180,33 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                                 return null;
                             }
                             return (
-                                <div key={`player-${q.id}`} className="p-3 border rounded-md">
-                                    <p className="font-medium text-muted-foreground text-center">{q.question}</p>
-                                     <div className="mt-2 pt-2 border-t grid grid-cols-2 gap-x-4">
+                                <div key={`player-${q.id}`} className="space-y-3">
+                                    <h4 className="text-center font-semibold text-primary">{q.question}</h4>
+                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            {teamAResults.map(([playerName, result]) => (
-                                                <div key={playerName} className="text-sm">
-                                                    <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
-                                                </div>
-                                            ))}
+                                            {teamAResults.length > 0 ? (
+                                                teamAResults.map(([playerName, result]) => (
+                                                    <div key={playerName} className="text-sm bg-muted/50 p-2 rounded-md">
+                                                        <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-sm text-muted-foreground text-center py-2">No results for {match.teamA.name}</div>
+                                            )}
                                         </div>
                                          <div className="space-y-1">
-                                            {teamBResults.map(([playerName, result]) => (
-                                                <div key={playerName} className="text-sm">
-                                                    <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
-                                                </div>
-                                            ))}
+                                            {teamBResults.length > 0 ? (
+                                                teamBResults.map(([playerName, result]) => (
+                                                    <div key={playerName} className="text-sm bg-muted/50 p-2 rounded-md">
+                                                        <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
+                                                    </div>
+                                                ))
+                                             ) : (
+                                                <div className="text-sm text-muted-foreground text-center py-2">No results for {match.teamB.name}</div>
+                                            )}
                                         </div>
                                     </div>
+                                    <Separator />
                                 </div>
                             );
                         })}
