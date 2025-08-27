@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { deletePlayer } from "@/app/actions/player.actions";
+import { SportIcon } from "../icons";
 
 interface PlayersListProps {
   initialPlayers: Player[];
@@ -82,7 +83,10 @@ export function PlayersList({ initialPlayers, onPlayerDeleted }: PlayersListProp
     <Tabs defaultValue={sports[0]} className="w-full">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 h-auto">
         {sports.map((sport) => (
-          <TabsTrigger key={sport} value={sport}>{sport}</TabsTrigger>
+          <TabsTrigger key={sport} value={sport} className="flex items-center gap-2">
+            <SportIcon sport={sport} className="w-4 h-4" />
+            {sport}
+          </TabsTrigger>
         ))}
       </TabsList>
       {sports.map((sport) => (

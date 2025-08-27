@@ -4,6 +4,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sports } from "@/lib/types";
 import { List } from "lucide-react";
+import { SportIcon } from "../icons";
 
 export function MatchTabs({ children }: { children: React.ReactNode }) {
   return (
@@ -21,8 +22,9 @@ export function MatchTabs({ children }: { children: React.ReactNode }) {
           <TabsTrigger 
             key={sport} 
             value={sport} 
-            className="py-2 px-4 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=inactive]:bg-muted/50 data-[state=inactive]:hover:bg-muted"
+            className="py-2 px-4 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=inactive]:bg-muted/50 data-[state=inactive]:hover:bg-muted flex items-center gap-2"
           >
+            <SportIcon sport={sport} className="w-5 h-5" />
             <span>{sport}</span>
           </TabsTrigger>
         ))}

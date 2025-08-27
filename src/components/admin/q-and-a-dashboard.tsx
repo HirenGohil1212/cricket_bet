@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +9,7 @@ import { useState, useCallback } from "react";
 import { getMatches } from "@/app/actions/match.actions";
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
+import { SportIcon } from "../icons";
 
 interface QandADashboardProps {
     matches: Match[];
@@ -48,7 +50,9 @@ export function QandADashboard({ matches: initialMatches }: QandADashboardProps)
             <TabsTrigger 
               key={sport} 
               value={sport}
+              className="flex items-center gap-2"
             >
+              <SportIcon sport={sport} className="w-4 h-4" />
               {sport}
             </TabsTrigger>
           ))}
