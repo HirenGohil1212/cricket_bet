@@ -135,7 +135,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
                 <DialogContent className="sm:max-w-5xl">
                     <DialogHeader>
-                        <DialogTitle>Manage Q&amp;A for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
+                        <DialogTitle>Manage Results for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
                         <DialogDescription>
                            Enter and save the results for each question, then finalize to process payouts.
                         </DialogDescription>
@@ -167,7 +167,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                                                 <TableCell key={p.name}>
                                                                                     <Input 
                                                                                         type="text" 
-                                                                                        className="min-w-[60px] text-center" 
+                                                                                        className="min-w-[60px] max-w-[80px] text-center" 
                                                                                         placeholder="-" 
                                                                                         disabled={isSaving || isSettling || q.status === 'settled'} 
                                                                                         value={results[`player_${q.id}`]?.teamA?.[p.name] || ''}
@@ -202,7 +202,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                                                 <TableCell key={p.name}>
                                                                                      <Input 
                                                                                         type="text" 
-                                                                                        className="min-w-[60px] text-center" 
+                                                                                        className="min-w-[60px] max-w-[80px] text-center" 
                                                                                         placeholder="-" 
                                                                                         disabled={isSaving || isSettling || q.status === 'settled'} 
                                                                                         value={results[`player_${q.id}`]?.teamB?.[p.name] || ''}
@@ -240,7 +240,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                             <TableCell>
                                                                 <Input 
                                                                     type="text" 
-                                                                    className="min-w-[60px] text-center" 
+                                                                    className="min-w-[60px] max-w-[120px] mx-auto text-center" 
                                                                     placeholder="Result" 
                                                                     disabled={isSaving || isSettling || q.status === 'settled'} 
                                                                     value={results[q.id]?.teamA || ''}
@@ -250,7 +250,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                             <TableCell>
                                                                 <Input 
                                                                     type="text" 
-                                                                    className="min-w-[60px] text-center" 
+                                                                    className="min-w-[60px] max-w-[120px] mx-auto text-center" 
                                                                     placeholder="Result" 
                                                                     disabled={isSaving || isSettling || q.status === 'settled'} 
                                                                     value={results[q.id]?.teamB || ''}
@@ -281,7 +281,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                             <Button type="submit" variant="outline" disabled={isSaving || isSettling || match.status === 'Finished' || !isAdmin}>
                                 {isSaving ? 'Saving...' : 'Save Results'}
                             </Button>
-                            <Button type="button" variant="destructive" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
+                            <Button type="button" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
                                 {isSettling ? 'Publishing...' : (match.status === 'Finished' ? 'Match Settled' : 'Publish Result')}
                             </Button>
                         </div>
