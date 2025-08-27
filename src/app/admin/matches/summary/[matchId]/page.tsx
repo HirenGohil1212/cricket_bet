@@ -145,7 +145,7 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
             {/* Questions and Team Results */}
             <Card className="bg-primary/5">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/> Team Q&A Results</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/> Team Q&amp;A Results</CardTitle>
                 </CardHeader>
                 <CardContent>
                      {questions.length > 0 ? (
@@ -170,27 +170,30 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
             {hasPlayerResults && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><User className="h-5 w-5"/> Player Q&A Results</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><User className="h-5 w-5"/> Player Q&amp;A Results</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {questions.map((q) => {
-                            if (!q.playerResult || (Object.keys(q.playerResult.teamA).length === 0 && Object.keys(q.playerResult.teamB).length === 0)) {
+                             const teamAResults = Object.entries(q.playerResult?.teamA || {}).filter(([, result]) => result);
+                             const teamBResults = Object.entries(q.playerResult?.teamB || {}).filter(([, result]) => result);
+
+                            if (teamAResults.length === 0 && teamBResults.length === 0) {
                                 return null;
                             }
                             return (
                                 <div key={`player-${q.id}`} className="p-3 border rounded-md">
                                     <p className="font-medium text-muted-foreground text-center">{q.question}</p>
-                                     <div className="mt-2 pt-2 border-t grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                     <div className="mt-2 pt-2 border-t grid grid-cols-2 gap-x-4">
                                         <div className="space-y-1">
-                                            {Object.entries(q.playerResult.teamA).map(([playerName, result]) => result && (
-                                                <div key={playerName} className="text-xs text-center sm:text-left">
+                                            {teamAResults.map(([playerName, result]) => (
+                                                <div key={playerName} className="text-sm">
                                                     <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
                                                 </div>
                                             ))}
                                         </div>
                                          <div className="space-y-1">
-                                            {Object.entries(q.playerResult.teamB).map(([playerName, result]) => result && (
-                                                <div key={playerName} className="text-xs text-center sm:text-left">
+                                            {teamBResults.map(([playerName, result]) => (
+                                                <div key={playerName} className="text-sm">
                                                     <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
                                                 </div>
                                             ))}
