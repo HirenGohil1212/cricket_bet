@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Terminal, Trophy, Users, Banknote, HelpCircle } from "lucide-react";
+import { ArrowLeft, Terminal, Trophy, Users, Banknote, HelpCircle, User } from "lucide-react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
@@ -142,10 +142,10 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                 </Card>
             </div>
 
-            {/* Questions and Results */}
+            {/* Questions and Team Results */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/> Settled Questions & Results</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/> Team Q&A Results</CardTitle>
                 </CardHeader>
                 <CardContent>
                      {questions.length > 0 ? (
@@ -157,28 +157,6 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                                         <span>{match.teamA.name}: {q.result?.teamA || 'N/A'}</span>
                                         <span>{match.teamB.name}: {q.result?.teamB || 'N/A'}</span>
                                     </div>
-                                    
-                                    {q.playerResult && (Object.keys(q.playerResult.teamA).length > 0 || Object.keys(q.playerResult.teamB).length > 0) && (
-                                        <div className="mt-3 pt-3 border-t border-dashed">
-                                            <h4 className="text-center text-xs font-semibold text-muted-foreground mb-2">PLAYER RESULTS</h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                                                <div className="space-y-1">
-                                                    {Object.entries(q.playerResult.teamA).map(([playerName, result]) => result && (
-                                                        <div key={playerName} className="text-xs text-center sm:text-left">
-                                                            <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                 <div className="space-y-1">
-                                                    {Object.entries(q.playerResult.teamB).map(([playerName, result]) => result && (
-                                                        <div key={playerName} className="text-xs text-center sm:text-left">
-                                                            <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>
@@ -187,6 +165,44 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                     )}
                 </CardContent>
             </Card>
+
+            {/* Player Results */}
+            {hasPlayerResults && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><User className="h-5 w-5"/> Player Q&A Results</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {questions.map((q) => {
+                            if (!q.playerResult || (Object.keys(q.playerResult.teamA).length === 0 && Object.keys(q.playerResult.teamB).length === 0)) {
+                                return null;
+                            }
+                            return (
+                                <div key={`player-${q.id}`} className="p-3 border rounded-md">
+                                    <p className="font-medium text-muted-foreground text-center">{q.question}</p>
+                                     <div className="mt-2 pt-2 border-t grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                        <div className="space-y-1">
+                                            {Object.entries(q.playerResult.teamA).map(([playerName, result]) => result && (
+                                                <div key={playerName} className="text-xs text-center sm:text-left">
+                                                    <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
+                                                </div>
+                                            ))}
+                                        </div>
+                                         <div className="space-y-1">
+                                            {Object.entries(q.playerResult.teamB).map(([playerName, result]) => result && (
+                                                <div key={playerName} className="text-xs text-center sm:text-left">
+                                                    <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </CardContent>
+                </Card>
+            )}
+
 
             {/* Winners List */}
             <Card>
