@@ -90,7 +90,7 @@ export default function AdminLayout({
     { href: "/admin/matches", label: "Matches", icon: Swords },
     { href: "/admin/players", label: "Players", icon: UsersRound },
     { href: "/admin/dummy-users", label: "Dummy Users", icon: UserRoundX },
-    { href: "/admin/q-and-a", label: "Q & A", icon: MessageSquareQuote },
+    { href: "/admin/q-and-a", label: "Result", icon: MessageSquareQuote },
     { href: "/admin/deposits", label: "Deposits", icon: Wallet },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
     { href: "/admin/financial-reports", label: "Financials", icon: LineChart },
