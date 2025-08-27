@@ -27,10 +27,10 @@ const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInp
             <div className="rounded-md border p-2">
                 <div 
                     className="grid items-center gap-x-1 gap-y-2"
-                    style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${players.length}, minmax(40px, 1fr))` }}
+                    style={{ gridTemplateColumns: `minmax(80px, auto) repeat(${players.length}, 1fr)` }}
                 >
                     {/* Header Row */}
-                    <div className="text-xs text-muted-foreground font-medium truncate">Question</div>
+                    <div />
                     {players.map((p: any) => (
                         <div key={p.name} className="text-xs font-medium text-center truncate" title={p.name}>
                             {p.name}
@@ -40,12 +40,12 @@ const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInp
                     {/* Data Rows */}
                     {questions.map((q: any) => (
                         <React.Fragment key={q.id}>
-                            <div className="text-xs text-muted-foreground truncate" title={q.question}>{q.question}</div>
+                            <div className="text-xs text-muted-foreground truncate pr-2" title={q.question}>{q.question}</div>
                             {players.map((p: any) => (
                                 <Input
                                     key={p.name}
                                     type="text"
-                                    className="w-full h-7 text-center px-1 text-xs"
+                                    className="w-10 h-10 text-center px-1 text-sm mx-auto"
                                     placeholder="-"
                                     disabled={disabled}
                                     value={results[`player_${q.id}`]?.[teamName === match.teamA.name ? 'teamA' : 'teamB']?.[p.name] || ''}
@@ -61,7 +61,7 @@ const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInp
 };
 
 
-export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQnaDialogProps) {
+export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: Match; questions: Question[]; isOpen: boolean; onClose: (shouldRefresh: boolean) => void; }) {
     const { toast } = useToast();
     const { userProfile } = useAuth();
     const [isSaving, setIsSaving] = React.useState(false);
