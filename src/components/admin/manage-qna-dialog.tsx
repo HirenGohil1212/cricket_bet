@@ -25,6 +25,49 @@ interface ManageQnaDialogProps {
     onClose: (shouldRefresh: boolean) => void;
 }
 
+const PlayerResultsGrid = ({ teamName, players, questions, results, onInputChange, disabled }: any) => {
+    if (!players || players.length === 0) return null;
+    
+    return (
+        <div className="space-y-2">
+            <h4 className="font-semibold">{teamName} Player Results</h4>
+            <div className="rounded-md border p-4">
+                <div 
+                    className="grid gap-x-2 gap-y-3"
+                    style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${players.length}, minmax(40px, 60px))` }}
+                >
+                    {/* Header Row */}
+                    <div className="text-xs text-muted-foreground font-medium">Question</div>
+                    {players.map((p: any) => (
+                        <div key={p.name} className="text-xs font-medium text-center truncate" title={p.name}>
+                            {p.name}
+                        </div>
+                    ))}
+                    
+                    {/* Data Rows */}
+                    {questions.map((q: any) => (
+                        <React.Fragment key={q.id}>
+                            <div className="text-xs text-muted-foreground truncate" title={q.question}>{q.question}</div>
+                            {players.map((p: any) => (
+                                <Input
+                                    key={p.name}
+                                    type="text"
+                                    className="w-full h-8 text-center px-1"
+                                    placeholder="-"
+                                    disabled={disabled}
+                                    value={results[`player_${q.id}`]?.[teamName === match.teamA.name ? 'teamA' : 'teamB']?.[p.name] || ''}
+                                    onChange={(e) => onInputChange(`player_${q.id}.${teamName === match.teamA.name ? 'teamA' : 'teamB'}.${p.name}`, e.target.value)}
+                                />
+                            ))}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQnaDialogProps) {
     const { toast } = useToast();
     const { userProfile } = useAuth();
@@ -62,10 +105,15 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
     
     const handleInputChange = (path: string, value: string) => {
         setResults(prev => {
-            const newResults = { ...prev };
+            const newResults = JSON.parse(JSON.stringify(prev)); // Deep copy
             const keys = path.split('.');
             let current = newResults;
             for (let i = 0; i < keys.length - 1; i++) {
+                if (!current[keys[i]]) {
+                  // If a nested path doesn't exist, create it.
+                  // This is crucial for player results which are nested two levels deep.
+                  current[keys[i]] = {};
+                }
                 current = current[keys[i]];
             }
             current[keys[keys.length - 1]] = value;
@@ -147,76 +195,22 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                     <div className="space-y-6">
                                         {match.isSpecialMatch && (
                                             <>
-                                                {/* Player Result Grid for Team A */}
-                                                {(match.teamA.players && match.teamA.players.length > 0) && (
-                                                    <div className="space-y-2">
-                                                        <h4 className="font-semibold">{match.teamA.name} Player Results</h4>
-                                                        <div className="rounded-md border">
-                                                            <Table>
-                                                                <TableHeader>
-                                                                    <TableRow>
-                                                                        <TableHead className="w-[120px]">Question</TableHead>
-                                                                        {match.teamA.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {questions.map((q) => (
-                                                                        <TableRow key={`${q.id}-a`}>
-                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate">{q.question}</TableCell>
-                                                                            {match.teamA.players?.map(p => (
-                                                                                <TableCell key={p.name} className="px-2">
-                                                                                    <Input 
-                                                                                        type="text" 
-                                                                                        className="w-16 h-8 text-center" 
-                                                                                        placeholder="-" 
-                                                                                        disabled={isSaving || isSettling || q.status === 'settled'} 
-                                                                                        value={results[`player_${q.id}`]?.teamA?.[p.name] || ''}
-                                                                                        onChange={(e) => handleInputChange(`player_${q.id}.teamA.${p.name}`, e.target.value)}
-                                                                                    />
-                                                                                </TableCell>
-                                                                            ))}
-                                                                        </TableRow>
-                                                                    ))}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {/* Player Result Grid for Team B */}
-                                                {(match.teamB.players && match.teamB.players.length > 0) && (
-                                                    <div className="space-y-2">
-                                                        <h4 className="font-semibold">{match.teamB.name} Player Results</h4>
-                                                        <div className="rounded-md border">
-                                                            <Table>
-                                                                <TableHeader>
-                                                                    <TableRow>
-                                                                        <TableHead className="w-[120px]">Question</TableHead>
-                                                                        {match.teamB.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {questions.map((q) => (
-                                                                        <TableRow key={`${q.id}-b`}>
-                                                                            <TableCell className="font-medium text-xs text-muted-foreground truncate">{q.question}</TableCell>
-                                                                            {match.teamB.players?.map(p => (
-                                                                                <TableCell key={p.name} className="px-2">
-                                                                                     <Input 
-                                                                                        type="text" 
-                                                                                        className="w-16 h-8 text-center" 
-                                                                                        placeholder="-" 
-                                                                                        disabled={isSaving || isSettling || q.status === 'settled'} 
-                                                                                        value={results[`player_${q.id}`]?.teamB?.[p.name] || ''}
-                                                                                        onChange={(e) => handleInputChange(`player_${q.id}.teamB.${p.name}`, e.target.value)}
-                                                                                    />
-                                                                                </TableCell>
-                                                                            ))}
-                                                                        </TableRow>
-                                                                    ))}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                <PlayerResultsGrid 
+                                                    teamName={match.teamA.name}
+                                                    players={match.teamA.players}
+                                                    questions={questions}
+                                                    results={results}
+                                                    onInputChange={handleInputChange}
+                                                    disabled={isSaving || isSettling || match.status === 'Finished'}
+                                                />
+                                                <PlayerResultsGrid 
+                                                    teamName={match.teamB.name}
+                                                    players={match.teamB.players}
+                                                    questions={questions}
+                                                    results={results}
+                                                    onInputChange={handleInputChange}
+                                                    disabled={isSaving || isSettling || match.status === 'Finished'}
+                                                />
                                                 <Separator />
                                             </>
                                         )}
