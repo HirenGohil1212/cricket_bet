@@ -155,7 +155,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                             <Table>
                                                                 <TableHeader>
                                                                     <TableRow>
-                                                                        <TableHead className="w-[200px]">Question</TableHead>
+                                                                        <TableHead className="w-[150px]">Question</TableHead>
                                                                         {match.teamA.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
                                                                     </TableRow>
                                                                 </TableHeader>
@@ -190,7 +190,7 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: ManageQna
                                                             <Table>
                                                                 <TableHeader>
                                                                     <TableRow>
-                                                                        <TableHead className="w-[200px]">Question</TableHead>
+                                                                        <TableHead className="w-[150px]">Question</TableHead>
                                                                         {match.teamB.players.map(p => <TableHead key={p.name} className="text-center">{p.name}</TableHead>)}
                                                                     </TableRow>
                                                                 </TableHeader>
