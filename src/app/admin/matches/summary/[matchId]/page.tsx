@@ -162,16 +162,20 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                                         <div className="mt-3 pt-3 border-t border-dashed">
                                             <h4 className="text-center text-xs font-semibold text-muted-foreground mb-2">PLAYER RESULTS</h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                                                {Object.entries(q.playerResult.teamA).map(([playerName, result]) => result && (
-                                                    <div key={playerName} className="text-xs text-center">
-                                                        <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
-                                                    </div>
-                                                ))}
-                                                 {Object.entries(q.playerResult.teamB).map(([playerName, result]) => result && (
-                                                    <div key={playerName} className="text-xs text-center">
-                                                        <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
-                                                    </div>
-                                                ))}
+                                                <div className="space-y-1">
+                                                    {Object.entries(q.playerResult.teamA).map(([playerName, result]) => result && (
+                                                        <div key={playerName} className="text-xs text-center sm:text-left">
+                                                            <span className="font-semibold">{playerName} ({match.teamA.name}):</span> {result}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                 <div className="space-y-1">
+                                                    {Object.entries(q.playerResult.teamB).map(([playerName, result]) => result && (
+                                                        <div key={playerName} className="text-xs text-center sm:text-left">
+                                                            <span className="font-semibold">{playerName} ({match.teamB.name}):</span> {result}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
