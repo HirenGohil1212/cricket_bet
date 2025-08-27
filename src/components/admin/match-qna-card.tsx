@@ -142,7 +142,7 @@ export function MatchQnaCard({ match, onUpdate }: MatchQnaCardProps) {
                         onClick={() => setIsManageDialogOpen(true)}
                         disabled={!isActionable}
                     >
-                        Manage Q&A
+                        Publish Result
                     </Button>
                 </CardFooter>
             </Card>
