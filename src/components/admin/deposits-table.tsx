@@ -184,7 +184,7 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Review Deposit from {deposit.userName}</DialogTitle>
                     <DialogDescription>
@@ -195,7 +195,7 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                     {deposit.screenshotUrl ? (
                         <div className="flex justify-center">
                             <a href={deposit.screenshotUrl} target="_blank" rel="noopener noreferrer" title="View full screenshot">
-                               <Image src={deposit.screenshotUrl} alt="Payment Screenshot" width={300} height={400} className="rounded-md border object-contain" />
+                               <Image src={deposit.screenshotUrl} alt="Payment Screenshot" width={300} height={400} className="rounded-md border object-contain max-h-64" />
                             </a>
                         </div>
                     ) : (
