@@ -149,7 +149,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
               onClick={() => onBetNow(match)}
               size="lg"
             >
-              Place Your Bet
+              Play Your Game
             </Button>
           </CardFooter>
         )}
