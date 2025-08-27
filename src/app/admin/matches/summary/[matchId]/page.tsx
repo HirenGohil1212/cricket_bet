@@ -143,7 +143,7 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
             </div>
 
             {/* Questions and Team Results */}
-            <Card>
+            <Card className="bg-primary/5">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5"/> Team Q&A Results</CardTitle>
                 </CardHeader>
@@ -151,7 +151,7 @@ export default async function MatchSummaryPage({ params }: MatchSummaryPageProps
                      {questions.length > 0 ? (
                         <div className="space-y-4">
                             {questions.map((q) => (
-                                <div key={q.id} className="p-3 border rounded-md">
+                                <div key={q.id} className="p-3 border rounded-md bg-background">
                                     <p className="font-medium text-muted-foreground text-center">{q.question}</p>
                                     <div className="mt-2 pt-2 border-t flex justify-around font-semibold text-primary">
                                         <span>{match.teamA.name}: {q.result?.teamA || 'N/A'}</span>
