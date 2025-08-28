@@ -21,21 +21,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 
 const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { prediction: Prediction, teamAName: string, teamBName: string }) => {
     const isTeamA = !!prediction.predictedAnswer?.teamA;
-    const answer = isTeamA ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
+    const answer = isTeamA ? prediction.predictedAnswer.teamA : prediction.predictedAnswer.teamB;
+    const [playerName] = prediction.questionId.split(':');
+
 
     return (
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 text-xs">
-            {isTeamA ? (
-                <div className="text-primary font-semibold text-center">{answer}</div>
-            ) : (
-                <div className="flex-1"></div>
-            )}
-            <div className="text-muted-foreground text-center truncate">{prediction.questionText}</div>
-            {!isTeamA ? (
-                <div className="text-primary font-semibold text-center">{answer}</div>
-            ) : (
-                <div className="flex-1"></div>
-            )}
+            <div className="text-primary font-semibold text-center">{isTeamA ? answer : ''}</div>
+            <div className="text-muted-foreground text-center truncate">{`(${playerName}) ${prediction.questionText}`}</div>
+            <div className="text-primary font-semibold text-center">{!isTeamA ? answer : ''}</div>
         </div>
     );
 };
