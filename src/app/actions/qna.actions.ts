@@ -342,7 +342,7 @@ export async function settleMatchAndPayouts(matchId: string) {
                         const correctAnswer = (question.playerResult as any)?.[teamSide]?.[playerName];
                         const predictedAnswer = teamSide === 'teamA' ? prediction.predictedAnswer?.teamA : prediction.predictedAnswer?.teamB;
                         
-                        if (String(correctAnswer) !== String(predictedAnswer)) {
+                        if (String(correctAnswer || '').trim() !== String(predictedAnswer || '').trim()) {
                             isWinner = false;
                             break;
                         }
