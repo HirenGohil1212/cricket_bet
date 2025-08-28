@@ -31,11 +31,8 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
     if (user) {
       setIsLoading(true);
       const betsCol = collection(db, 'bets');
-      const startDate = startOfDay(subDays(new Date(), 7));
-      const startTimestamp = Timestamp.fromDate(startDate);
-      // FIX: Removed where('status', '==', type) to avoid needing a composite index.
-      // Filtering will be done on the client-side after fetching.
-      const q = query(betsCol, where('userId', '==', user.uid), where('timestamp', '>=', startTimestamp));
+      // FIX: Removed date filtering and status filtering from query
+      const q = query(betsCol, where('userId', '==', user.uid));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userBets = querySnapshot.docs.map(doc => {
@@ -78,7 +75,7 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            No {type.toLowerCase()} bets found in the last 7 days.
+            No {type.toLowerCase()} bets found.
           </TableCell>
         </TableRow>
       );

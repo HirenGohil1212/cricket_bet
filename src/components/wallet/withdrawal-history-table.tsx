@@ -26,7 +26,6 @@ export function WithdrawalHistoryTable() {
     if (user) {
       setIsLoading(true);
       const withdrawalsCol = collection(db, 'withdrawals');
-      const startDate = startOfDay(subDays(new Date(), 7));
       const q = query(withdrawalsCol, where('userId', '==', user.uid));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -38,7 +37,7 @@ export function WithdrawalHistoryTable() {
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 updatedAt: (data.updatedAt as Timestamp).toDate().toISOString(),
             } as WithdrawalRequest;
-        }).filter(w => new Date(w.createdAt) >= startDate);
+        });
 
         userWithdrawals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -81,7 +80,7 @@ export function WithdrawalHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            No withdrawal requests found in the last 7 days.
+            No withdrawal requests found.
           </TableCell>
         </TableRow>
       );

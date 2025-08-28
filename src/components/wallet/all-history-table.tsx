@@ -30,15 +30,12 @@ export function AllHistoryTable() {
     if (!user) return;
     setIsLoading(true);
     try {
-        const startDate = startOfDay(subDays(new Date(), 7));
-        const startTimestamp = Timestamp.fromDate(startDate);
-        
-        // FIX: Removed orderBy from queries to avoid needing composite indexes. Sorting is handled in code.
-        const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid), where('timestamp', '>=', startTimestamp));
-        const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
-        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
-        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), where('timestamp', '>=', startTimestamp));
-        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'), where('createdAt', '>=', startTimestamp));
+        // FIX: Removed date range filtering to show all history
+        const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid));
+        const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid));
+        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid));
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'));
+        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'));
 
         const [betsSnap, depositsSnap, withdrawalsSnap, bonusesSnap, pendingSnap] = await Promise.all([
             getDocs(betsQuery),
@@ -180,7 +177,7 @@ export function AllHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            No transactions found in the last 7 days.
+            No transactions found.
           </TableCell>
         </TableRow>
       );

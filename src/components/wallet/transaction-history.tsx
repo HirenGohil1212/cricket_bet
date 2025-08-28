@@ -15,7 +15,7 @@ export function TransactionHistory() {
       <CardHeader>
         <CardTitle>Transaction History</CardTitle>
         <CardDescription>
-            A record of your financial activity from the last 7 days.
+            A complete record of all your financial activity.
         </CardDescription>
       </CardHeader>
       <CardContent>

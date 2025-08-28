@@ -29,11 +29,9 @@ export function BonusHistoryTable() {
       
       setIsLoading(true);
       try {
-        const startDate = startOfDay(subDays(new Date(), 7));
-        const startTimestamp = Timestamp.fromDate(startDate);
-          
-        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), where('timestamp', '>=', startTimestamp));
-        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'), where('createdAt', '>=', startTimestamp));
+        // FIX: Removed date filtering to show all history
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'));
+        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'));
 
         const [completedSnap, pendingSnap] = await Promise.all([
           getDocs(bonusesQuery),
@@ -74,7 +72,7 @@ export function BonusHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            No bonuses found in the last 7 days.
+            No bonuses found.
           </TableCell>
         </TableRow>
       );
