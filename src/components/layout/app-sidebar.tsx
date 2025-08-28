@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -116,14 +117,6 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                 <Link href="/">
                     <Ticket />
                     Matches
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => handleLinkClick('/history')} asChild isActive={pathname === '/history'}>
-                <Link href="/history">
-                    <History />
-                    History
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -45,7 +45,6 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
              return { error: 'Match not found. Please try again.' };
         }
         
-        // ** NEW LOGIC: Use the betting settings stored on the match document **
         const bettingSettings = match.bettingSettings;
         if (!bettingSettings) {
             return { error: 'Betting is not configured for this match. Please contact support.' };
@@ -61,6 +60,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 sportBetOptions = bettingSettings.betOptions.Cricket.general;
             }
         } else {
+             // For non-cricket sports, player bets use the general options
              sportBetOptions = bettingSettings.betOptions[match.sport];
         }
 
@@ -72,9 +72,6 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
         
         const potentialWin = selectedOption.payout;
         
-        // ** REVISED LOGIC **
-        // The transaction now only updates the user's balance and creates the bet.
-        // The referral processing is handled immediately after the transaction succeeds.
         const result = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
 
@@ -84,7 +81,6 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
             
             const userData = userDoc.data();
             
-            // This flag is now ONLY used to determine if we should check referral status.
             const wasFirstBet = userData.isFirstBetPlaced === false;
 
             const currentBalance = userData.walletBalance;
@@ -94,7 +90,6 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
 
             const newBalance = currentBalance - amount;
             
-            // Only update isFirstBetPlaced once.
             const userUpdateData: { walletBalance: number; isFirstBetPlaced?: boolean } = {
                 walletBalance: newBalance,
             };
@@ -118,18 +113,16 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 betType,
             });
             
-            // Return the necessary data for referral processing.
             return { shouldCheckReferral: true, referredBy: userData.referredBy };
         });
 
-        // ** NEW ROBUST LOGIC **
-        // After the bet is successfully placed, check if a referral needs to be processed.
         if (result.shouldCheckReferral && result.referredBy) {
             await processReferral(userId, result.referredBy);
         }
 
         revalidatePath('/');
         revalidatePath('/wallet');
+        revalidatePath('/game-history');
         return { success: 'Bet placed successfully!' };
 
     } catch (error: any) {
