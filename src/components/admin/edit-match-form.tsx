@@ -412,6 +412,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     const currentQuestions = useWatch({ control: form.control, name: "questions" }) || [];
     const sportSpecificQuestions = questionBank.filter(q => q.sport === selectedSport);
     const [open, setOpen] = React.useState(false);
+    const [manualQuestionText, setManualQuestionText] = React.useState("");
   
     const handleSelect = (questionText: string) => {
       const isSelected = currentQuestions.some(cq => cq.question === questionText);
@@ -420,6 +421,13 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
       } else {
         appendQuestion({ question: questionText });
       }
+    };
+
+    const handleAddManual = () => {
+        if (manualQuestionText.trim()) {
+            appendQuestion({ question: manualQuestionText.trim() });
+            setManualQuestionText("");
+        }
     };
   
     return (
@@ -465,35 +473,22 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             </ScrollArea>
           </PopoverContent>
         </Popover>
+
+        <div className="p-3 border rounded-md relative border-dashed space-y-2">
+            <Label htmlFor="manual-question" className="text-xs">New Question Text</Label>
+            <Textarea 
+                id="manual-question"
+                placeholder="Enter new question" 
+                value={manualQuestionText}
+                onChange={(e) => setManualQuestionText(e.target.value)}
+            />
+            <Button type="button" size="sm" onClick={handleAddManual}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Question
+            </Button>
+        </div>
   
-        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ question: "" })}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Question Manually
-        </Button>
         <FormMessage>{form.formState.errors.questions?.message}</FormMessage>
-  
-        {questionFields.map((field, index) => {
-          if (questionBank.some(q => q.question === field.question)) return null;
-          return (
-            <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative border-dashed">
-              <FormField
-                control={form.control}
-                name={`questions.${index}.question`}
-                render={({ field: qField }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel className="text-xs">New Question Text</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Enter new question" {...qField} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 mt-5" onClick={() => removeQuestion(index)}>
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
-          );
-        })}
       </div>
     );
   };
