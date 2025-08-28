@@ -39,10 +39,10 @@ interface GuessDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'A' | 'B', onPlayerSelect: (player: Player & {team: 'A' | 'B'}) => void, selectedPlayer: (Player & {team: 'A' | 'B'}) | null }) => {
+const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'teamA' | 'teamB', onPlayerSelect: (player: Player & {team: 'teamA' | 'teamB'}) => void, selectedPlayer: (Player & {team: 'teamA' | 'teamB'}) | null }) => {
     const { match } = useGuessDialogContext();
-    const players = team === 'A' ? match.teamA.players : match.teamB.players;
-    const teamName = team === 'A' ? match.teamA.name : match.teamB.name;
+    const players = team === 'teamA' ? match.teamA.players : match.teamB.players;
+    const teamName = team === 'teamA' ? match.teamA.name : match.teamB.name;
     const [popoverOpen, setPopoverOpen] = React.useState(false);
     
     if (!players || players.length === 0) return <p className="text-xs text-muted-foreground p-2 text-center">No players listed for {teamName}</p>;
@@ -120,7 +120,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [playerPredictions, setPlayerPredictions] = useState<Record<string, Record<string, string>>>({});
   
   // State for Player Bet UI
-  const [selectedPlayer, setSelectedPlayer] = React.useState<(Player & {team: 'A' | 'B'}) | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = React.useState<(Player & {team: 'teamA' | 'teamB'}) | null>(null);
 
   const betOptions = React.useMemo(() => {
     if (!match?.bettingSettings) return [];
@@ -223,7 +223,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     }));
   };
 
-  const handlePlayerSelect = (player: (Player & {team: 'A' | 'B'}) | null) => {
+  const handlePlayerSelect = (player: (Player & {team: 'teamA' | 'teamB'}) | null) => {
     if (selectedPlayer?.name === player?.name) {
       setSelectedPlayer(null);
     } else {
@@ -247,7 +247,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                         questionId: `${selectedPlayer.name}:${q.id}`,
                         questionText: `(${selectedPlayer.name}) ${q.question}`,
                         predictedAnswer: {
-                            [selectedPlayer.team]: answer,
+                          [selectedPlayer.team]: answer
                         },
                     });
                 }
@@ -344,8 +344,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </div>
         )}
         <div className="grid grid-cols-1 gap-4">
-            {betOnSide === 'teamA' && <PlayerSelector team="A" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
-            {betOnSide === 'teamB' && <PlayerSelector team="B" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
+            {betOnSide === 'teamA' && <PlayerSelector team="teamA" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
+            {betOnSide === 'teamB' && <PlayerSelector team="teamB" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
         </div>
         
         {selectedPlayer && (
