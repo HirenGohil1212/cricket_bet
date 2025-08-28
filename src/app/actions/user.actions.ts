@@ -109,7 +109,7 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             }
 
             if (docsToBackup.length > 0) {
-                const backupCollectionName = `delete_${collectionName}`;
+                const backupCollectionName = `delete_${collectionName}_${new Date().toISOString().split('T')[0]}`;
                 const backupBatch = writeBatch(db);
                 docsToBackup.forEach(docSnapshot => {
                     const backupDocRef = doc(db, backupCollectionName, docSnapshot.id);
