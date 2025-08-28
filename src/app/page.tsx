@@ -12,6 +12,7 @@ import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
 import { getAppSettings } from "@/app/actions/settings.actions";
 import { getWinnersForMatch } from "./actions/qna.actions";
+import { subDays, startOfDay } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,8 +23,13 @@ async function MatchData({ sport }: { sport?: Sport }) {
     (m) => (m.status === "Upcoming" || m.status === "Live")
   );
 
+  const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
   const finished = matches.filter(
-    (m) => m.status === "Finished"
+    (m) => {
+        if (m.status !== "Finished") return false;
+        const matchDate = new Date(m.startTime);
+        return matchDate >= sevenDaysAgo;
+    }
   );
   
   // Fetch winners for all finished matches in parallel
