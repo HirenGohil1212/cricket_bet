@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DepositHistoryTable } from "@/components/wallet/deposit-history-table";
 import { WithdrawalHistoryTable } from "./withdrawal-history-table";
@@ -14,6 +14,9 @@ export function TransactionHistory() {
     <Card>
       <CardHeader>
         <CardTitle>Transaction History</CardTitle>
+        <CardDescription>
+            A record of your financial activity from the last 7 days.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="all" className="w-full">

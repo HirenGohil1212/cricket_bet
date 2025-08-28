@@ -129,6 +129,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => handleLinkClick('/history')} asChild isActive={pathname === '/history'}>
+                <Link href="/history">
+                    <History />
+                    Transaction History
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => handleLinkClick('/profile')} asChild isActive={pathname === '/profile'}>
                 <Link href="/profile">
                     <UserIcon />

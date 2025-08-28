@@ -4,7 +4,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Wallet, User as UserIcon, LogOut } from "lucide-react";
+import { Wallet, User as UserIcon, LogOut, History } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ const getTitle = (pathname: string) => {
     if (pathname.startsWith('/profile')) return 'My Profile';
     if (pathname.startsWith('/wallet')) return 'My Wallet';
     if (pathname.startsWith('/game-history')) return 'Game History';
+    if (pathname.startsWith('/history')) return 'Transaction History';
     return 'Matches';
 }
 
