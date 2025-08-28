@@ -26,6 +26,7 @@ import {
   DatabaseZap,
   Settings,
   UserRoundX,
+  Landmark,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -93,6 +94,7 @@ export default function AdminLayout({
     { href: "/admin/q-and-a", label: "Result", icon: MessageSquareQuote },
     { href: "/admin/deposits", label: "Deposits", icon: Wallet },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
+    { href: "/admin/finance", label: "Finance", icon: Landmark },
     { href: "/admin/financial-reports", label: "Financials", icon: LineChart },
     { href: "/admin/referrals", label: "Referrals", icon: Gift },
     { href: "/admin/betting-settings", label: "Betting Settings", icon: Percent },

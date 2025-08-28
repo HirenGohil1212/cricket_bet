@@ -10,29 +10,54 @@ import { subDays, startOfDay, format } from 'date-fns';
 export async function getFinancialSummary() {
     try {
         const summaryRef = doc(db, 'statistics', 'financialSummary');
-        const summarySnap = await getDoc(summaryRef);
+        const usersRef = collection(db, 'users');
+        const transactionsRef = collection(db, 'transactions');
         
-        if (!summarySnap.exists()) {
-             // If it doesn't exist, initialize it.
-            const initialSummary = {
-                totalDeposits: 0,
-                totalWithdrawals: 0,
-                totalWagered: 0,
-                totalPayouts: 0,
-            };
-            await setDoc(summaryRef, initialSummary);
-            return { ...initialSummary, grossRevenue: 0, error: null };
+        // Use Promise.all to fetch data concurrently
+        const [summarySnap, usersSnap, referralBonusesSnap] = await Promise.all([
+            getDoc(summaryRef),
+            getDocs(query(usersRef)),
+            getDocs(query(transactionsRef, where('type', '==', 'referral_bonus')))
+        ]);
+        
+        // Initialize summary data
+        let summaryData = {
+            totalDeposits: 0,
+            totalWithdrawals: 0,
+            totalWagered: 0,
+            totalPayouts: 0,
+        };
+        
+        if (summarySnap.exists()) {
+            summaryData = summarySnap.data() as typeof summaryData;
+        } else {
+            // If summary doc doesn't exist, create it.
+            await setDoc(summaryRef, summaryData);
         }
+
+        // Calculate total user wallet funds
+        const totalUserWalletFunds = usersSnap.docs.reduce(
+            (sum, doc) => sum + (doc.data().walletBalance || 0),
+            0
+        );
+
+        // Calculate total referral bonuses
+        const totalReferralBonuses = referralBonusesSnap.docs.reduce(
+            (sum, doc) => sum + (doc.data().amount || 0),
+            0
+        );
         
-        const summaryData = summarySnap.data();
-        const grossRevenue = summaryData.totalWagered - summaryData.totalPayouts;
+        const betIncome = summaryData.totalWagered;
+        const grossRevenue = betIncome - summaryData.totalPayouts;
+        const finalProfit = grossRevenue - totalReferralBonuses;
         
         return {
             totalDeposits: summaryData.totalDeposits,
             totalWithdrawals: summaryData.totalWithdrawals,
-            totalWagered: summaryData.totalWagered,
-            totalPayouts: summaryData.totalPayouts,
-            grossRevenue,
+            totalUserWalletFunds,
+            betIncome,
+            totalReferralBonuses,
+            finalProfit,
             error: null,
         };
     } catch (error) {
@@ -40,9 +65,10 @@ export async function getFinancialSummary() {
         return { 
             totalDeposits: 0,
             totalWithdrawals: 0,
-            totalWagered: 0,
-            totalPayouts: 0,
-            grossRevenue: 0,
+            totalUserWalletFunds: 0,
+            betIncome: 0,
+            totalReferralBonuses: 0,
+            finalProfit: 0,
             error: 'Failed to fetch financial summary.' 
         };
     }
