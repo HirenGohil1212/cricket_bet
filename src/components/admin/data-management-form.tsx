@@ -3,7 +3,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { Calendar as CalendarIcon, Trash2, BrainCircuit } from "lucide-react";
 import * as React from "react";
 import { z } from "zod";
@@ -108,6 +108,12 @@ export function DataManagementForm() {
       setIsSubmitting(false);
     }
   };
+  
+  const setLast45Days = () => {
+    const to = new Date();
+    const from = subDays(to, 45);
+    form.setValue('dateRange', { from, to }, { shouldValidate: true });
+  }
 
   return (
     <>
@@ -177,7 +183,12 @@ export function DataManagementForm() {
                     name="dateRange"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Date Range for Deletion</FormLabel>
+                        <div className="flex justify-between items-center">
+                            <FormLabel>Date Range for Deletion</FormLabel>
+                             <Button type="button" variant="outline" size="sm" onClick={setLast45Days}>
+                                Select Last 45 Days
+                            </Button>
+                        </div>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
