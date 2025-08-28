@@ -238,25 +238,25 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     let finalPredictions: Prediction[] = [];
     
     if (bettingMode === 'player') {
-      if (selectedPlayer) {
-          const predsForPlayer = playerPredictions[selectedPlayer.name] || {};
-          for (const q of questions) {
-            const answer = predsForPlayer[q.id];
-            if (answer && answer.trim()) {
-              finalPredictions.push({
-                questionId: `${selectedPlayer.name}:${q.id}`,
-                questionText: `(${selectedPlayer.name}) ${q.question}`,
-                predictedAnswer: {
-                  [selectedPlayer.team === 'teamA' ? 'teamA' : 'teamB']: answer
+        if (selectedPlayer) {
+            const predsForPlayer = playerPredictions[selectedPlayer.name] || {};
+            for (const q of questions) {
+                const answer = predsForPlayer[q.id];
+                if (answer && answer.trim()) {
+                    finalPredictions.push({
+                        questionId: `${selectedPlayer.name}:${q.id}`,
+                        questionText: `(${selectedPlayer.name}) ${q.question}`,
+                        predictedAnswer: {
+                            [selectedPlayer.team]: answer,
+                        },
+                    });
                 }
-              });
             }
-          }
-      }
-      if (finalPredictions.length === 0 && selectedPlayer) {
-        toast({ variant: "destructive", title: "Validation Failed", description: "Please enter a prediction for the selected player." });
-        return;
-      }
+        }
+        if (finalPredictions.length === 0 && selectedPlayer) {
+            toast({ variant: "destructive", title: "Validation Failed", description: "Please enter a prediction for the selected player." });
+            return;
+        }
       
     } else { // QnA mode
       for (const q of questions) {
@@ -535,5 +535,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
-    
