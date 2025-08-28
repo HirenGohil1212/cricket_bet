@@ -27,9 +27,8 @@ export function DepositHistoryTable() {
       setIsLoading(true);
       const depositsCol = collection(db, 'deposits');
       const startDate = startOfDay(subDays(new Date(), 7));
-      const startTimestamp = Timestamp.fromDate(startDate);
       
-      const q = query(depositsCol, where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
+      const q = query(depositsCol, where('userId', '==', user.uid));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userDeposits = querySnapshot.docs.map(doc => {
@@ -40,7 +39,7 @@ export function DepositHistoryTable() {
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 updatedAt: (data.updatedAt as Timestamp).toDate().toISOString(),
             } as DepositRequest;
-        });
+        }).filter(d => new Date(d.createdAt) >= startDate); // Filter by date here
 
         // Sort on the client-side to ensure newest are first
         userDeposits.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

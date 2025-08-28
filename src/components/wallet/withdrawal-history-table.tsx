@@ -27,8 +27,7 @@ export function WithdrawalHistoryTable() {
       setIsLoading(true);
       const withdrawalsCol = collection(db, 'withdrawals');
       const startDate = startOfDay(subDays(new Date(), 7));
-      const startTimestamp = Timestamp.fromDate(startDate);
-      const q = query(withdrawalsCol, where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
+      const q = query(withdrawalsCol, where('userId', '==', user.uid));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userWithdrawals = querySnapshot.docs.map(doc => {
@@ -39,7 +38,7 @@ export function WithdrawalHistoryTable() {
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 updatedAt: (data.updatedAt as Timestamp).toDate().toISOString(),
             } as WithdrawalRequest;
-        });
+        }).filter(w => new Date(w.createdAt) >= startDate);
 
         userWithdrawals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 

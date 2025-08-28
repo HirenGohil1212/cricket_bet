@@ -175,7 +175,7 @@ export async function getBonusTransactions(userId: string): Promise<Transaction[
   if (!userId) return [];
   try {
     const transCol = collection(db, 'transactions');
-    // FIX: Removed orderBy to avoid needing a composite index. Sorting will be done client-side.
+    // FIX: Removed orderBy and combined where clauses to avoid needing a composite index. Sorting will be done client-side.
     const q = query(
       transCol,
       where('userId', '==', userId),
@@ -204,6 +204,7 @@ export async function getPendingReferrals(userId: string): Promise<Referral[]> {
   if (!userId) return [];
   try {
     const referralsCol = collection(db, 'referrals');
+    // FIX: Removed orderBy to avoid needing a composite index.
     const q = query(
       referralsCol,
       where('referrerId', '==', userId),
