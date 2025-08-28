@@ -320,8 +320,19 @@ export async function settleMatchAndPayouts(matchId: string) {
                     // For player bets, every single prediction must match
                     for (const prediction of betData.predictions) {
                         const [playerName, questionId] = prediction.questionId.split(':');
-                        const teamSide = matchData.teamA.players.some((p: any) => p.name === playerName) ? 'teamA' : 'teamB';
                         
+                        let teamSide: 'teamA' | 'teamB' | null = null;
+                        if (matchData.teamA.players?.some((p: any) => p.name === playerName)) {
+                            teamSide = 'teamA';
+                        } else if (matchData.teamB.players?.some((p: any) => p.name === playerName)) {
+                            teamSide = 'teamB';
+                        }
+
+                        if (!teamSide) {
+                            isWinner = false;
+                            break;
+                        }
+
                         const question = activeQuestions.find(q => q.id === questionId);
                         if (!question || !question.playerResult) {
                             isWinner = false;
