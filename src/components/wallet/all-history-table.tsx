@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Gift, Clock } from 'lucide-react';
+import { subDays, startOfDay } from 'date-fns';
 
 type CombinedHistoryItem = {
     id: string;
@@ -29,11 +30,14 @@ export function AllHistoryTable() {
     if (!user) return;
     setIsLoading(true);
     try {
-        const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid));
-        const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid));
-        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid));
-        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'));
-        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'));
+        const startDate = startOfDay(subDays(new Date(), 7));
+        const startTimestamp = Timestamp.fromDate(startDate);
+        
+        const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid), where('timestamp', '>=', startTimestamp));
+        const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
+        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), where('timestamp', '>=', startTimestamp));
+        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'), where('createdAt', '>=', startTimestamp));
 
         const [betsSnap, depositsSnap, withdrawalsSnap, bonusesSnap, pendingSnap] = await Promise.all([
             getDocs(betsQuery),
@@ -175,7 +179,7 @@ export function AllHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            No transaction history found.
+            No transactions found in the last 7 days.
           </TableCell>
         </TableRow>
       );

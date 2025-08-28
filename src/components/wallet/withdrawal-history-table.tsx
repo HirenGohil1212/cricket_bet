@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { subDays, startOfDay } from 'date-fns';
 
 export function WithdrawalHistoryTable() {
   const { user, loading: authLoading } = useAuth();
@@ -25,7 +26,9 @@ export function WithdrawalHistoryTable() {
     if (user) {
       setIsLoading(true);
       const withdrawalsCol = collection(db, 'withdrawals');
-      const q = query(withdrawalsCol, where('userId', '==', user.uid));
+      const startDate = startOfDay(subDays(new Date(), 7));
+      const startTimestamp = Timestamp.fromDate(startDate);
+      const q = query(withdrawalsCol, where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userWithdrawals = querySnapshot.docs.map(doc => {
@@ -79,7 +82,7 @@ export function WithdrawalHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            You haven't made any withdrawal requests yet.
+            No withdrawal requests found in the last 7 days.
           </TableCell>
         </TableRow>
       );

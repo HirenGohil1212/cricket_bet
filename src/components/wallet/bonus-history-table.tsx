@@ -9,6 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Gift, Clock } from 'lucide-react';
+import { subDays, startOfDay } from 'date-fns';
+import { Timestamp, query, where, getDocs, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export function BonusHistoryTable() {
   const { user, loading: authLoading } = useAuth();
@@ -26,13 +29,23 @@ export function BonusHistoryTable() {
       
       setIsLoading(true);
       try {
-        // Fetch both completed and pending bonuses in parallel.
-        const [completed, pending] = await Promise.all([
-          getBonusTransactions(user.uid),
-          getPendingReferrals(user.uid)
+        const startDate = startOfDay(subDays(new Date(), 7));
+        const startTimestamp = Timestamp.fromDate(startDate);
+          
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'), where('timestamp', '>=', startTimestamp));
+        const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'), where('createdAt', '>=', startTimestamp));
+
+        const [completedSnap, pendingSnap] = await Promise.all([
+          getDocs(bonusesQuery),
+          getDocs(pendingQuery)
         ]);
-        setCompletedBonuses(completed);
-        setPendingBonuses(pending);
+        
+        const completed = completedSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), timestamp: (doc.data().timestamp as Timestamp).toDate().toISOString() } as Transaction));
+        const pending = pendingSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: (doc.data().createdAt as Timestamp).toDate().toISOString() } as Referral));
+        
+        setCompletedBonuses(completed.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+        setPendingBonuses(pending.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+
       } catch (error) {
         console.error("Failed to fetch bonus history:", error);
       } finally {
@@ -61,7 +74,7 @@ export function BonusHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            You haven't received any bonuses yet.
+            No bonuses found in the last 7 days.
           </TableCell>
         </TableRow>
       );

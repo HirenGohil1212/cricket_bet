@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { subDays, startOfDay } from 'date-fns';
 
 export function DepositHistoryTable() {
   const { user, loading: authLoading } = useAuth();
@@ -25,8 +26,10 @@ export function DepositHistoryTable() {
     if (user) {
       setIsLoading(true);
       const depositsCol = collection(db, 'deposits');
-      // Query without ordering to avoid needing a composite index
-      const q = query(depositsCol, where('userId', '==', user.uid));
+      const startDate = startOfDay(subDays(new Date(), 7));
+      const startTimestamp = Timestamp.fromDate(startDate);
+      
+      const q = query(depositsCol, where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userDeposits = querySnapshot.docs.map(doc => {
@@ -82,7 +85,7 @@ export function DepositHistoryTable() {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            You haven't made any deposits yet.
+            No deposits found in the last 7 days.
           </TableCell>
         </TableRow>
       );

@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { TrendingDown, TrendingUp } from 'lucide-react';
+import { subDays, startOfDay } from 'date-fns';
 
 interface WinsLossesHistoryTableProps {
   type: 'Won' | 'Lost';
@@ -30,7 +31,9 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
     if (user) {
       setIsLoading(true);
       const betsCol = collection(db, 'bets');
-      const q = query(betsCol, where('userId', '==', user.uid), where('status', '==', type));
+      const startDate = startOfDay(subDays(new Date(), 7));
+      const startTimestamp = Timestamp.fromDate(startDate);
+      const q = query(betsCol, where('userId', '==', user.uid), where('status', '==', type), where('timestamp', '>=', startTimestamp));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userBets = querySnapshot.docs.map(doc => {
@@ -73,7 +76,7 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
       return (
         <TableRow>
           <TableCell colSpan={3} className="text-center text-muted-foreground py-12">
-            You have no {type.toLowerCase()} bets.
+            No {type.toLowerCase()} bets found in the last 7 days.
           </TableCell>
         </TableRow>
       );
