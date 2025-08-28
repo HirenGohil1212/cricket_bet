@@ -33,7 +33,9 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
       const betsCol = collection(db, 'bets');
       const startDate = startOfDay(subDays(new Date(), 7));
       const startTimestamp = Timestamp.fromDate(startDate);
-      const q = query(betsCol, where('userId', '==', user.uid), where('status', '==', type), where('timestamp', '>=', startTimestamp));
+      // FIX: Removed where('status', '==', type) to avoid needing a composite index.
+      // Filtering will be done on the client-side after fetching.
+      const q = query(betsCol, where('userId', '==', user.uid), where('timestamp', '>=', startTimestamp));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const userBets = querySnapshot.docs.map(doc => {
@@ -43,7 +45,7 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
                 ...data,
                 timestamp: (data.timestamp as Timestamp).toDate().toISOString(),
             } as Bet;
-        });
+        }).filter(bet => bet.status === type); // Filter by type here
 
         userBets.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
