@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { collection, getDocs, query, where, Timestamp, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -58,6 +59,8 @@ export async function getFinancialSummary() {
             betIncome,
             totalReferralBonuses,
             finalProfit,
+            totalPayouts: summaryData.totalPayouts, // FIX: Added missing totalPayouts
+            grossRevenue, // Pass grossRevenue for the reports page
             error: null,
         };
     } catch (error) {
@@ -69,6 +72,8 @@ export async function getFinancialSummary() {
             betIncome: 0,
             totalReferralBonuses: 0,
             finalProfit: 0,
+            totalPayouts: 0,
+            grossRevenue: 0,
             error: 'Failed to fetch financial summary.' 
         };
     }
@@ -134,7 +139,7 @@ export async function getDailyFinancialActivity(days: number = 30): Promise<Dail
             revenue: values.wagered - values.payouts,
             deposits: values.deposits,
             withdrawals: values.withdrawals,
-        })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        })).sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime());
         
         return result;
 
