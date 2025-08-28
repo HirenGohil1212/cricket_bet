@@ -12,6 +12,10 @@ import {
   TrendingDown,
   ArrowUpCircle,
   ArrowDownCircle,
+  Wallet,
+  Gift,
+  BadgePercent,
+  CircleDollarSign,
 } from "lucide-react";
 import { getFinancialSummary, getDailyFinancialActivity } from "@/app/actions/financials.actions";
 import { FinancialActivityChart } from "@/components/admin/financial-activity-chart";
@@ -39,20 +43,21 @@ export default async function FinancialReportsPage() {
     const summaryCards = [
         { title: "Total Deposits", value: summary.totalDeposits, icon: ArrowUpCircle, color: "text-green-500", description: "All funds added by users." },
         { title: "Total Withdrawals", value: summary.totalWithdrawals, icon: ArrowDownCircle, color: "text-red-500", description: "All funds paid out to users." },
-        { title: "Total Payouts", value: summary.totalPayouts ?? 0, icon: TrendingDown, color: "text-orange-500", description: "All winnings paid out for bets." },
+        { title: "Total User Wallet Funds", value: summary.totalUserWalletFunds, icon: Wallet, color: "text-blue-500", description: "Current funds in all user wallets." },
+        { title: "Bet Income (Total Wagered)", value: summary.betIncome, icon: BadgePercent, color: "text-indigo-500", description: "Total amount wagered by users." },
+        { title: "Referral Bonuses Paid", value: summary.totalReferralBonuses, icon: Gift, color: "text-purple-500", description: "Total bonuses given for referrals." },
     ];
-
-    const profitLoss = summary.grossRevenue ?? 0;
-    const isProfit = profitLoss >= 0;
+    
+    const isProfit = summary.finalProfit >= 0;
 
     return (
         <div className="space-y-6">
             <div className="flex items-center">
-                <h1 className="text-lg font-semibold md:text-2xl">Financial Reports</h1>
+                <h1 className="text-lg font-semibold md:text-2xl">Financials</h1>
             </div>
 
             {/* Summary Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                  {summaryCards.map(card => (
                     <Card key={card.title}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -67,12 +72,12 @@ export default async function FinancialReportsPage() {
                  ))}
                  <Card className={isProfit ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{isProfit ? 'Total Revenue (Profit)' : 'Total Loss'}</CardTitle>
-                        <Banknote className="h-4 w-4 text-white/70" />
+                        <CardTitle className="text-sm font-medium">{isProfit ? 'Final Profit' : 'Final Loss'}</CardTitle>
+                        <CircleDollarSign className="h-4 w-4 text-white/70" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">INR {Math.abs(profitLoss).toFixed(2)}</div>
-                        <p className="text-xs text-white/70">Total Wagered - Total Payouts</p>
+                        <div className="text-2xl font-bold">INR {Math.abs(summary.finalProfit).toFixed(2)}</div>
+                        <p className="text-xs text-white/70">Bet Income - Payouts - Bonuses</p>
                     </CardContent>
                  </Card>
             </div>
