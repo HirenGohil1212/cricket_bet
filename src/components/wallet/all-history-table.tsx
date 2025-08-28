@@ -33,6 +33,7 @@ export function AllHistoryTable() {
         const startDate = startOfDay(subDays(new Date(), 7));
         const startTimestamp = Timestamp.fromDate(startDate);
         
+        // FIX: Removed orderBy from queries to avoid needing composite indexes. Sorting is handled in code.
         const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid), where('timestamp', '>=', startTimestamp));
         const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
         const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('createdAt', '>=', startTimestamp));
