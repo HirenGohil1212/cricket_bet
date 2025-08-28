@@ -168,6 +168,31 @@ export async function getUserBets(userId: string): Promise<Bet[]> {
     }
 }
 
+// New function to get the total amount a user has spent on bets.
+export async function getTotalBetAmountForUser(userId: string): Promise<number> {
+  if (!userId) {
+    return 0;
+  }
+  try {
+    const betsCol = collection(db, 'bets');
+    const q = query(betsCol, where('userId', '==', userId));
+    const betSnapshot = await getDocs(q);
+
+    if (betSnapshot.empty) {
+      return 0;
+    }
+
+    const totalAmount = betSnapshot.docs.reduce((sum, doc) => {
+      return sum + (doc.data().amount || 0);
+    }, 0);
+
+    return totalAmount;
+  } catch (error) {
+    console.error(`Error fetching total bet amount for user ${userId}:`, error);
+    return 0;
+  }
+}
+
 
 // New function to get total bet amount for a match
 export async function getTotalBetAmountForMatch(matchId: string): Promise<number> {

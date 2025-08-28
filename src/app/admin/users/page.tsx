@@ -22,7 +22,7 @@ import {
     CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Loader2, Wrench, Sparkles } from 'lucide-react';
+import { Users, Loader2, Wrench, Sparkles, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReferredUsersDialog } from '@/components/admin/referred-users-dialog';
 import { fixMissingSignupBonuses } from '@/app/actions/user.actions';
@@ -38,13 +38,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { getTotalBetAmountForUser } from '@/app/actions/bet.actions';
+import { BettingHistoryDialog } from '@/components/dashboard/betting-history-dialog';
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isFixing, setIsFixing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isReferredUsersDialogOpen, setIsReferredUsersDialogOpen] = useState(false);
+    const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+    const [historyUser, setHistoryUser] = useState<UserProfile | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -53,6 +57,7 @@ export default function AdminUsersPage() {
             const usersCol = collection(db, 'users');
             const q = query(usersCol, orderBy('createdAt', 'desc'));
             const userSnapshot = await getDocs(q);
+
             const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
                 const data = doc.data();
                 return {
@@ -64,10 +69,13 @@ export default function AdminUsersPage() {
                     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                     role: data.role || 'user',
                     referredBy: data.referredBy,
+                    totalBetSpend: 0, // Initialize
                 } as UserProfile;
             });
+            
+            const betSpendPromises = userList.map(user => getTotalBetAmountForUser(user.uid));
+            const betSpends = await Promise.all(betSpendPromises);
 
-            // Corrected referral count logic
             const referralCounts = new Map<string, number>();
             userList.forEach(user => {
                 if (user.referredBy) {
@@ -75,23 +83,29 @@ export default function AdminUsersPage() {
                 }
             });
 
-            const usersWithReferrals = userList.map(user => ({
+            const usersWithData = userList.map((user, index) => ({
                 ...user,
                 totalReferrals: referralCounts.get(user.uid) || 0,
+                totalBetSpend: betSpends[index] || 0,
             }));
             
-            setUsers(usersWithReferrals);
+            setUsers(usersWithData);
             setIsLoading(false);
         }
         fetchAndProcessUsers();
     }, []);
 
     const handleViewReferrals = (user: UserProfile) => {
-        if (user.totalReferrals > 0) {
+        if (user.totalReferrals && user.totalReferrals > 0) {
             setSelectedUser(user);
-            setIsDialogOpen(true);
+            setIsReferredUsersDialogOpen(true);
         }
     }
+
+    const handleViewHistory = (user: UserProfile) => {
+        setHistoryUser(user);
+        setIsHistoryDialogOpen(true);
+    };
     
     const handleFixBonuses = async () => {
         setIsFixing(true);
@@ -126,16 +140,17 @@ export default function AdminUsersPage() {
                                 <TableHead>Name</TableHead>
                                 <TableHead className="hidden sm:table-cell">Phone Number</TableHead>
                                 <TableHead>Role</TableHead>
-                                <TableHead>Total Referrals</TableHead>
-                                <TableHead className="text-right">Wallet Balance</TableHead>
-                                <TableHead className="hidden md:table-cell">Referral Code</TableHead>
+                                <TableHead>Referrals</TableHead>
+                                <TableHead className="text-right">Balance</TableHead>
+                                <TableHead className="text-right hidden md:table-cell">Bet Spend</TableHead>
                                 <TableHead className="hidden md:table-cell">Joined On</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center">
+                                    <TableCell colSpan={8} className="h-24 text-center">
                                         <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
                                     </TableCell>
                                 </TableRow>
@@ -161,10 +176,13 @@ export default function AdminUsersPage() {
                                         </Button>
                                     </TableCell>
                                     <TableCell className="text-right">INR {user.walletBalance.toFixed(2)}</TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <Badge variant="outline">{user.referralCode}</Badge>
-                                    </TableCell>
+                                    <TableCell className="text-right hidden md:table-cell">INR {user.totalBetSpend?.toFixed(2)}</TableCell>
                                     <TableCell className="hidden whitespace-nowrap md:table-cell">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                     <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" onClick={() => handleViewHistory(user)}>
+                                            <History className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -173,9 +191,16 @@ export default function AdminUsersPage() {
             </Card>
             {selectedUser && (
                 <ReferredUsersDialog 
-                    isOpen={isDialogOpen}
-                    onClose={() => setIsDialogOpen(false)}
+                    isOpen={isReferredUsersDialogOpen}
+                    onClose={() => setIsReferredUsersDialogOpen(false)}
                     referrer={selectedUser}
+                />
+            )}
+            {historyUser && (
+                 <BettingHistoryDialog
+                    open={isHistoryDialogOpen}
+                    onOpenChange={setIsHistoryDialogOpen}
+                    user={historyUser}
                 />
             )}
         </>

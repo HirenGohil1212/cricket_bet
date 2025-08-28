@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge";
-import type { Bet, Match, Prediction } from "@/lib/types";
+import type { Bet, Match, Prediction, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -30,6 +30,7 @@ interface BettingHistoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   match?: Match | null;
+  user?: UserProfile | null; // Allow passing a specific user for admin view
 }
 
 const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { prediction: Prediction, teamAName: string, teamBName: string }) => {
@@ -55,16 +56,18 @@ const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { predict
 };
 
 
-export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHistoryDialogProps) {
-  const { user } = useAuth();
+export function BettingHistoryDialog({ open, onOpenChange, match, user: propUser }: BettingHistoryDialogProps) {
+  const { user: authUser } = useAuth();
+  const userToFetch = propUser || authUser;
+
   const [bets, setBets] = useState<Bet[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     async function fetchBets() {
-        if (open && user) {
+        if (open && userToFetch) {
             setIsLoading(true);
-            let userBets = await getUserBets(user.uid);
+            let userBets = await getUserBets(userToFetch.uid);
             // Filter bets if a specific match is provided
             if (match) {
               userBets = userBets.filter(bet => bet.matchId === match.id);
@@ -74,7 +77,7 @@ export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHisto
         }
     }
     fetchBets();
-  }, [open, user, match]);
+  }, [open, userToFetch, match]);
 
 
   const getStatusClass = (status: Bet["status"]) => {
@@ -90,8 +93,17 @@ export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHisto
     }
   };
   
-  const dialogTitle = match ? `My Bets for ${match.teamA.name} vs ${match.teamB.name}` : "My Betting History";
-  const dialogDescription = match ? "Review your bets and their outcomes for this specific match." : "Review all your past bets and their outcomes.";
+  const dialogTitle = propUser 
+    ? `Betting History for ${propUser.name}`
+    : match 
+    ? `My Bets for ${match.teamA.name} vs ${match.teamB.name}` 
+    : "My Betting History";
+    
+  const dialogDescription = propUser
+    ? "A list of all bets placed by this user."
+    : match 
+    ? "Review your bets and their outcomes for this specific match." 
+    : "Review all your past bets and their outcomes.";
 
   const renderContent = () => {
     if (isLoading) {
@@ -107,8 +119,8 @@ export function BettingHistoryDialog({ open, onOpenChange, match }: BettingHisto
     if (bets.length === 0) {
         return (
             <div className="text-center text-muted-foreground py-12">
-                <p>{match ? "You haven't placed any bets on this match." : "You haven't placed any bets yet."}</p>
-                {!match && <p className="text-sm">Go to the matches page to make your first prediction!</p>}
+                <p>{match ? "You haven't placed any bets on this match." : "No bets found for this user."}</p>
+                {!match && !propUser && <p className="text-sm">Go to the matches page to make your first prediction!</p>}
             </div>
         );
     }

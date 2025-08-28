@@ -1,6 +1,5 @@
 
 
-
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -83,6 +82,7 @@ export type UserProfile = {
   isFirstBetPlaced?: boolean; // Has the user placed their first bet
   referralBonusAwarded?: boolean; // Has this user received their signup bonus
   totalReferrals?: number; // New field for referral count
+  totalBetSpend?: number;
 };
 
 export type BankAccount = {
