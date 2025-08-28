@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -247,9 +246,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               finalPredictions.push({
                 questionId: `${selectedPlayer.name}:${q.id}`,
                 questionText: `(${selectedPlayer.name}) ${q.question}`,
-                predictedAnswer: selectedPlayer.team === 'teamA' 
-                    ? { teamA: answer, teamB: '' } 
-                    : { teamA: '', teamB: answer }
+                predictedAnswer: {
+                  [selectedPlayer.team === 'teamA' ? 'teamA' : 'teamB']: answer
+                }
               });
             }
           }
@@ -536,3 +535,5 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
+    

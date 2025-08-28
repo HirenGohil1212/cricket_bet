@@ -20,16 +20,17 @@ import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { prediction: Prediction, teamAName: string, teamBName: string }) => {
-    const isTeamA = !!prediction.predictedAnswer?.teamA;
-    const answer = isTeamA ? prediction.predictedAnswer.teamA : prediction.predictedAnswer.teamB;
+    const isTeamA = prediction.predictedAnswer && typeof prediction.predictedAnswer.teamA !== 'undefined';
+    const isTeamB = prediction.predictedAnswer && typeof prediction.predictedAnswer.teamB !== 'undefined';
+    const teamName = isTeamA ? teamAName : teamBName;
+    const answer = isTeamA ? prediction.predictedAnswer.teamA : (isTeamB ? prediction.predictedAnswer.teamB : '');
     const [playerName] = prediction.questionId.split(':');
-
 
     return (
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 text-xs">
             <div className="text-primary font-semibold text-center">{isTeamA ? answer : ''}</div>
             <div className="text-muted-foreground text-center truncate">{`(${playerName}) ${prediction.questionText}`}</div>
-            <div className="text-primary font-semibold text-center">{!isTeamA ? answer : ''}</div>
+            <div className="text-primary font-semibold text-center">{isTeamB ? answer : ''}</div>
         </div>
     );
 };
@@ -181,3 +182,5 @@ export function GameHistoryList() {
     </Card>
   );
 }
+
+    
