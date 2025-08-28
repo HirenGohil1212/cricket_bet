@@ -247,7 +247,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               finalPredictions.push({
                 questionId: `${selectedPlayer.name}:${q.id}`,
                 questionText: `(${selectedPlayer.name}) ${q.question}`,
-                predictedAnswer: selectedPlayer.team === 'teamA' ? { teamA: answer, teamB: '' } : { teamA: '', teamB: answer }
+                predictedAnswer: selectedPlayer.team === 'teamA' 
+                    ? { teamA: answer, teamB: '' } 
+                    : { teamA: '', teamB: answer }
               });
             }
           }
