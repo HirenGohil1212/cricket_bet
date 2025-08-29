@@ -79,90 +79,58 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             
             const q = query(
                 collection(db, collectionName),
-                where(dateField, '>=', Timestamp.fromDate(finalStartDate)),
-                where(dateField, '<=', Timestamp.fromDate(finalEndDate))
+                where(dateField, '>=', Timestamp.from(finalStartDate)),
+                where(dateField, '<=', Timestamp.from(finalEndDate))
             );
 
             const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
 
-            const docsToDelete = [];
-            const docsToBackup = [];
+            const deleteBatch = writeBatch(db);
 
-            // ** NEW ROBUST LOGIC **
-            // Filter out pending requests before processing
             for (const docSnapshot of snapshot.docs) {
                 const data = docSnapshot.data();
                 
+                // Safety Check: Do not delete pending requests or active matches.
                 if ((collectionName === 'deposits' || collectionName === 'withdrawals') && data.status === 'Processing') {
-                    // Skip any pending requests
-                    continue;
+                    continue; 
                 }
-
-                // ** NEW **: Skip any upcoming or live matches
-                if (collectionName === 'matches' && (data.status === 'Upcoming' || data.status === 'Live')) {
+                if (collectionName === 'matches' && ['Upcoming', 'Live'].includes(data.status)) {
                     continue;
                 }
                 
-                docsToBackup.push(docSnapshot);
-                docsToDelete.push(docSnapshot);
-            }
-
-            if (docsToBackup.length > 0) {
-                const backupCollectionName = `delete_${collectionName}_${new Date().toISOString().split('T')[0]}`;
-                const backupBatch = writeBatch(db);
-                docsToBackup.forEach(docSnapshot => {
-                    const backupDocRef = doc(db, backupCollectionName, docSnapshot.id);
-                    backupBatch.set(backupDocRef, docSnapshot.data());
-                });
-                await backupBatch.commit();
+                // Handle associated file deletions before document deletion
+                if (collectionName === 'deposits') {
+                    const pathToDelete = data.screenshotPath || data.screenshotUrl;
+                    if (pathToDelete) {
+                        try {
+                            await deleteFileByPath(pathToDelete);
+                        } catch (storageError) {
+                            console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
+                        }
+                    }
+                }
+                
+                if (collectionName === 'matches') {
+                    if (data.teamA?.logoPath) {
+                        try { await deleteFileByPath(data.teamA.logoPath); } catch (e) { console.error(e); }
+                    }
+                     if (data.teamB?.logoPath) {
+                        try { await deleteFileByPath(data.teamB.logoPath); } catch (e) { console.error(e); }
+                    }
+                }
+                
+                // Add the document to the delete batch
+                deleteBatch.delete(docSnapshot.ref);
             }
             
-            if (docsToDelete.length > 0) {
-                const deleteBatch = writeBatch(db);
-
-                for (const docSnapshot of docsToDelete) {
-                    const data = docSnapshot.data();
-                    
-                    if (collectionName === 'deposits') {
-                        const pathToDelete = data.screenshotPath || data.screenshotUrl;
-                        if (pathToDelete) {
-                            try {
-                                await deleteFileByPath(pathToDelete);
-                            } catch (storageError) {
-                                console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
-                            }
-                        }
-                    }
-                    
-                    if (collectionName === 'matches') {
-                        if (data.teamA?.logoPath) {
-                            try {
-                                await deleteFileByPath(data.teamA.logoPath);
-                            } catch (storageError) {
-                                 console.error(`Could not delete storage file for Team A logo in match ${docSnapshot.id}. Error:`, storageError);
-                            }
-                        }
-                         if (data.teamB?.logoPath) {
-                            try {
-                                await deleteFileByPath(data.teamB.logoPath);
-                            } catch (storageError) {
-                                 console.error(`Could not delete storage file for Team B logo in match ${docSnapshot.id}. Error:`, storageError);
-                            }
-                        }
-                    }
-                    
-                    deleteBatch.delete(docSnapshot.ref);
-                }
-                
-                await deleteBatch.commit();
-                totalDeleted += docsToDelete.length;
-            }
+            await deleteBatch.commit();
+            totalDeleted += deleteBatch._ops.length; // Approximate count of deleted docs
         }
         
         revalidatePath('/admin/data-management');
         revalidatePath('/admin/dashboard');
-        return { success: `Successfully backed up and deleted ${totalDeleted} historical records. Pending requests and active matches were preserved.` };
+        return { success: `Successfully deleted ${totalDeleted} historical records. Pending requests and active matches were preserved.` };
     } catch (error: any) {
         console.error("Error deleting data history: ", error);
         return { error: 'Failed to delete data history. Check server logs for details.' };
@@ -288,3 +256,4 @@ export async function fixMissingSignupBonuses() {
         return { error: 'An error occurred while trying to fix bonuses.' };
     }
 }
+
