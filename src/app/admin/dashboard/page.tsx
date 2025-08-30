@@ -1,6 +1,6 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Users, Swords, Banknote, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Users, Swords, Banknote, ArrowUpCircle, ArrowDownCircle, TrendingDown, BadgePercent, CircleDollarSign } from "lucide-react";
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
@@ -33,26 +33,35 @@ async function getDashboardData() {
         const matchCount = activeMatchesSnapshot.data().count;
         const pendingWithdrawals = pendingWithdrawalsSnapshot.size;
         const pendingDeposits = pendingDepositsSnapshot.size;
-        const totalRevenue = financialSummary.grossRevenue;
 
-        return { userCount, matchCount, totalRevenue, pendingWithdrawals, pendingDeposits };
+        return { userCount, matchCount, pendingWithdrawals, pendingDeposits, financialSummary };
 
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        return { userCount: 0, matchCount: 0, totalRevenue: 0, pendingWithdrawals: 0, pendingDeposits: 0 };
+        return { userCount: 0, matchCount: 0, pendingWithdrawals: 0, pendingDeposits: 0, financialSummary: {
+            totalDeposits: 0,
+            totalWithdrawals: 0,
+            totalUserWalletFunds: 0,
+            betIncome: 0,
+            totalReferralBonuses: 0,
+            finalProfit: 0,
+            totalPayouts: 0,
+            grossRevenue: 0,
+            error: 'Failed to fetch financial summary.'
+        }};
     }
 }
 
 export default async function AdminDashboardPage() {
-    const { userCount, matchCount, totalRevenue, pendingWithdrawals, pendingDeposits } = await getDashboardData();
-    const isProfit = totalRevenue >= 0;
+    const { userCount, matchCount, pendingWithdrawals, pendingDeposits, financialSummary } = await getDashboardData();
+    const isProfit = financialSummary.finalProfit >= 0;
 
     return (
         <>
             <div className="flex items-center">
                 <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -73,17 +82,7 @@ export default async function AdminDashboardPage() {
                         <p className="text-xs text-muted-foreground">Live and upcoming</p>
                     </CardContent>
                  </Card>
-                 <Card className={isProfit ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{isProfit ? 'Gross Revenue' : 'Total Loss'}</CardTitle>
-                        <Banknote className="h-4 w-4 text-white/70" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">INR {totalRevenue.toFixed(2)}</div>
-                        <p className="text-xs text-white/70">All-time profit/loss</p>
-                    </CardContent>
-                 </Card>
-                 <Card>
+                <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Pending Deposits</CardTitle>
                         <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
@@ -92,8 +91,8 @@ export default async function AdminDashboardPage() {
                         <div className="text-2xl font-bold">{pendingDeposits}</div>
                         <p className="text-xs text-muted-foreground">Awaiting approval</p>
                     </CardContent>
-                 </Card>
-                 <Card>
+                </Card>
+                <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Pending Withdrawals</CardTitle>
                         <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
@@ -101,6 +100,58 @@ export default async function AdminDashboardPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{pendingWithdrawals}</div>
                         <p className="text-xs text-muted-foreground">Awaiting approval</p>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Deposits</CardTitle>
+                        <ArrowUpCircle className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">INR {financialSummary.totalDeposits.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground">All approved deposits</p>
+                    </CardContent>
+                 </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Withdrawals</CardTitle>
+                        <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">INR {financialSummary.totalWithdrawals.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground">All approved withdrawals</p>
+                    </CardContent>
+                 </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Bet Income</CardTitle>
+                        <BadgePercent className="h-4 w-4 text-indigo-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">INR {financialSummary.betIncome.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground">Total amount wagered by users</p>
+                    </CardContent>
+                 </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Payouts</CardTitle>
+                        <TrendingDown className="h-4 w-4 text-orange-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">INR {financialSummary.totalPayouts.toFixed(2)}</div>
+                        <p className="text-xs text-muted-foreground">Total winnings paid out</p>
+                    </CardContent>
+                 </Card>
+                 <Card className={isProfit ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">{isProfit ? 'Final Profit' : 'Final Loss'}</CardTitle>
+                        <CircleDollarSign className="h-4 w-4 text-white/70" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">INR {Math.abs(financialSummary.finalProfit).toFixed(2)}</div>
+                        <p className="text-xs text-white/70">Bet Income - Payouts - Bonuses</p>
                     </CardContent>
                  </Card>
             </div>
