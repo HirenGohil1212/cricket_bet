@@ -7,34 +7,33 @@ import { db } from '@/lib/firebase';
 import type { DailyFinancialActivity } from '@/lib/types';
 import { subDays, startOfDay, format } from 'date-fns';
 
-// Gets all-time financial summary from the dedicated summary document.
+// Gets all-time financial summary by calculating from source collections.
 export async function getFinancialSummary() {
     try {
-        const summaryRef = doc(db, 'statistics', 'financialSummary');
         const usersRef = collection(db, 'users');
         const transactionsRef = collection(db, 'transactions');
-        
-        // Use Promise.all to fetch data concurrently
-        const [summarySnap, usersSnap, referralBonusesSnap] = await Promise.all([
-            getDoc(summaryRef),
+        const depositsRef = collection(db, 'deposits');
+        const withdrawalsRef = collection(db, 'withdrawals');
+        const betsRef = collection(db, 'bets');
+
+        const [
+            usersSnap, 
+            referralBonusesSnap,
+            approvedDepositsSnap,
+            approvedWithdrawalsSnap,
+            betsSnap
+        ] = await Promise.all([
             getDocs(query(usersRef)),
-            getDocs(query(transactionsRef, where('type', '==', 'referral_bonus')))
+            getDocs(query(transactionsRef, where('type', '==', 'referral_bonus'))),
+            getDocs(query(depositsRef, where('status', '==', 'Approved'))),
+            getDocs(query(withdrawalsRef, where('status', '==', 'Approved'))),
+            getDocs(query(betsRef)),
         ]);
         
-        // Initialize summary data
-        let summaryData = {
-            totalDeposits: 0,
-            totalWithdrawals: 0,
-            totalWagered: 0,
-            totalPayouts: 0,
-        };
-        
-        if (summarySnap.exists()) {
-            summaryData = summarySnap.data() as typeof summaryData;
-        } else {
-            // If summary doc doesn't exist, create it.
-            await setDoc(summaryRef, summaryData);
-        }
+        const totalDeposits = approvedDepositsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+        const totalWithdrawals = approvedWithdrawalsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+        const totalWagered = betsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+        const totalPayouts = betsSnap.docs.filter(doc => doc.data().status === 'Won').reduce((sum, doc) => sum + (doc.data().potentialWin || 0), 0);
 
         // Calculate total user wallet funds
         const totalUserWalletFunds = usersSnap.docs.reduce(
@@ -48,19 +47,19 @@ export async function getFinancialSummary() {
             0
         );
         
-        const betIncome = summaryData.totalWagered;
-        const grossRevenue = betIncome - summaryData.totalPayouts;
+        const betIncome = totalWagered;
+        const grossRevenue = betIncome - totalPayouts;
         const finalProfit = grossRevenue - totalReferralBonuses;
         
         return {
-            totalDeposits: summaryData.totalDeposits,
-            totalWithdrawals: summaryData.totalWithdrawals,
+            totalDeposits,
+            totalWithdrawals,
             totalUserWalletFunds,
             betIncome,
             totalReferralBonuses,
             finalProfit,
-            totalPayouts: summaryData.totalPayouts, // FIX: Added missing totalPayouts
-            grossRevenue, // Pass grossRevenue for the reports page
+            totalPayouts,
+            grossRevenue,
             error: null,
         };
     } catch (error) {
