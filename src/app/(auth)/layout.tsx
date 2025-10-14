@@ -41,7 +41,7 @@ export default function AuthLayout({
                 <div className="mb-8 flex justify-center">
                     <div className="flex items-center gap-2">
                          <Award className="w-10 h-10 text-primary" />
-                         <h1 className="font-headline text-3xl font-bold">ScoreCast</h1>
+                         <h1 className="font-headline text-3xl font-bold">UPI11</h1>
                     </div>
                 </div>
                 {children}

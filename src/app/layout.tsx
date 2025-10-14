@@ -24,7 +24,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'ScoreCast',
+  title: 'UPI11',
   description: 'Predict scores and win!',
   manifest: '/manifest.json',
 };

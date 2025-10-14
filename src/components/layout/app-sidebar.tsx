@@ -86,7 +86,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const HeaderContent = () => (
     <div className="flex items-center gap-2">
       <Award className="w-8 h-8 text-primary" />
-      <h1 className="font-headline text-2xl font-bold">ScoreCast</h1>
+      <h1 className="font-headline text-2xl font-bold">UPI11</h1>
     </div>
   );
 
@@ -94,7 +94,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     <SheetHeader className="p-4 border-b">
         <SheetTitle className={cn("flex items-center gap-2 font-headline text-2xl font-bold")}>
             <Award className="w-8 h-8 text-primary" />
-            <span>ScoreCast</span>
+            <span>UPI11</span>
         </SheetTitle>
     </SheetHeader>
   )
