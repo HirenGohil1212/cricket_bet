@@ -5,7 +5,7 @@
 runConfig:
   # All keys under runConfig must be indented by exactly two spaces
   minInstances: 1
-  maxInstances: 500
+  maxInstances: 100
   concurrency: 80
   cpu: 1 
   memoryMiB: 1024
