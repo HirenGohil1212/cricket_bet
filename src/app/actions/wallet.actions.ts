@@ -198,3 +198,19 @@ export async function rejectDeposit(depositId: string) {
         return { error: error.message || "Failed to reject deposit." };
     }
 }
+
+export async function getTotalWithdrawalsForUser(userId: string): Promise<number> {
+    if (!userId) return 0;
+    try {
+        const withdrawalsCol = collection(db, 'withdrawals');
+        const q = query(withdrawalsCol, where('userId', '==', userId), where('status', '==', 'Approved'));
+        const querySnapshot = await getDocs(q);
+        
+        const totalAmount = querySnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+        return totalAmount;
+
+    } catch (error) {
+        console.error(`Error fetching total withdrawals for user ${userId}:`, error);
+        return 0;
+    }
+}

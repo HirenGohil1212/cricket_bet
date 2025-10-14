@@ -263,3 +263,28 @@ export async function fixMissingSignupBonuses() {
         return { error: 'An error occurred while trying to fix bonuses.' };
     }
 }
+
+export async function getTotalWinningsForUser(userId: string): Promise<number> {
+    if (!userId) {
+        return 0;
+    }
+    try {
+        const betsCol = collection(db, 'bets');
+        const q = query(betsCol, where('userId', '==', userId), where('status', '==', 'Won'));
+        const betSnapshot = await getDocs(q);
+
+        if (betSnapshot.empty) {
+            return 0;
+        }
+
+        const totalWinnings = betSnapshot.docs.reduce((sum, doc) => {
+            return sum + (doc.data().potentialWin || 0);
+        }, 0);
+
+        return totalWinnings;
+
+    } catch (error) {
+        console.error(`Error fetching total winnings for user ${userId}:`, error);
+        return 0;
+    }
+}
