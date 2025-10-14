@@ -31,6 +31,7 @@ import { BettingHistoryDialog } from '@/components/dashboard/betting-history-dia
 import { getTotalDepositsForUser, getTotalWithdrawalsForUser } from '@/app/actions/wallet.actions';
 import { getTotalWinningsForUser } from '@/app/actions/user.actions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from "@/components/ui/input";
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
