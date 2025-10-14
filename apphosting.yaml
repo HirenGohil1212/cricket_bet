@@ -1,23 +1,11 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# The top-level key must be at the very left edge (no indentation)
 runConfig:
-  # Guarantees fast response times by keeping one instance ready at all times.
-  minInstances: 1 
-  
-  # Sets a very high safety limit to handle extreme, unexpected traffic spikes 
-  # (e.g., viral traffic or a DDoS) without returning a 429 error.
-  # This acts as a protective ceiling, not a baseline you will pay for.
-  maxInstances: 500 
-  
-  # Maximum number of concurrent requests an instance will handle. 
-  # 80 is the default and provides the best balance of efficiency and latency.
-  concurrency: 80 
-  
-  # Dedicated CPU is highly recommended for dynamic/SSR applications 
-  # to improve performance under concurrency and ensure predictable scaling.
-  cpu: 1 
-  
-  # Allocating more memory provides a safety buffer, especially when handling 
-  # many concurrent requests or running a memory-intensive framework (like Next.js).
-  memoryMiB: 1024 # Increased to 1GB
+  # All keys under runConfig must be indented by exactly two spaces
+    minInstances: 1
+    maxInstances: 500
+    concurrency: 80
+    cpu: 1 
+    memoryMiB: 1024
