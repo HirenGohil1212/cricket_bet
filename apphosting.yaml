@@ -4,8 +4,8 @@
 # The top-level key must be at the very left edge (no indentation)
 runConfig:
   # All keys under runConfig must be indented by exactly two spaces
-    minInstances: 1
-    maxInstances: 500
-    concurrency: 80
-    cpu: 1 
-    memoryMiB: 1024
+  minInstances: 1
+  maxInstances: 500
+  concurrency: 80
+  cpu: 1 
+  memoryMiB: 1024
