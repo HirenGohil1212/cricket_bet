@@ -109,6 +109,7 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
     ));
   };
 
+
   return (
     <Table>
       <TableHeader>

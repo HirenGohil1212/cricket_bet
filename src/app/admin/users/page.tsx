@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp, orderBy, query, where } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { 
     Table, 
@@ -22,33 +22,24 @@ import {
     CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Loader2, Wrench, Sparkles, History } from 'lucide-react';
+import { Users, Loader2, History, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReferredUsersDialog } from '@/components/admin/referred-users-dialog';
-import { fixMissingSignupBonuses } from '@/app/actions/user.actions';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { getTotalBetAmountForUser } from '@/app/actions/bet.actions';
 import { BettingHistoryDialog } from '@/components/dashboard/betting-history-dialog';
+import { getTotalDepositsForUser, getTotalWithdrawalsForUser } from '@/app/actions/wallet.actions';
+import { getTotalWinningsForUser } from '@/app/actions/user.actions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFixing, setIsFixing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [isReferredUsersDialogOpen, setIsReferredUsersDialogOpen] = useState(false);
     const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [historyUser, setHistoryUser] = useState<UserProfile | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const { toast } = useToast();
 
     useEffect(() => {
@@ -58,7 +49,7 @@ export default function AdminUsersPage() {
             const q = query(usersCol, orderBy('createdAt', 'desc'));
             const userSnapshot = await getDocs(q);
 
-            const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+            const userList: UserProfile[] = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
                 const data = doc.data();
                 return {
                     uid: doc.id,
@@ -69,24 +60,32 @@ export default function AdminUsersPage() {
                     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                     role: data.role || 'user',
                     referredBy: data.referredBy,
-                    totalBetSpend: 0, // Initialize
+                    // Initialize financial fields, they will be populated below
+                    totalDeposits: 0,
+                    totalWithdrawals: 0,
+                    totalBetSpend: 0,
+                    totalWinnings: 0,
                 } as UserProfile;
             });
             
-            const betSpendPromises = userList.map(user => getTotalBetAmountForUser(user.uid));
-            const betSpends = await Promise.all(betSpendPromises);
+            // Batch fetch all financial data
+            const financialPromises = userList.map(user => Promise.all([
+                getTotalDepositsForUser(user.uid),
+                getTotalWithdrawalsForUser(user.uid),
+                getTotalBetAmountForUser(user.uid),
+                getTotalWinningsForUser(user.uid),
+                getDocs(query(collection(db, 'users'), where('referredBy', '==', user.uid))).then(snap => snap.size)
+            ]));
 
-            const referralCounts = new Map<string, number>();
-            userList.forEach(user => {
-                if (user.referredBy) {
-                    referralCounts.set(user.referredBy, (referralCounts.get(user.referredBy) || 0) + 1);
-                }
-            });
+            const financialResults = await Promise.all(financialPromises);
 
             const usersWithData = userList.map((user, index) => ({
                 ...user,
-                totalReferrals: referralCounts.get(user.uid) || 0,
-                totalBetSpend: betSpends[index] || 0,
+                totalDeposits: financialResults[index][0],
+                totalWithdrawals: financialResults[index][1],
+                totalBetSpend: financialResults[index][2],
+                totalWinnings: financialResults[index][3],
+                totalReferrals: financialResults[index][4],
             }));
             
             setUsers(usersWithData);
@@ -94,6 +93,11 @@ export default function AdminUsersPage() {
         }
         fetchAndProcessUsers();
     }, []);
+    
+    const filteredUsers = users.filter(user => 
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.phoneNumber.includes(searchTerm)
+    );
 
     const handleViewReferrals = (user: UserProfile) => {
         if (user.totalReferrals && user.totalReferrals > 0) {
@@ -106,21 +110,6 @@ export default function AdminUsersPage() {
         setHistoryUser(user);
         setIsHistoryDialogOpen(true);
     };
-    
-    const handleFixBonuses = async () => {
-        setIsFixing(true);
-        const result = await fixMissingSignupBonuses();
-        if (result.error) {
-            toast({ variant: "destructive", title: "Error", description: result.error });
-        } else {
-            toast({ 
-                title: "Process Complete", 
-                description: result.success,
-                action: result.count > 0 ? <Sparkles className="h-5 w-5 text-accent" /> : undefined,
-            });
-        }
-        setIsFixing(false);
-    };
 
     return (
         <>
@@ -128,63 +117,76 @@ export default function AdminUsersPage() {
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <CardTitle>Users</CardTitle>
-                            <CardDescription>A list of all the users in your app.</CardDescription>
+                            <CardTitle>User Accounts</CardTitle>
+                            <CardDescription>A complete financial overview of all users.</CardDescription>
                         </div>
+                         <Input 
+                            placeholder="Search by name or phone..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="max-w-sm"
+                         />
                     </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead className="hidden sm:table-cell">Phone Number</TableHead>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Referrals</TableHead>
+                                <TableHead>User</TableHead>
                                 <TableHead className="text-right">Balance</TableHead>
-                                <TableHead className="text-right hidden md:table-cell">Bet Spend</TableHead>
-                                <TableHead className="hidden md:table-cell">Joined On</TableHead>
+                                <TableHead className="text-right hidden md:table-cell">Deposits</TableHead>
+                                <TableHead className="text-right hidden md:table-cell">Withdrawals</TableHead>
+                                <TableHead className="text-right hidden lg:table-cell">Wagered</TableHead>
+                                <TableHead className="text-right hidden lg:table-cell">Won</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">
-                                        <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
-                                    </TableCell>
-                                </TableRow>
-                            ) : users.map((user) => (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : filteredUsers.length > 0 ? filteredUsers.map((user) => (
                                 <TableRow key={user.uid}>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{user.phoneNumber}</TableCell>
                                     <TableCell>
-                                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                            {user.role}
-                                        </Badge>
+                                        <div className="font-medium">{user.name}</div>
+                                        <div className="text-xs text-muted-foreground">{user.phoneNumber}</div>
                                     </TableCell>
-                                    <TableCell>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="flex items-center gap-2 -ml-3" 
-                                            onClick={() => handleViewReferrals(user)}
-                                            disabled={!user.totalReferrals || user.totalReferrals === 0}
-                                        >
-                                            <Users className="h-4 w-4 text-muted-foreground" />
-                                            <span className="font-medium">{user.totalReferrals || 0}</span>
-                                        </Button>
+                                    <TableCell className="text-right font-semibold">
+                                        INR {user.walletBalance.toFixed(2)}
                                     </TableCell>
-                                    <TableCell className="text-right">INR {user.walletBalance.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right hidden md:table-cell">INR {user.totalBetSpend?.toFixed(2)}</TableCell>
-                                    <TableCell className="hidden whitespace-nowrap md:table-cell">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-right hidden md:table-cell">
+                                        <span className="text-green-600 flex items-center justify-end gap-1">
+                                            <ArrowUp className="h-4 w-4" /> INR {user.totalDeposits?.toFixed(2)}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right hidden md:table-cell">
+                                        <span className="text-red-600 flex items-center justify-end gap-1">
+                                            <ArrowDown className="h-4 w-4" /> INR {user.totalWithdrawals?.toFixed(2)}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right hidden lg:table-cell">INR {user.totalBetSpend?.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right hidden lg:table-cell">
+                                         <span className="text-indigo-600 flex items-center justify-end gap-1">
+                                            <Trophy className="h-4 w-4" /> INR {user.totalWinnings?.toFixed(2)}
+                                        </span>
+                                    </TableCell>
                                      <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" onClick={() => handleViewHistory(user)}>
                                             <History className="h-4 w-4" />
+                                            <span className="sr-only">View History</span>
                                         </Button>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-24 text-center">
+                                        No users found for your search.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
