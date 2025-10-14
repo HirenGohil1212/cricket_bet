@@ -77,19 +77,23 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const dateField = dateFieldMap[collectionName];
             if (!dateField) continue;
             
-            const q = query(
-                collection(db, collectionName),
-                where(dateField, '>=', Timestamp.from(finalStartDate)),
-                where(dateField, '<=', Timestamp.from(finalEndDate))
-            );
+            // FIX: Query the entire collection first, then filter by date in code to avoid indexing errors.
+            const collectionRef = collection(db, collectionName);
+            const snapshot = await getDocs(collectionRef);
 
-            const snapshot = await getDocs(q);
             if (snapshot.empty) continue;
 
             const deleteBatch = writeBatch(db);
+            let deletedInCollection = 0;
 
             for (const docSnapshot of snapshot.docs) {
                 const data = docSnapshot.data();
+                const docDate = (data[dateField] as Timestamp)?.toDate();
+                
+                // Perform date filtering in code
+                if (!docDate || docDate < finalStartDate || docDate > finalEndDate) {
+                    continue;
+                }
                 
                 // Safety Check: Do not delete pending requests or active matches.
                 if ((collectionName === 'deposits' || collectionName === 'withdrawals') && data.status === 'Processing') {
@@ -122,10 +126,13 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
                 
                 // Add the document to the delete batch
                 deleteBatch.delete(docSnapshot.ref);
+                deletedInCollection++;
             }
             
-            await deleteBatch.commit();
-            totalDeleted += deleteBatch._ops.length; // Approximate count of deleted docs
+            if (deletedInCollection > 0) {
+                 await deleteBatch.commit();
+                 totalDeleted += deletedInCollection;
+            }
         }
         
         revalidatePath('/admin/data-management');
@@ -256,4 +263,3 @@ export async function fixMissingSignupBonuses() {
         return { error: 'An error occurred while trying to fix bonuses.' };
     }
 }
-

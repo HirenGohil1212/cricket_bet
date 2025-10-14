@@ -42,6 +42,7 @@ export default async function FinancePage() {
         { title: "Total Withdrawals", value: summary.totalWithdrawals, icon: ArrowDownCircle, color: "text-red-500", description: "All funds paid out to users." },
         { title: "Total User Wallet Funds", value: summary.totalUserWalletFunds, icon: Wallet, color: "text-blue-500", description: "Current funds in all user wallets." },
         { title: "Bet Income (Total Wagered)", value: summary.betIncome, icon: BadgePercent, color: "text-indigo-500", description: "Total amount wagered by users." },
+        { title: "Total Payouts", value: summary.totalPayouts, icon: TrendingDown, color: "text-orange-500", description: "Total winnings paid out." },
         { title: "Referral Bonuses Paid", value: summary.totalReferralBonuses, icon: Gift, color: "text-purple-500", description: "Total bonuses given for referrals." },
     ];
     
