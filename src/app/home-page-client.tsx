@@ -119,7 +119,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
       <AppSidebar onNavigate={() => setIsNavigating(true)} />
       <SidebarInset className="flex flex-col min-h-screen">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col mb-28">
           <div className="mb-4 flex gap-2">
               <Button asChild className="w-1/2 bg-green-500 hover:bg-green-600 text-white">
                 <Link href="/wallet?action=deposit">
