@@ -478,7 +478,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                               <div className="space-y-3">
                                   {questions.map((q) => (
                                       <div key={q.id} className="space-y-2">
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 p-1">
                                               {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
                                                   <div className="flex-1">
                                                       <Input
@@ -540,5 +540,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
+    
 
     
