@@ -4,8 +4,8 @@
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "ScoreCast",
-  "short_name": "ScoreCast",
+  "name": "UPI11",
+  "short_name": "UPI11",
   "description": "Predict scores and win!",
   "icons": [
     {
