@@ -8,10 +8,10 @@ interface WhatsAppSupportButtonProps {
 }
 
 export function WhatsAppSupportButton({ appSettings }: WhatsAppSupportButtonProps) {
-  const whatsappNumber = appSettings?.whatsappNumber;
+  const whatsappNumber = appSettings?.whatsappNumber || "1234567890"; // Fallback number
 
   if (!whatsappNumber) {
-    return null; // Don't render the button if no number is set
+    return null; // Should not happen with the fallback, but good for safety
   }
 
   const whatsappLink = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}`;
