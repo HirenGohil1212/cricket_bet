@@ -6,6 +6,8 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
+import { usePwaInstall } from "@/context/pwa-install-context";
 
 
 export default function AuthLayout({
@@ -15,6 +17,8 @@ export default function AuthLayout({
 }) {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const { promptInstall, setIsDialogOpen } = usePwaInstall();
+
 
     useEffect(() => {
         if (!loading && user) {
@@ -45,6 +49,14 @@ export default function AuthLayout({
                     </div>
                 </div>
                 {children}
+                 <div className="mt-6 flex justify-center gap-4">
+                    <button onClick={() => setIsDialogOpen(true)} aria-label="Download from App Store">
+                        <Image src="/app-store.png" alt="Download on the App Store" width={144} height={48} className="object-contain h-12 w-auto" />
+                    </button>
+                    <button onClick={promptInstall} aria-label="Get it on Google Play">
+                        <Image src="/google-play.png" alt="Get it on Google Play" width={144} height={48} className="object-contain h-12 w-auto" />
+                    </button>
+                </div>
             </div>
         </div>
     );
