@@ -51,10 +51,10 @@ export default function AuthLayout({
                 {children}
                  <div className="mt-6 flex justify-center gap-4">
                     <button onClick={() => setIsDialogOpen(true)} aria-label="Download from App Store">
-                        <Image src="/app-store.png" alt="Download on the App Store" width={144} height={48} className="object-contain h-12 w-auto" />
+                        <Image src="/icons8-app-store-100.png" alt="Download on the App Store" width={144} height={48} className="object-contain h-12 w-auto" />
                     </button>
                     <button onClick={promptInstall} aria-label="Get it on Google Play">
-                        <Image src="/google-play.png" alt="Get it on Google Play" width={144} height={48} className="object-contain h-12 w-auto" />
+                        <Image src="/icons8-google-play-store-100.png" alt="Get it on Google Play" width={144} height={48} className="object-contain h-12 w-auto" />
                     </button>
                 </div>
             </div>
