@@ -18,7 +18,7 @@ import { usePwaInstall } from "@/context/pwa-install-context";
 
 const IosInstructions = () => (
   <div className="text-center text-sm space-y-4">
-    <p>To install this app on your iPhone or iPad, tap the button below and then choose <span className="font-bold">Add to Home Screen</span>.</p>
+    <p>To install the app, open the site in Safari, tap the 'Share' button, then scroll down and select 'Add to Home Screen'.</p>
     <div className="flex justify-center items-center gap-2 text-muted-foreground p-2 rounded-lg bg-muted">
        <div className="border rounded-md p-2 bg-background">
         <ArrowUpSquare className="h-10 w-10" />
@@ -37,8 +37,6 @@ const DefaultInstructions = () => (
 export function InstallPwaDialog() {
   const { isDialogOpen, setIsDialogOpen, isIos } = usePwaInstall();
   
-  // No need for a separate onInstall prop, the context handles it.
-  
   return (
     <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <AlertDialogContent>
@@ -46,7 +44,7 @@ export function InstallPwaDialog() {
           <div className="flex justify-center mb-4">
              <Image src="/icons/icon-192x192.png" alt="App Logo" width={80} height={80} className="rounded-2xl" />
           </div>
-          <AlertDialogTitle className="text-center">Install Guess & Win App</AlertDialogTitle>
+          <AlertDialogTitle className="text-center">Install UPI11 App</AlertDialogTitle>
           <AlertDialogDescription asChild>
              {isIos ? (
               <IosInstructions />

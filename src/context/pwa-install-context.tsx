@@ -59,9 +59,11 @@ export const PwaInstallProvider = ({ children }: { children: ReactNode }) => {
     }
     
     deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setCanInstall(false);
+    }
     setDeferredPrompt(null);
-    setCanInstall(false);
   }, [deferredPrompt, isIos]);
 
   return (

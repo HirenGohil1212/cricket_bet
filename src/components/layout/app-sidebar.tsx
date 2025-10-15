@@ -40,7 +40,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
-  const { canInstall, promptInstall } = usePwaInstall();
+  const { canInstall, promptInstall, setIsDialogOpen, isIos } = usePwaInstall();
 
   const handleLinkClick = (href: string) => {
     if (pathname !== href) {
@@ -77,7 +77,11 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
   };
 
   const handleInstallClick = () => {
-    promptInstall();
+    if (isIos) {
+      setIsDialogOpen(true);
+    } else {
+      promptInstall();
+    }
     if (isMobile) {
       setOpenMobile(false);
     }
