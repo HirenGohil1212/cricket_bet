@@ -15,6 +15,7 @@ import { BannerAd } from "@/components/banner-ad";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Footer } from "@/components/layout/footer";
 
 interface HomePageClientProps {
   children: React.ReactNode;
@@ -134,6 +135,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
           <BannerAd imageUrl={content?.bannerImageUrl} />
           {isNavigating ? <PageLoader /> : children}
         </main>
+        <Footer />
         <WhatsAppSupportButton appSettings={appSettings} />
         {promoVideoUrl && (
             <PromotionalVideoDialog 

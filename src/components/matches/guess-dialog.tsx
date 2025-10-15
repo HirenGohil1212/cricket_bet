@@ -527,7 +527,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 <Button type="button" variant="ghost">Cancel</Button>
               </DialogClose>
               <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
-                {isSubmitting ? "Placing Bet..." : "Place Bet"}
+                {isSubmitting ? "Playing Game..." : "Play Game"}
               </Button>
             </DialogFooter>
         </form>
