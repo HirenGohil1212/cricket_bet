@@ -3,11 +3,11 @@ import Image from 'next/image';
 
 export function Footer() {
   return (
-    <footer className="relative w-full py-6 bg-green-700 text-white">
+    <footer className="relative w-full py-6 bg-primary text-primary-foreground">
       <Image
         src="/footer-bg.png"
         alt="Footer Background"
-        layout="fill"
+        fill
         objectFit="cover"
         objectPosition="center"
         quality={100}
@@ -20,7 +20,7 @@ export function Footer() {
           <Image src="/18plus.png" alt="18+ logo" width={40} height={40} className="object-contain" />
           <Image src="/ssl.png" alt="SSL Secure logo" width={80} height={40} className="object-contain" />
         </div>
-        <p className="text-xs text-white/80">© Copyright 2025. All Rights Reserved.</p>
+        <p className="text-xs text-primary-foreground/80">© Copyright 2025. All Rights Reserved.</p>
       </div>
     </footer>
   );
