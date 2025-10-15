@@ -4,7 +4,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Wallet, User as UserIcon, LogOut, History } from "lucide-react";
+import { Wallet, User as UserIcon, LogOut, History, Award } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -62,8 +62,14 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8">
-      <div className="md:hidden">
-        <SidebarTrigger />
+      <div className="flex items-center gap-2">
+        <div className="md:hidden">
+            <SidebarTrigger />
+        </div>
+        <div className="md:hidden flex items-center gap-2 font-headline text-lg font-bold">
+            <Award className="w-6 h-6 text-primary" />
+            <span>UPI11</span>
+        </div>
       </div>
       <div className="hidden md:block">
         <h1 className="font-headline text-2xl font-bold">{title}</h1>
