@@ -23,7 +23,7 @@ export function WhatsAppSupportButton({ appSettings }: WhatsAppSupportButtonProp
         <div className="absolute inset-0 animate-orbit">
           <svg
             viewBox="0 0 120 120" // Increased viewBox for more space
-            className="h-full w-full"
+            className="h-full w-full text-primary"
           >
             <defs>
               <path
@@ -36,7 +36,7 @@ export function WhatsAppSupportButton({ appSettings }: WhatsAppSupportButtonProp
             <text
               fill="currentColor" // Use currentColor for fill
               // Apply theme color via text-* class and adjust font
-              className="text-primary font-headline text-[11px] font-bold tracking-wider"
+              className="font-headline text-[11px] font-bold tracking-wider"
             >
               <textPath href="#orbit-path"> {/* Use modern href attribute */}
                 24 X 7 SUPPORT • 24 X 7 SUPPORT •
