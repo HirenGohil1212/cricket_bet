@@ -365,7 +365,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                 id={`${selectedPlayer.name}-${q.id}`}
                                 type="text"
                                 placeholder="Prediction"
-                                className="border-accent focus:border-primary"
+                                className="border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
                                 value={playerPredictions[selectedPlayer.name]?.[q.id] || ''}
                                 onChange={(e) => handlePlayerInputChange(selectedPlayer.name, q.id, e.target.value)}
                             />
@@ -484,7 +484,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                       type="text"
                                                       placeholder={`${match.teamA.name}`}
                                                       value={qnaPredictions[q.id]?.teamA ?? ''}
-                                                      className="text-center h-9 text-sm flex-1 w-0 border-accent focus:border-primary"
+                                                      className="text-center h-9 text-sm flex-1 w-0 border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
                                                       onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
                                                   />
                                               ) : <div className="flex-1 w-0" />}
@@ -497,7 +497,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                   <Input
                                                       type="text"
                                                       placeholder={`${match.teamB.name}`}
-                                                      className="text-center h-9 text-sm flex-1 w-0 border-accent focus:border-primary"
+                                                      className="text-center h-9 text-sm flex-1 w-0 border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
                                                       value={qnaPredictions[q.id]?.teamB ?? ''}
                                                       onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
                                                   />
