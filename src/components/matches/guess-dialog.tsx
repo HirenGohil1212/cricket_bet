@@ -381,7 +381,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Place Your Bet</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Play Your Game</DialogTitle>
           <DialogDescription asChild>
             <div className="flex items-center justify-center gap-4 mt-2">
                 <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
-              <Label className="font-headline text-lg">Select Bet Amount</Label>
+              <Label className="font-headline text-lg">Select Amount</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(betOptions || []).map((opt) => (
                   <Button
