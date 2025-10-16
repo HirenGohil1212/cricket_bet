@@ -479,8 +479,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                   {questions.map((q) => (
                                       <div key={q.id} className="space-y-2">
                                           <div className="flex items-center gap-2 p-1">
-                                              {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
-                                                  <div className="flex-1">
+                                              <div className="flex-1">
+                                                {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                                       <Input
                                                           type="text"
                                                           placeholder={`${match.teamA.name}`}
@@ -488,15 +488,15 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                           className="text-center h-9 text-sm border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
                                                           onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
                                                       />
-                                                  </div>
-                                              ) : <div className="flex-1" />}
+                                                )}
+                                              </div>
                                               
                                               <div className="text-sm font-semibold text-center text-muted-foreground px-1 truncate shrink">
                                                 {q.question}
                                               </div>
                                               
-                                              {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) ? (
-                                                  <div className="flex-1">
+                                              <div className="flex-1">
+                                                {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
                                                       <Input
                                                           type="text"
                                                           placeholder={`${match.teamB.name}`}
@@ -504,8 +504,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                           value={qnaPredictions[q.id]?.teamB ?? ''}
                                                           onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
                                                       />
-                                                  </div>
-                                              ) : <div className="flex-1" />}
+                                                )}
+                                              </div>
                                           </div>
                                       </div>
                                   ))}

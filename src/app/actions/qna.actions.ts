@@ -15,7 +15,8 @@ import {
     documentId,
     addDoc,
     deleteDoc,
-    increment
+    increment,
+    setDoc
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -462,6 +463,8 @@ export async function settleMatchAndPayouts(matchId: string) {
 
         // Now, process financial payouts for REAL users and update all-time summary transactionally
         await runTransaction(db, async (transaction) => {
+            const summaryDoc = await transaction.get(summaryRef);
+            
             for (const [userId, payoutAmount] of payouts.entries()) {
                 if (payoutAmount <= 0) continue;
                 
@@ -477,10 +480,19 @@ export async function settleMatchAndPayouts(matchId: string) {
             }
 
             // Update the all-time summary document
-            transaction.update(summaryRef, {
-                totalWagered: increment(totalMatchWagered),
-                totalPayouts: increment(totalMatchPayouts)
-            });
+            if (summaryDoc.exists()) {
+                transaction.update(summaryRef, {
+                    totalWagered: increment(totalMatchWagered),
+                    totalPayouts: increment(totalMatchPayouts)
+                });
+            } else {
+                 transaction.set(summaryRef, {
+                    totalWagered: totalMatchWagered,
+                    totalPayouts: totalMatchPayouts,
+                    totalDeposits: 0,
+                    totalWithdrawals: 0,
+                });
+            }
         });
         
         try {
