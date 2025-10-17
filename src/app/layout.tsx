@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   description: 'Predict scores and win!',
   manifest: '/manifest.json',
   icons: {
-    icon: '/upi11-favicon.png',
-    shortcut: '/upi11-favicon.png',
+    icon: '/upi11-favicon.png?v=2',
+    shortcut: '/upi11-favicon.png?v=2',
     apple: '/UPI11 ICONE.png',
   },
 };
