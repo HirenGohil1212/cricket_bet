@@ -29,6 +29,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: '/UPI11 FAV ICON.png',
+    shortcut: '/UPI11 FAV ICON.png',
     apple: '/UPI11 ICONE.png',
   },
 };
