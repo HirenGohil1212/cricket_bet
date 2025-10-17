@@ -41,9 +41,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
        <head>
-        <link rel="apple-touch-icon" sizes="180x180" href="/UPI11 ICONE.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/UPI11 FAV ICON.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/UPI11 FAV ICON.png" />
+        <link rel="apple-touch-icon" href="/UPI11 ICONE.png" />
+        <link rel="icon" href="/UPI11 FAV ICON.png" />
       </head>
       <body className={cn("font-body antialiased", ptSans.variable, poppins.variable)}>
         <AuthProvider>
