@@ -3,7 +3,7 @@ import type {Metadata, Viewport} from 'next';
 import { PT_Sans, Poppins } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from '@/context/auth-context';
+import { AuthProvider } from '@/context/auth-context-provider';
 import { cn } from '@/lib/utils';
 import { PwaInstallProvider } from '@/context/pwa-install-context';
 import { InstallPwaDialog } from '@/components/install-pwa-dialog';
@@ -27,11 +27,6 @@ export const metadata: Metadata = {
   title: 'UPI11',
   description: 'Predict scores and win!',
   manifest: '/manifest.json',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/UPI11 ICONE.png',
-  },
 };
 
 export const viewport: Viewport = {
@@ -46,6 +41,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
        <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/UPI11 ICONE.png" />
       </head>
       <body className={cn("font-body antialiased", ptSans.variable, poppins.variable)}>
         <AuthProvider>
