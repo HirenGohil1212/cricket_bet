@@ -27,15 +27,6 @@ export const metadata: Metadata = {
   title: 'UPI11',
   description: 'Predict scores and win!',
   manifest: '/manifest.json',
-  icons: {
-    icon: [
-      { url: '/UPI11 FAV ICON.png', type: 'image/png' },
-      { url: '/UPI11 FAV ICON.png', sizes: '32x32', type: 'image/png' },
-      { url: '/UPI11 FAV ICON.png', sizes: '16x16', type: 'image/png' },
-    ],
-    shortcut: '/UPI11 FAV ICON.png',
-    apple: '/UPI11 ICONE.png',
-  },
 };
 
 export const viewport: Viewport = {
@@ -49,6 +40,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+       <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/UPI11 ICONE.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/UPI11 FAV ICON.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/UPI11 FAV ICON.png" />
+      </head>
       <body className={cn("font-body antialiased", ptSans.variable, poppins.variable)}>
         <AuthProvider>
             <PwaInstallProvider>
