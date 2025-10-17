@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { usePwaInstall } from '@/context/pwa-install-context';
+import Image from 'next/image';
 
 interface AppSidebarProps {
   onNavigate: () => void;
@@ -89,16 +90,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   const HeaderContent = () => (
     <div className="flex items-center gap-2">
-      <Award className="w-8 h-8 text-primary" />
-      <h1 className="font-headline text-2xl font-bold">UPI11</h1>
+      <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
     </div>
   );
 
   const MobileHeader = () => (
     <SheetHeader className="p-4 border-b">
         <SheetTitle className={cn("flex items-center gap-2 font-headline text-2xl font-bold")}>
-            <Award className="w-8 h-8 text-primary" />
-            <span>UPI11</span>
+            <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
         </SheetTitle>
     </SheetHeader>
   )

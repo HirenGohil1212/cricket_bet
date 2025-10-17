@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   title: 'UPI11',
   description: 'Predict scores and win!',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/UPI11 FAV ICON.png',
+    apple: '/UPI11 ICONE.png',
+  },
 };
 
 export const viewport: Viewport = {

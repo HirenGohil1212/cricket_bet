@@ -21,6 +21,7 @@ import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
 
 
 const getTitle = (pathname: string) => {
@@ -67,8 +68,7 @@ export function Header() {
             <SidebarTrigger />
         </div>
         <div className="md:hidden flex items-center gap-2 font-headline text-lg font-bold">
-            <Award className="w-6 h-6 text-primary" />
-            <span>UPI11</span>
+            <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={70} height={35} />
         </div>
       </div>
       <div className="hidden md:block">
