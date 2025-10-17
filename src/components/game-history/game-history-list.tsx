@@ -22,15 +22,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { prediction: Prediction, teamAName: string, teamBName: string }) => {
     const isTeamA = prediction.predictedAnswer && typeof prediction.predictedAnswer.teamA !== 'undefined';
     const isTeamB = prediction.predictedAnswer && typeof prediction.predictedAnswer.teamB !== 'undefined';
-    const teamName = isTeamA ? teamAName : teamBName;
     const answer = isTeamA ? prediction.predictedAnswer.teamA : (isTeamB ? prediction.predictedAnswer.teamB : '');
     const [playerName] = prediction.questionId.split(':');
 
+    // The question text now includes the player name, so we show it simply.
     return (
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 text-xs">
-            <div className="text-primary font-semibold text-center">{isTeamA ? answer : ''}</div>
-            <div className="text-muted-foreground text-center truncate">{`(${playerName}) ${prediction.questionText}`}</div>
-            <div className="text-primary font-semibold text-center">{isTeamB ? answer : ''}</div>
+        <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 text-xs">
+            <div className="text-muted-foreground text-left truncate">{prediction.questionText}</div>
+            <div className="text-primary font-semibold text-right">{answer}</div>
         </div>
     );
 };
