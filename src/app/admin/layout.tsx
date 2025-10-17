@@ -39,6 +39,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 function PageLoader() {
   return (
@@ -130,8 +131,8 @@ export default function AdminLayout({
               href="/admin/dashboard"
               className="flex items-center gap-2 font-semibold"
             >
-              <Award className="h-6 w-6 text-primary" />
-              <span className="">Guess & Win Admin</span>
+              <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
+              <span className="">Admin</span>
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -172,8 +173,8 @@ export default function AdminLayout({
                         handleLinkClick('/admin/dashboard', true);
                       }}
                     >
-                      <Award className="h-6 w-6 text-primary" />
-                      <span>Guess & Win Admin</span>
+                       <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
+                      <span>Admin</span>
                     </Link>
                 </SheetTitle>
               </SheetHeader>
