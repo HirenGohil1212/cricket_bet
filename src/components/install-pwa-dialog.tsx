@@ -42,7 +42,7 @@ export function InstallPwaDialog() {
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex justify-center mb-4">
-             <Image src="/icons/icon-192x192.png" alt="App Logo" width={80} height={80} className="rounded-2xl" />
+             <Image src="/UPI11 ICONE.png" alt="App Logo" width={80} height={80} className="rounded-2xl" />
           </div>
           <AlertDialogTitle className="text-center">Install UPI11 App</AlertDialogTitle>
           <AlertDialogDescription asChild>
