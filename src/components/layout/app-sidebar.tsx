@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from 'react';
@@ -110,7 +109,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar className="bg-background border-r border-border">
+      <Sidebar className="bg-transparent border-r border-border">
         {isMobile ? <MobileHeader /> : <DesktopHeader />}
         
         <SidebarContent className="p-2">
