@@ -14,19 +14,19 @@ body {
     --card-foreground: 0 0% 100%;
     --popover: 220 18% 12%;
     --popover-foreground: 0 0% 100%;
-    --primary: 345 100% 52%; /* #FF0A4F */
-    --primary-foreground: 0 0% 100%;
+    --primary: 44 58% 54%; /* #C8A850 - Liquid Gold */
+    --primary-foreground: 240 14% 3%;
     --secondary: 220 18% 12%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 18% 12%;
     --muted-foreground: 220 3% 65%; /* #A0A0A9 */
-    --accent: 44 58% 54%; /* #C8A850 */
-    --accent-foreground: 240 14% 3%;
+    --accent: 345 100% 52%; /* #FF0A4F - Electric Crimson */
+    --accent-foreground: 0 0% 100%;
     --destructive: 345 100% 52%; /* Electric Crimson for destructive actions */
     --destructive-foreground: 0 0% 100%;
     --border: 220 18% 16%; /* A slightly lighter version of card for borders */
     --input: 220 18% 16%;
-    --ring: 345 100% 52%;
+    --ring: 44 58% 54%;
     --chart-1: 180 100% 42%; /* Cyber Teal */
     --chart-2: 44 58% 54%; /* Liquid Gold */
     --chart-3: 345 100% 52%; /* Electric Crimson */
@@ -35,12 +35,12 @@ body {
     --radius: 0.75rem; 
     --sidebar-background: 240 14% 3%;
     --sidebar-foreground: 220 3% 65%;
-    --sidebar-primary: 345 100% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 44 58% 54%;
+    --sidebar-primary-foreground: 240 14% 3%;
     --sidebar-accent: 220 18% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 220 18% 16%;
-    --sidebar-ring: 345 100% 52%;
+    --sidebar-ring: 44 58% 54%;
   }
   .dark {
     --background: 240 14% 3%; /* #08080C */
@@ -49,19 +49,19 @@ body {
     --card-foreground: 0 0% 100%;
     --popover: 220 18% 12%;
     --popover-foreground: 0 0% 100%;
-    --primary: 345 100% 52%; /* #FF0A4F */
-    --primary-foreground: 0 0% 100%;
+    --primary: 44 58% 54%; /* #C8A850 - Liquid Gold */
+    --primary-foreground: 240 14% 3%;
     --secondary: 220 18% 12%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 18% 12%;
     --muted-foreground: 220 3% 65%; /* #A0A0A9 */
-    --accent: 44 58% 54%; /* #C8A850 */
-    --accent-foreground: 240 14% 3%;
+    --accent: 345 100% 52%; /* #FF0A4F - Electric Crimson */
+    --accent-foreground: 0 0% 100%;
     --destructive: 345 100% 52%; 
     --destructive-foreground: 0 0% 100%;
     --border: 220 18% 16%;
     --input: 220 18% 16%;
-    --ring: 345 100% 52%;
+    --ring: 44 58% 54%;
     --chart-1: 180 100% 42%;
     --chart-2: 44 58% 54%;
     --chart-3: 345 100% 52%;
@@ -70,12 +70,12 @@ body {
     --radius: 0.75rem;
     --sidebar-background: 240 14% 3%;
     --sidebar-foreground: 220 3% 65%;
-    --sidebar-primary: 345 100% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 44 58% 54%;
+    --sidebar-primary-foreground: 240 14% 3%;
     --sidebar-accent: 220 18% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 220 18% 16%;
-    --sidebar-ring: 345 100% 52%;
+    --sidebar-ring: 44 58% 54%;
   }
 }
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -66,7 +67,7 @@ const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'teamA
                                     variant="ghost"
                                     className={cn(
                                         "w-full justify-start font-normal h-auto py-2",
-                                        selectedPlayer?.name === player.name && "bg-accent text-accent-foreground"
+                                        selectedPlayer?.name === player.name && "bg-primary text-primary-foreground"
                                     )}
                                     onClick={() => {
                                         onPlayerSelect({ ...player, team });
@@ -485,7 +486,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                           type="text"
                                                           placeholder={`${match.teamA.name}`}
                                                           value={qnaPredictions[q.id]?.teamA ?? ''}
-                                                          className="text-center h-9 text-sm border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
+                                                          className="text-center h-9 text-sm border-primary focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
                                                           onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
                                                       />
                                                 )}
@@ -500,7 +501,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                       <Input
                                                           type="text"
                                                           placeholder={`${match.teamB.name}`}
-                                                          className="text-center h-9 text-sm border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
+                                                          className="text-center h-9 text-sm border-primary focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
                                                           value={qnaPredictions[q.id]?.teamB ?? ''}
                                                           onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
                                                       />
@@ -522,7 +523,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               </GuessDialogContext.Provider>
             </ScrollArea>
                 
-            <div className="p-3 bg-accent/10 rounded-lg text-center mt-4">
+            <div className="p-3 bg-primary/10 rounded-lg text-center mt-4">
               <p className="text-sm text-muted-foreground">Potential Win</p>
               <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
             </div>
@@ -531,7 +532,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
               <DialogClose asChild>
                 <Button type="button" variant="ghost">Cancel</Button>
               </DialogClose>
-              <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
+              <Button type="submit" className="flex-1 font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
                 {isSubmitting ? "Playing Game..." : "Play Game"}
               </Button>
             </DialogFooter>
@@ -540,7 +541,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
-
-    
-
-    

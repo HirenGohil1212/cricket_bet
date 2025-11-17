@@ -28,7 +28,7 @@ const StatusIndicator = ({ status }: { status: Match['status'] }) => {
   return (
     <div className={cn(
         "flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded-full",
-        isLive ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+        isLive ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"
     )}>
       {isLive ? <Flame className="h-3 w-3 animate-pulse" /> : <Clock className="h-3 w-3" />}
       <span>{status}</span>
@@ -76,7 +76,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
   return (
     <Card className={cn(
         "overflow-hidden transition-all duration-300 ease-in-out flex flex-col group hover:shadow-2xl hover:border-primary/50",
-        currentUserWon && "border-accent ring-2 ring-accent",
+        currentUserWon && "border-primary ring-2 ring-primary",
         status === 'Finished' ? "bg-secondary/70" : "bg-secondary"
       )}>
         <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 border-b-2 border-primary/50" style={{
@@ -84,7 +84,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         }}>
             <div className="absolute top-0 left-0 w-full h-full bg-no-repeat bg-center"/>
             <div className="relative flex justify-between items-start p-3 w-full">
-                <Badge variant="secondary" className="bg-accent text-accent-foreground font-semibold">
+                <Badge variant="secondary" className="bg-primary text-primary-foreground font-semibold">
                     {sport}
                 </Badge>
                 {status === 'Upcoming' ? (
@@ -108,8 +108,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                   </div>
                   {status === 'Finished' && winner === teamA.name && (
                     <div className="flex items-center gap-1.5 mt-1">
-                        <Trophy className="h-4 w-4 text-accent" />
-                        <p className="font-bold text-sm text-accent">Winner</p>
+                        <Trophy className="h-4 w-4 text-primary" />
+                        <p className="font-bold text-sm text-primary">Winner</p>
                     </div>
                   )}
               </div>
@@ -130,8 +130,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                   </div>
                    {status === 'Finished' && winner === teamB.name && (
                     <div className="flex items-center gap-1.5 mt-1">
-                        <Trophy className="h-4 w-4 text-accent" />
-                        <p className="font-bold text-sm text-accent">Winner</p>
+                        <Trophy className="h-4 w-4 text-primary" />
+                        <p className="font-bold text-sm text-primary">Winner</p>
                     </div>
                   )}
               </div>
@@ -172,7 +172,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
               <AccordionItem value="winners" className="border-b-0">
                 <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
                   <div className="flex items-center gap-2 mx-auto">
-                    <Trophy className="h-4 w-4 text-accent" />
+                    <Trophy className="h-4 w-4 text-primary" />
                     <span>
                       {winners && winners.length > 0 ? `${winners.length} Winner(s)` : "No Winners"}
                     </span>
@@ -185,12 +185,12 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                         {winners.map((win, index) => (
                           <div key={index} className={cn(
                             "flex justify-between items-center text-xs p-2 rounded-md",
-                            win.userId === user?.uid ? "bg-accent/20" : "bg-background"
+                            win.userId === user?.uid ? "bg-primary/20" : "bg-background"
                           )}>
                             <span className="font-medium truncate">{win.name}</span>
                             <div className="flex items-center gap-2">
-                              {win.userId === user?.uid && <Star className="h-4 w-4 text-accent fill-accent" />}
-                              <span className="font-semibold text-accent shrink-0">
+                              {win.userId === user?.uid && <Star className="h-4 w-4 text-primary fill-primary" />}
+                              <span className="font-semibold text-primary shrink-0">
                                 INR {win.payoutAmount.toFixed(2)}
                               </span>
                             </div>

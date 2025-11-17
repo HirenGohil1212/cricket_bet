@@ -1,4 +1,5 @@
 
+
 import { Button } from "@/components/ui/button";
 import { WhatsAppIcon } from "@/components/icons";
 import type { AppSettings } from "@/lib/types";
@@ -23,7 +24,7 @@ export function WhatsAppSupportButton({ appSettings }: WhatsAppSupportButtonProp
         <div className="absolute inset-0 animate-orbit">
           <svg
             viewBox="0 0 120 120"
-            className="h-full w-full text-accent"
+            className="h-full w-full text-primary"
           >
             <defs>
               <path

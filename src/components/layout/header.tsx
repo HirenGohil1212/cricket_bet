@@ -76,7 +76,7 @@ export function Header() {
       </div>
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
         {user && userProfile && (
-            <Button asChild variant="outline" className="border-accent/50 bg-accent/10 text-accent hover:bg-accent/20 hover:text-accent">
+            <Button asChild variant="outline" className="border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary">
                 <Link href="/wallet">
                     <Wallet className="h-5 w-5" />
                     <span className="hidden sm:inline-block">INR {userProfile.walletBalance.toFixed(2)}</span>
@@ -87,7 +87,7 @@ export function Header() {
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-9 w-9 border-2 border-accent/50">
+                <Avatar className="h-9 w-9 border-2 border-primary/50">
                   <AvatarImage src={user?.photoURL || undefined} alt={userProfile.name} />
                   <AvatarFallback>
                     <UserIcon />
@@ -112,7 +112,7 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-primary focus:text-primary">
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-accent focus:text-accent">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
