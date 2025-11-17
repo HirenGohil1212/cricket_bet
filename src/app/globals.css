@@ -84,7 +84,9 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(ellipse at top, hsl(44 58% 10%) 0%, hsl(var(--background)) 50%);
   }
 }
 
