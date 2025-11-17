@@ -73,7 +73,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
   if (loading || !user) {
     return (
       <div className="flex flex-col min-h-screen">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 md:px-8 backdrop-blur-sm">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-8">
              <Skeleton className="h-8 w-8 rounded-full md:hidden" />
              <Skeleton className="h-8 w-48 hidden md:block" />
              <div className="flex flex-1 items-center justify-end gap-4">

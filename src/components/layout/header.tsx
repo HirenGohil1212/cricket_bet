@@ -62,7 +62,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-8">
       <div className="flex items-center gap-2">
         <div className="md:hidden">
             <SidebarTrigger />

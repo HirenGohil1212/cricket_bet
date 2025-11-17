@@ -85,7 +85,6 @@ body {
   }
   body {
     @apply text-foreground;
-    background-color: hsl(var(--background));
     background-image: linear-gradient(to bottom right, hsl(44 58% 10% / 0.5), hsl(var(--background)) 50%);
   }
 }
