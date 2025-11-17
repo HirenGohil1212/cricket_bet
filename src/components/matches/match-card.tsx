@@ -79,9 +79,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         currentUserWon && "border-primary ring-2 ring-primary",
         status === 'Finished' ? "bg-secondary/70" : "bg-secondary"
       )}>
-        <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 border-b-2 border-primary/50" style={{
-            boxShadow: 'inset 0px -10px 20px -10px rgba(0,0,0,0.7)',
-        }}>
+        <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 border-b-2 border-primary/50">
             <div className="absolute top-0 left-0 w-full h-full bg-no-repeat bg-center"/>
             <div className="relative flex justify-between items-start p-3 w-full">
                 <Badge variant="secondary" className="bg-primary text-primary-foreground font-semibold">
