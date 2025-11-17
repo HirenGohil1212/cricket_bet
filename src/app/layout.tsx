@@ -1,6 +1,6 @@
 
 import type {Metadata, Viewport} from 'next';
-import { PT_Sans, Poppins } from 'next/font/google';
+import { PT_Sans, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context-provider';
@@ -16,21 +16,25 @@ const ptSans = PT_Sans({
   display: 'swap',
 });
 
-const poppins = Poppins({
+const cormorantGaramond = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: ['400', '600', '700', '800', '900'],
-  variable: '--font-poppins',
+  weight: ['400', '600', '700'],
+  variable: '--font-cormorant-garamond',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: 'UPI11',
   description: 'Predict scores and win!',
+   icons: {
+    icon: '/favicon.ico',
+    apple: '/UPI11 ICONE.png',
+  },
   manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
-  themeColor: '#32CD32',
+  themeColor: '#C8A850',
 };
 
 export default function RootLayout({
@@ -41,10 +45,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
        <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/UPI11 ICONE.png" />
+          <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={cn("font-body antialiased", ptSans.variable, poppins.variable)}>
+      <body className={cn("font-body antialiased", ptSans.variable, cormorantGaramond.variable)}>
         <AuthProvider>
             <PwaInstallProvider>
                 {children}
