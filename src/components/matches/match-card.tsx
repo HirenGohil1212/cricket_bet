@@ -28,7 +28,7 @@ const StatusIndicator = ({ status }: { status: Match['status'] }) => {
   return (
     <div className={cn(
         "flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded-full",
-        isLive ? "bg-red-500/10 text-red-500" : "bg-foreground/10 text-foreground"
+        isLive ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
     )}>
       {isLive ? <Flame className="h-3 w-3 animate-pulse" /> : <Clock className="h-3 w-3" />}
       <span>{status}</span>
@@ -77,7 +77,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
     <Card className={cn(
         "overflow-hidden transition-all duration-300 ease-in-out flex flex-col group hover:shadow-2xl hover:border-primary/50",
         currentUserWon && "border-accent ring-2 ring-accent",
-        status === 'Finished' ? "bg-muted/40" : "bg-card"
+        status === 'Finished' ? "bg-secondary/70" : "bg-secondary"
       )}>
         <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 border-b-2 border-primary/50" style={{
             boxShadow: 'inset 0px -10px 20px -10px rgba(0,0,0,0.7)',
@@ -87,9 +87,9 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                 <Badge variant="secondary" className="bg-accent text-accent-foreground font-semibold">
                     {sport}
                 </Badge>
-                <div className="flex items-center gap-2">
-                  {isSpecialMatch && <Badge variant="destructive" className="bg-accent text-accent-foreground animate-pulse shadow-lg">SPECIAL</Badge>}
-                </div>
+                {status === 'Upcoming' ? (
+                   <StatusIndicator status={status} />
+                ) : null}
             </div>
 
             <div className="relative flex items-center justify-around w-full px-4 pb-4 gap-2">
@@ -108,8 +108,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                   </div>
                   {status === 'Finished' && winner === teamA.name && (
                     <div className="flex items-center gap-1.5 mt-1">
-                        <Trophy className="h-4 w-4 text-amber-400" />
-                        <p className="font-bold text-sm text-primary">Winner</p>
+                        <Trophy className="h-4 w-4 text-accent" />
+                        <p className="font-bold text-sm text-accent">Winner</p>
                     </div>
                   )}
               </div>
@@ -130,8 +130,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                   </div>
                    {status === 'Finished' && winner === teamB.name && (
                     <div className="flex items-center gap-1.5 mt-1">
-                        <Trophy className="h-4 w-4 text-amber-400" />
-                        <p className="font-bold text-sm text-primary">Winner</p>
+                        <Trophy className="h-4 w-4 text-accent" />
+                        <p className="font-bold text-sm text-accent">Winner</p>
                     </div>
                   )}
               </div>
@@ -140,12 +140,12 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
 
         {status === 'Upcoming' && (
           <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
-            <div className="text-center bg-accent/10 text-accent-foreground p-2 rounded-md w-full">
+            <div className="text-center bg-accent/10 text-accent p-2 rounded-md w-full">
                 <p className="text-xs font-semibold">Betting closes in:</p>
                 <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
             </div>
             <Button
-              className="w-full font-bold bg-gradient-to-r from-accent to-yellow-400 text-accent-foreground hover:from-accent/90 hover:to-yellow-400/90 transform-gpu group-hover:scale-105 transition-transform duration-300 shadow-lg"
+              className="w-full font-bold bg-primary hover:bg-primary/80 transform-gpu group-hover:scale-105 transition-transform duration-300 shadow-lg"
               onClick={() => onBetNow(match)}
               size="lg"
             >
@@ -159,6 +159,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
             <Button
               className="w-full font-bold"
               onClick={() => onViewMyBets(match)}
+              variant="outline"
             >
               View My Bets
             </Button>
@@ -166,12 +167,12 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
         )}
 
         {status === 'Finished' && (
-          <CardFooter className="p-2 border-t bg-muted/50">
+          <CardFooter className="p-2 border-t bg-black/10">
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="winners" className="border-b-0">
                 <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
                   <div className="flex items-center gap-2 mx-auto">
-                    <Trophy className="h-4 w-4 text-amber-500" />
+                    <Trophy className="h-4 w-4 text-accent" />
                     <span>
                       {winners && winners.length > 0 ? `${winners.length} Winner(s)` : "No Winners"}
                     </span>
@@ -188,8 +189,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                           )}>
                             <span className="font-medium truncate">{win.name}</span>
                             <div className="flex items-center gap-2">
-                              {win.userId === user?.uid && <Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
-                              <span className="font-semibold text-primary shrink-0">
+                              {win.userId === user?.uid && <Star className="h-4 w-4 text-accent fill-accent" />}
+                              <span className="font-semibold text-accent shrink-0">
                                 INR {win.payoutAmount.toFixed(2)}
                               </span>
                             </div>

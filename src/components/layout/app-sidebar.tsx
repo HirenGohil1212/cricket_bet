@@ -110,7 +110,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   return (
     <>
-      <Sidebar className="bg-gradient-to-b from-background to-muted/50">
+      <Sidebar className="bg-background border-r border-border">
         {isMobile ? <MobileHeader /> : <DesktopHeader />}
         
         <SidebarContent className="p-2">

@@ -22,23 +22,21 @@ export function WhatsAppSupportButton({ appSettings }: WhatsAppSupportButtonProp
         {/* Orbiting Text */}
         <div className="absolute inset-0 animate-orbit">
           <svg
-            viewBox="0 0 120 120" // Increased viewBox for more space
-            className="h-full w-full text-primary"
+            viewBox="0 0 120 120"
+            className="h-full w-full text-accent"
           >
             <defs>
               <path
                 id="orbit-path"
                 fill="transparent"
-                // Path centered in the new viewBox with a larger radius
                 d="M 60, 60 m -50, 0 a 50, 50, 0, 1, 1, 100, 0 a 50, 50, 0, 1, 1, -100, 0"
               />
             </defs>
             <text
-              fill="currentColor" // Use currentColor for fill
-              // Apply theme color via text-* class and adjust font
+              fill="currentColor"
               className="font-headline text-[11px] font-bold tracking-wider"
             >
-              <textPath href="#orbit-path"> {/* Use modern href attribute */}
+              <textPath href="#orbit-path">
                 24 X 7 SUPPORT • 24 X 7 SUPPORT •
               </textPath>
             </text>

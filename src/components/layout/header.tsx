@@ -76,16 +76,18 @@ export function Header() {
       </div>
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
         {user && userProfile && (
-            <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm">
-              <Wallet className="h-5 w-5" />
-              <span><span className="hidden sm:inline">INR </span>{userProfile.walletBalance.toFixed(2)}</span>
-            </div>
+            <Button asChild variant="outline" className="border-accent/50 bg-accent/10 text-accent hover:bg-accent/20 hover:text-accent">
+                <Link href="/wallet">
+                    <Wallet className="h-5 w-5" />
+                    <span className="hidden sm:inline-block">INR {userProfile.walletBalance.toFixed(2)}</span>
+                </Link>
+            </Button>
         )}
         {user && userProfile && (
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-9 w-9 border-2 border-accent/50">
                   <AvatarImage src={user?.photoURL || undefined} alt={userProfile.name} />
                   <AvatarFallback>
                     <UserIcon />
@@ -110,7 +112,7 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-primary focus:text-primary">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

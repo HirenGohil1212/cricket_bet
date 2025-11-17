@@ -25,21 +25,21 @@ export function ReferralCard() {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+    <Card className="bg-gradient-to-br from-accent/10 to-accent/20 border-accent/20">
       <CardHeader className="flex flex-row items-center gap-4">
-        <div className="p-3 bg-primary rounded-full">
-            <Gift className="h-6 w-6 text-primary-foreground" />
+        <div className="p-3 bg-accent rounded-full">
+            <Gift className="h-6 w-6 text-accent-foreground" />
         </div>
         <div>
-            <CardTitle className="font-headline text-lg">Refer & Earn</CardTitle>
+            <CardTitle className="font-headline text-lg text-accent">Refer & Earn</CardTitle>
             <CardDescription className="text-sm">Get a bonus for each friend!</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-xs text-muted-foreground">Share your code. When your friend signs up, makes a deposit, and places their first bet, you'll both get a bonus!</p>
         <div className="flex items-center space-x-2">
-          <Input readOnly value={referralCode} className="font-mono bg-background" />
-          <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!userProfile?.referralCode}>
+          <Input readOnly value={referralCode} className="font-mono bg-background text-accent border-accent/30" />
+          <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!userProfile?.referralCode} className="text-accent hover:text-accent/80">
             <Copy className="h-4 w-4" />
           </Button>
         </div>

@@ -8,74 +8,74 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* #FAFAFA */
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 120 61% 50%; /* #32CD32 - Vibrant Green */
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 51 100% 50%; /* #FFD700 - Bright Yellow */
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 120 61% 50%;
-    --chart-1: 120 61% 40%;
-    --chart-2: 51 100% 50%;
-    --chart-3: 197 37% 24%;
+    --background: 240 14% 3%; /* #08080C */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+    --card: 220 18% 12%; /* #1A1A24 */
+    --card-foreground: 0 0% 100%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 345 100% 52%; /* #FF0A4F */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 18% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 18% 12%;
+    --muted-foreground: 220 3% 65%; /* #A0A0A9 */
+    --accent: 44 58% 54%; /* #C8A850 */
+    --accent-foreground: 240 14% 3%;
+    --destructive: 345 100% 52%; /* Electric Crimson for destructive actions */
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 18% 16%; /* A slightly lighter version of card for borders */
+    --input: 220 18% 16%;
+    --ring: 345 100% 52%;
+    --chart-1: 180 100% 42%; /* Cyber Teal */
+    --chart-2: 44 58% 54%; /* Liquid Gold */
+    --chart-3: 345 100% 52%; /* Electric Crimson */
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.75rem; /* Slightly larger radius for a softer look */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 120 61% 40%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 120 61% 40%;
+    --radius: 0.75rem; 
+    --sidebar-background: 240 14% 3%;
+    --sidebar-foreground: 220 3% 65%;
+    --sidebar-primary: 345 100% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 18% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 18% 16%;
+    --sidebar-ring: 345 100% 52%;
   }
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 120 61% 50%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 51 100% 50%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 120 61% 50%;
-    --chart-1: 120 61% 50%;
-    --chart-2: 51 100% 50%;
-    --chart-3: 30 80% 55%;
+    --background: 240 14% 3%; /* #08080C */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+    --card: 220 18% 12%; /* #1A1A24 */
+    --card-foreground: 0 0% 100%;
+    --popover: 220 18% 12%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 345 100% 52%; /* #FF0A4F */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 18% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 18% 12%;
+    --muted-foreground: 220 3% 65%; /* #A0A0A9 */
+    --accent: 44 58% 54%; /* #C8A850 */
+    --accent-foreground: 240 14% 3%;
+    --destructive: 345 100% 52%; 
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 18% 16%;
+    --input: 220 18% 16%;
+    --ring: 345 100% 52%;
+    --chart-1: 180 100% 42%;
+    --chart-2: 44 58% 54%;
+    --chart-3: 345 100% 52%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.75rem;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 120 61% 50%;
-    --sidebar-primary-foreground: 240 5.9% 10%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 120 61% 50%;
+    --sidebar-background: 240 14% 3%;
+    --sidebar-foreground: 220 3% 65%;
+    --sidebar-primary: 345 100% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 18% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 18% 16%;
+    --sidebar-ring: 345 100% 52%;
   }
 }
 
@@ -86,4 +86,12 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+html {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
