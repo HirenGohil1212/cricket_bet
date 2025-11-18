@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,12 +9,12 @@ import { BettingHistoryDialog } from '../dashboard/betting-history-dialog';
 
 interface MatchListProps {
   matches: Match[];
-  sport?: Sport;
   searchTerm: string;
   onToggleFavorite: (matchId: string) => void;
+  status: 'Live' | 'Upcoming'
 }
 
-export function MatchList({ matches, searchTerm, onToggleFavorite }: MatchListProps) {
+export function MatchList({ matches, searchTerm, onToggleFavorite, status }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
   const [localMatches, setLocalMatches] = useState(matches);
@@ -27,11 +26,8 @@ export function MatchList({ matches, searchTerm, onToggleFavorite }: MatchListPr
   }, [matches]);
 
   const handleCountdownEnd = (matchId: string) => {
-    setLocalMatches(currentMatches =>
-      currentMatches.map(m =>
-        m.id === matchId ? { ...m, status: 'Live' } : m
-      )
-    );
+    // This is now handled by the parent component re-fetching, 
+    // but kept here in case of direct state manipulation needs in the future.
   };
 
   const handleBetNow = (match: Match) => {
@@ -67,54 +63,27 @@ export function MatchList({ matches, searchTerm, onToggleFavorite }: MatchListPr
       match.teamB.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [localMatches, searchTerm]);
-
-
-  const upcomingMatches = filteredMatches
-    .filter((m) => m.status === 'Upcoming')
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     
-  const liveMatches = filteredMatches.filter((m) => m.status === 'Live');
-  
-  // This is used to show the "no results for search" message
-  const noFilteredMatchesExist = filteredMatches.length === 0 && searchTerm;
-  
-  // This is used to hide the sections if there are no matches at all (pre-search)
-  const noMatchesInitially = localMatches.length === 0;
-
-  if (noMatchesInitially) {
+  if (filteredMatches.length === 0) {
+     if (searchTerm) {
+      return (
+        <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
+            <p className="text-lg font-semibold">No {status.toLowerCase()} matches found for "{searchTerm}"</p>
+        </div>
+      )
+    }
     return null;
   }
 
   return (
     <>
-      {upcomingMatches.length > 0 && (
-        <section>
-          <h2 className="font-headline text-2xl font-bold mb-4">Upcoming Matches</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {upcomingMatches.map((match) => (
-              <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} onToggleFavorite={onToggleFavorite} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {liveMatches.length > 0 && (
-        <section className={upcomingMatches.length > 0 ? "mt-8" : ""}>
-          <h2 className="font-headline text-2xl font-bold mb-4">Live Matches</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {liveMatches.map((match) => (
-              <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} onToggleFavorite={onToggleFavorite} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {noFilteredMatchesExist && (
-         <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
-            <p className="text-lg font-semibold">No matches found for "{searchTerm}"</p>
-            <p className="text-sm">Try searching for another team.</p>
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredMatches.map((match) => (
+            <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} onToggleFavorite={onToggleFavorite} />
+          ))}
         </div>
-      )}
+      </section>
       
       <GuessDialog 
         match={selectedMatch} 

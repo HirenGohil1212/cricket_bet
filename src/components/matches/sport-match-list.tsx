@@ -4,10 +4,11 @@
 
 import type { Match, Sport } from "@/lib/types";
 import { MatchList } from "./match-list";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { FinishedMatchesList } from "./finished-matches-list";
+import { PaginatedFinishedMatches } from "./paginated-finished-matches";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SportMatchListProps {
   sport?: Sport;
@@ -27,6 +28,7 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
   const [upcomingAndLiveMatches, setUpcomingAndLiveMatches] = useState(initialUpcoming);
   const [finishedMatches, setFinishedMatches] = useState(initialFinished);
   const [favoriteIds, setFavoriteIds] = useState<string[]>(getFavoriteMatchIds());
+  const [activeStatusTab, setActiveStatusTab] = useState<'all' | 'live' | 'upcoming' | 'finished'>('all');
 
   const updateMatchData = useCallback(() => {
     const favIds = getFavoriteMatchIds();
@@ -64,8 +66,14 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
     }
     
     localStorage.setItem('favoriteMatches', JSON.stringify(newFavorites));
-    window.dispatchEvent(new Event('storage')); // Trigger update across tabs
+    window.dispatchEvent(new Event('storage'));
   };
+
+  const { liveMatches, upcomingMatches } = useMemo(() => {
+    const live = upcomingAndLiveMatches.filter(m => m.status === 'Live');
+    const upcoming = upcomingAndLiveMatches.filter(m => m.status === 'Upcoming');
+    return { liveMatches: live, upcomingMatches: upcoming };
+  }, [upcomingAndLiveMatches]);
 
   const noMatchesExistForSport = upcomingAndLiveMatches.length === 0 && finishedMatches.length === 0;
 
@@ -78,9 +86,11 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
       )
   }
 
+  const statusFilters = ['all', 'live', 'upcoming', 'finished'];
+
   return (
     <div className="space-y-8">
-      <div className="mt-4">
+      <div className="mt-4 space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -90,20 +100,36 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Tabs value={activeStatusTab} onValueChange={(value) => setActiveStatusTab(value as any)} className="w-full">
+            <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="live">Live</TabsTrigger>
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="finished">Finished</TabsTrigger>
+            </TabsList>
+        </Tabs>
       </div>
       
-      <MatchList
-        matches={upcomingAndLiveMatches}
-        sport={sport}
-        searchTerm={searchTerm}
-        onToggleFavorite={handleToggleFavorite}
-      />
+      {(activeStatusTab === 'all' || activeStatusTab === 'live') && liveMatches.length > 0 && (
+          <div>
+            <h2 className="font-headline text-2xl font-bold mb-4">Live Matches</h2>
+            <MatchList matches={liveMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Live" />
+          </div>
+      )}
+
+      {(activeStatusTab === 'all' || activeStatusTab === 'upcoming') && upcomingMatches.length > 0 && (
+          <div>
+            <h2 className="font-headline text-2xl font-bold mb-4">Upcoming Matches</h2>
+            <MatchList matches={upcomingMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Upcoming" />
+          </div>
+      )}
       
-      <FinishedMatchesList
-        matches={finishedMatches}
-        searchTerm={searchTerm}
-        onToggleFavorite={handleToggleFavorite}
-      />
+      {(activeStatusTab === 'all' || activeStatusTab === 'finished') && finishedMatches.length > 0 && (
+         <div>
+            <h2 className="font-headline text-2xl font-bold mb-4">Finished Matches</h2>
+            <PaginatedFinishedMatches matches={finishedMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} />
+        </div>
+      )}
       
       {noMatchesExistForSport && !isFavoritesPage && !searchTerm && (
         <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
