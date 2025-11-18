@@ -4,7 +4,7 @@
 
 import type { Match, Sport } from "@/lib/types";
 import { MatchList } from "./match-list";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { FinishedMatchesList } from "./finished-matches-list";
@@ -13,12 +13,70 @@ interface SportMatchListProps {
   sport?: Sport;
   upcomingAndLiveMatches: Match[];
   finishedMatches: Match[];
+  isFavoritesPage?: boolean;
 }
 
-export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches }: SportMatchListProps) {
+const getFavoriteMatchIds = () => {
+    if (typeof window === 'undefined') return [];
+    const favorites = localStorage.getItem('favoriteMatches');
+    return favorites ? JSON.parse(favorites) : [];
+};
+
+export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming, finishedMatches: initialFinished, isFavoritesPage = false }: SportMatchListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [upcomingAndLiveMatches, setUpcomingAndLiveMatches] = useState(initialUpcoming);
+  const [finishedMatches, setFinishedMatches] = useState(initialFinished);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(getFavoriteMatchIds());
+
+  const updateMatchData = useCallback(() => {
+    const favIds = getFavoriteMatchIds();
+    setFavoriteIds(favIds);
+
+    const markFavorites = (matches: Match[]) => matches.map(m => ({ ...m, isFavorite: favIds.includes(m.id) }));
+    
+    let upcoming = markFavorites(initialUpcoming);
+    let finished = markFavorites(initialFinished);
+
+    if (isFavoritesPage) {
+        upcoming = upcoming.filter(m => favIds.includes(m.id));
+        finished = finished.filter(m => favIds.includes(m.id));
+    }
+
+    setUpcomingAndLiveMatches(upcoming);
+    setFinishedMatches(finished);
+  }, [initialUpcoming, initialFinished, isFavoritesPage]);
+
+  useEffect(() => {
+    updateMatchData();
+    window.addEventListener('storage', updateMatchData);
+    return () => window.removeEventListener('storage', updateMatchData);
+  }, [updateMatchData]);
+
+
+  const handleToggleFavorite = (matchId: string) => {
+    const currentFavorites: string[] = getFavoriteMatchIds();
+    let newFavorites: string[];
+
+    if (currentFavorites.includes(matchId)) {
+        newFavorites = currentFavorites.filter(id => id !== matchId);
+    } else {
+        newFavorites = [...currentFavorites, matchId];
+    }
+    
+    localStorage.setItem('favoriteMatches', JSON.stringify(newFavorites));
+    window.dispatchEvent(new Event('storage')); // Trigger update across tabs
+  };
+
   const noMatchesExistForSport = upcomingAndLiveMatches.length === 0 && finishedMatches.length === 0;
+
+  if (isFavoritesPage && favoriteIds.length === 0) {
+      return (
+          <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
+              <p className="text-lg font-semibold">You haven't favorited any matches yet.</p>
+              <p className="text-sm">Click the heart icon on a match to add it to your favorites.</p>
+          </div>
+      )
+  }
 
   return (
     <div className="space-y-8">
@@ -38,14 +96,16 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches 
         matches={upcomingAndLiveMatches}
         sport={sport}
         searchTerm={searchTerm}
+        onToggleFavorite={handleToggleFavorite}
       />
       
       <FinishedMatchesList
         matches={finishedMatches}
         searchTerm={searchTerm}
+        onToggleFavorite={handleToggleFavorite}
       />
       
-      {noMatchesExistForSport && !searchTerm && (
+      {noMatchesExistForSport && !isFavoritesPage && !searchTerm && (
         <div className="text-center text-muted-foreground py-20 rounded-lg border border-dashed">
             <p className="text-lg font-semibold">No matches found for {sport || 'any sport'}.</p>
             <p className="text-sm">Check back later for updates!</p>
@@ -54,4 +114,3 @@ export function SportMatchList({ sport, upcomingAndLiveMatches, finishedMatches 
     </div>
   );
 }
-    

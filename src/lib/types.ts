@@ -1,5 +1,6 @@
 
 
+
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -41,6 +42,7 @@ export type Match = {
   allowOneSidedBets?: boolean;
   dummyWinners?: { userId: string; amount: number }[];
   bettingSettings?: BettingSettings; // Snapshot of settings at match creation
+  isFavorite?: boolean;
 };
 
 export type Prediction = {

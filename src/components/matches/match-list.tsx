@@ -12,9 +12,10 @@ interface MatchListProps {
   matches: Match[];
   sport?: Sport;
   searchTerm: string;
+  onToggleFavorite: (matchId: string) => void;
 }
 
-export function MatchList({ matches, searchTerm }: MatchListProps) {
+export function MatchList({ matches, searchTerm, onToggleFavorite }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
   const [localMatches, setLocalMatches] = useState(matches);
@@ -91,7 +92,7 @@ export function MatchList({ matches, searchTerm }: MatchListProps) {
           <h2 className="font-headline text-2xl font-bold mb-4">Upcoming Matches</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {upcomingMatches.map((match) => (
-              <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} />
+              <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} onToggleFavorite={onToggleFavorite} />
             ))}
           </div>
         </section>
@@ -102,7 +103,7 @@ export function MatchList({ matches, searchTerm }: MatchListProps) {
           <h2 className="font-headline text-2xl font-bold mb-4">Live Matches</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {liveMatches.map((match) => (
-              <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} />
+              <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} onToggleFavorite={onToggleFavorite} />
             ))}
           </div>
         </section>

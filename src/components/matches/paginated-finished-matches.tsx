@@ -12,11 +12,12 @@ import { GuessDialog } from './guess-dialog';
 interface PaginatedFinishedMatchesProps {
   matches: Match[];
   searchTerm: string;
+  onToggleFavorite: (matchId: string) => void;
 }
 
 const FINISHED_MATCHES_PER_PAGE = 8;
 
-export function PaginatedFinishedMatches({ matches, searchTerm }: PaginatedFinishedMatchesProps) {
+export function PaginatedFinishedMatches({ matches, searchTerm, onToggleFavorite }: PaginatedFinishedMatchesProps) {
   // State for dialogs, needed because MatchCard actions are here
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
@@ -83,6 +84,7 @@ export function PaginatedFinishedMatches({ matches, searchTerm }: PaginatedFinis
               onBetNow={handleBetNow}
               onViewMyBets={handleViewMyBets}
               onCountdownEnd={handleCountdownEnd}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </div>

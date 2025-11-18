@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star, Users } from 'lucide-react';
+import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +21,7 @@ interface MatchCardProps {
   onBetNow: (match: Match) => void;
   onViewMyBets: (match: Match) => void;
   onCountdownEnd: (matchId: string) => void;
+  onToggleFavorite: (matchId: string) => void;
 }
 
 const StatusIndicator = ({ status }: { status: Match['status'] }) => {
@@ -67,8 +68,8 @@ const PlayerList = ({ team }: { team: Team }) => {
 };
 
 
-export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: MatchCardProps) {
-  const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch } = match;
+export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onToggleFavorite }: MatchCardProps) {
+  const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch, isFavorite } = match;
   const { user } = useAuth();
 
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
@@ -85,9 +86,20 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd }: Mat
                 <Badge variant="secondary" className="bg-primary text-primary-foreground font-semibold">
                     {sport}
                 </Badge>
-                {status === 'Upcoming' ? (
-                   <StatusIndicator status={status} />
-                ) : null}
+                <div className="flex items-center gap-2">
+                    {status === 'Upcoming' && <StatusIndicator status={status} />}
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleFavorite(match.id);
+                        }}
+                    >
+                        <Heart className={cn("h-5 w-5 transition-all", isFavorite && "fill-red-500 text-red-500")} />
+                    </Button>
+                </div>
             </div>
 
             <div className="relative flex items-center justify-around w-full px-4 pb-4 gap-2">

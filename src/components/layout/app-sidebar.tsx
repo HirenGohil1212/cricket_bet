@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download, Swords } from "lucide-react";
+import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download, Swords, Heart } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -119,6 +119,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                 <Link href="/">
                     <Ticket />
                     Matches
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => handleLinkClick('/favorites')} asChild isActive={pathname === '/favorites'}>
+                <Link href="/favorites">
+                    <Heart />
+                    Favorites
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
