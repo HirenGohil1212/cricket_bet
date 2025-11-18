@@ -6,9 +6,11 @@ import type { Match, Sport } from "@/lib/types";
 import { MatchList } from "./match-list";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, ChevronDown } from "lucide-react";
 import { PaginatedFinishedMatches } from "./paginated-finished-matches";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 
 interface SportMatchListProps {
   sport?: Sport;
@@ -76,6 +78,13 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
   }, [upcomingAndLiveMatches]);
 
   const noMatchesExistForSport = upcomingAndLiveMatches.length === 0 && finishedMatches.length === 0;
+  
+  const statusFilters = [
+    { value: 'all', label: 'All Matches' },
+    { value: 'live', label: 'Live' },
+    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'finished', label: 'Finished' },
+  ];
 
   if (isFavoritesPage && favoriteIds.length === 0) {
       return (
@@ -86,12 +95,10 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
       )
   }
 
-  const statusFilters = ['all', 'live', 'upcoming', 'finished'];
-
   return (
     <div className="space-y-8">
-      <div className="mt-4 space-y-4">
-        <div className="relative">
+      <div className="mt-4 flex flex-col sm:flex-row items-center gap-4">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={sport ? `Search for a team in ${sport}...` : 'Search for any team...'}
@@ -100,14 +107,21 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Tabs value={activeStatusTab} onValueChange={(value) => setActiveStatusTab(value as any)} className="w-full">
-            <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="live">Live</TabsTrigger>
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="finished">Finished</TabsTrigger>
-            </TabsList>
-        </Tabs>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto">
+                    {statusFilters.find(f => f.value === activeStatusTab)?.label}
+                    <ChevronDown className="ml-2 h-4 w-4"/>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuRadioGroup value={activeStatusTab} onValueChange={(value) => setActiveStatusTab(value as any)}>
+                    {statusFilters.map(filter => (
+                         <DropdownMenuRadioItem key={filter.value} value={filter.value}>{filter.label}</DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       
       {(activeStatusTab === 'all' || activeStatusTab === 'live') && liveMatches.length > 0 && (
