@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -562,7 +563,7 @@ const SidebarMenuButton = React.forwardRef<
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), 'font-body', className)}
+        className={cn(sidebarMenuButtonVariants({ variant, size }), 'font-headline', className)}
         {...props}
       />
     )
