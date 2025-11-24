@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: 'PT Sans', sans-serif;
+  font-family: 'Cormorant Garamond', serif;
 }
 
 @layer base {
@@ -84,8 +84,8 @@ body {
     @apply border-border;
   }
   body {
-    @apply text-foreground bg-background;
     background-image: radial-gradient(ellipse at top, hsl(44 58% 10%), hsl(var(--background)));
+    @apply text-foreground;
   }
 }
 
