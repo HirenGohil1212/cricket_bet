@@ -39,6 +39,7 @@ export function ReferralSettingsForm({ initialData }: ReferralSettingsFormProps)
       referrerBonus: initialData.referrerBonus || 100,
       referredUserBonus: initialData.referredUserBonus || 50,
       minBetAmountForBonus: initialData.minBetAmountForBonus || 150,
+      depositCommissionPercentage: initialData.depositCommissionPercentage || 0,
     }
   });
 
@@ -123,6 +124,22 @@ export function ReferralSettingsForm({ initialData }: ReferralSettingsFormProps)
                   </FormControl>
                   <FormDescription>
                     The total amount a new user must bet before the referrer gets their bonus.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="depositCommissionPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Deposit Commission (%)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g. 5" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Percentage of a referred user's deposit to give to the referrer as a commission.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

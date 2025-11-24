@@ -116,7 +116,7 @@ export const withdrawalRequestSchema = z.object({
 export type WithdrawalRequestFormValues = z.infer<typeof withdrawalRequestSchema>;
 
 
-// Schema for Q&amp;A Template (Admin Form)
+// Schema for Q&A Template (Admin Form)
 export const qnaItemSchema = z.object({
   question: z.string().min(1, "Question cannot be empty."),
 });
@@ -132,6 +132,7 @@ export const referralSettingsSchema = z.object({
   referrerBonus: z.coerce.number().min(0, "Bonus must be a positive number."),
   referredUserBonus: z.coerce.number().min(0, "Bonus must be a positive number."),
   minBetAmountForBonus: z.coerce.number().min(0, "Minimum bet amount must be a positive number."),
+  depositCommissionPercentage: z.coerce.number().min(0, "Commission must be a positive number.").max(100, "Commission cannot exceed 100%."),
 });
 
 export type ReferralSettingsFormValues = z.infer<typeof referralSettingsSchema>;

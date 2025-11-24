@@ -13,11 +13,13 @@ import {
     orderBy,
     updateDoc,
     writeBatch,
-    increment
+    increment,
+    getDoc
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { DepositRequest } from '@/lib/types';
+import { getReferralSettings } from './referral.actions';
 
 interface CreateDepositRequestParams {
     userId: string;
@@ -142,14 +144,17 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
         const userRef = doc(db, 'users', userId);
         const summaryRef = doc(db, 'statistics', 'financialSummary');
 
+        const referralSettings = await getReferralSettings();
+
         await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
             if (!userDoc.exists()) {
                 throw new Error("User not found.");
             }
+            const userData = userDoc.data();
 
             // Update user balance
-            const currentBalance = userDoc.data().walletBalance || 0;
+            const currentBalance = userData.walletBalance || 0;
             const newBalance = currentBalance + amount;
             transaction.update(userRef, { walletBalance: newBalance });
             
@@ -164,11 +169,36 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
             transaction.update(summaryRef, {
                 totalDeposits: increment(amount)
             });
+
+            // Handle referral deposit commission
+            if (
+                referralSettings.isEnabled && 
+                referralSettings.depositCommissionPercentage > 0 && 
+                userData.referredBy
+            ) {
+                const commissionAmount = amount * (referralSettings.depositCommissionPercentage / 100);
+                if (commissionAmount > 0) {
+                    const referrerRef = doc(db, 'users', userData.referredBy);
+                    const commissionLogRef = doc(collection(db, 'transactions'));
+                    
+                    transaction.update(referrerRef, { walletBalance: increment(commissionAmount) });
+                    
+                    transaction.set(commissionLogRef, {
+                        userId: userData.referredBy,
+                        amount: commissionAmount,
+                        type: 'deposit_commission',
+                        description: `Commission from ${userData.name}'s deposit of ${amount}.`,
+                        timestamp: Timestamp.now(),
+                    });
+                }
+            }
         });
 
         revalidatePath('/admin/deposits');
         revalidatePath('/admin/financial-reports');
         revalidatePath('/admin/dashboard');
+        revalidatePath('/wallet');
+        revalidatePath('/history');
         return { success: 'Deposit approved and wallet updated.' };
 
     } catch (error: any) {

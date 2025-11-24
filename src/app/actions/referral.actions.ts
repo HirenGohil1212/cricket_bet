@@ -34,7 +34,8 @@ export async function getReferralSettings(): Promise<ReferralSettings> {
             isEnabled: false, 
             referrerBonus: 100, 
             referredUserBonus: 50, 
-            minBetAmountForBonus: 150 
+            minBetAmountForBonus: 150,
+            depositCommissionPercentage: 0,
         };
 
         if (docSnap.exists()) {
@@ -44,7 +45,7 @@ export async function getReferralSettings(): Promise<ReferralSettings> {
         return defaults;
     } catch (error) {
         console.error("Error fetching referral settings:", error);
-        return { isEnabled: false, referrerBonus: 0, referredUserBonus: 0, minBetAmountForBonus: 150 };
+        return { isEnabled: false, referrerBonus: 0, referredUserBonus: 0, minBetAmountForBonus: 150, depositCommissionPercentage: 0 };
     }
 }
 
@@ -179,7 +180,7 @@ export async function getBonusTransactions(userId: string): Promise<Transaction[
     const q = query(
       transCol,
       where('userId', '==', userId),
-      where('type', '==', 'referral_bonus')
+      where('type', 'in', ['referral_bonus', 'deposit_commission'])
     );
     const querySnapshot = await getDocs(q);
     const transactions = querySnapshot.docs.map(doc => {

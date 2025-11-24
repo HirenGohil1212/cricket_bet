@@ -1,6 +1,5 @@
 
 
-
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -145,7 +144,7 @@ export type Question = {
 export type Transaction = {
     id: string;
     userId: string;
-    type: 'referral_bonus';
+    type: 'referral_bonus' | 'deposit_commission';
     amount: number; // positive for credit
     description: string;
     timestamp: string | { toDate: () => Date }; // Allow for Firestore Timestamp
@@ -156,6 +155,7 @@ export type ReferralSettings = {
     referredUserBonus: number;
     isEnabled: boolean;
     minBetAmountForBonus: number; // New field
+    depositCommissionPercentage: number;
 };
 
 export type Referral = {

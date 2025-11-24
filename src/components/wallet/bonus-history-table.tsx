@@ -8,7 +8,7 @@ import { getBonusTransactions, getPendingReferrals } from '@/app/actions/referra
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Gift, Clock } from 'lucide-react';
+import { Gift, Clock, PiggyBank } from 'lucide-react';
 import { subDays, startOfDay } from 'date-fns';
 import { Timestamp, query, where, getDocs, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -30,7 +30,7 @@ export function BonusHistoryTable() {
       setIsLoading(true);
       try {
         // FIX: Removed date filtering to show all history
-        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'));
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', 'in', ['referral_bonus', 'deposit_commission']));
         const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'));
 
         const [completedSnap, pendingSnap] = await Promise.all([
@@ -103,10 +103,17 @@ export function BonusHistoryTable() {
         {completedBonuses.map((tx) => (
           <TableRow key={tx.id}>
             <TableCell className="font-medium">
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    <Gift className="h-3 w-3 mr-1" />
-                    Credited
-                </Badge>
+                {tx.type === 'deposit_commission' ? (
+                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        <PiggyBank className="h-3 w-3 mr-1" />
+                        Commission
+                    </Badge>
+                ) : (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        <Gift className="h-3 w-3 mr-1" />
+                        Credited
+                    </Badge>
+                )}
             </TableCell>
             <TableCell>
               <div className="font-semibold">INR {tx.amount.toFixed(2)}</div>
