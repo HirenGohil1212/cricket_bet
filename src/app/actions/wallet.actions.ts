@@ -153,10 +153,11 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
             }
             const userData = userDoc.data();
 
-            // Update user balance
-            const currentBalance = userData.walletBalance || 0;
-            const newBalance = currentBalance + amount;
-            transaction.update(userRef, { walletBalance: newBalance });
+            // Update user balance and total deposits
+            transaction.update(userRef, { 
+                walletBalance: increment(amount),
+                totalDeposits: increment(amount)
+            });
             
             // Update deposit status
             transaction.update(depositRef, { 

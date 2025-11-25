@@ -83,7 +83,10 @@ export type UserProfile = {
   isFirstBetPlaced?: boolean; // Has the user placed their first bet
   referralBonusAwarded?: boolean; // Has this user received their signup bonus
   totalReferrals?: number; // New field for referral count
-  totalBetSpend?: number;
+  totalWagered: number;
+  totalWinnings: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
 };
 
 export type BankAccount = {

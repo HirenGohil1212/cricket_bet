@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp, orderBy, query, where } from 'firebase/firestore';
+import { collection, getDocs, QueryDocumentSnapshot, DocumentData, Timestamp, orderBy, query, where, onSnapshot } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { 
     Table, 
@@ -44,13 +44,12 @@ export default function AdminUsersPage() {
     const { toast } = useToast();
 
     useEffect(() => {
-        async function fetchAndProcessUsers() {
-            setIsLoading(true);
-            const usersCol = collection(db, 'users');
-            const q = query(usersCol, orderBy('createdAt', 'desc'));
-            const userSnapshot = await getDocs(q);
-
-            const userList: UserProfile[] = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        setIsLoading(true);
+        const usersCol = collection(db, 'users');
+        const q = query(usersCol, orderBy('createdAt', 'desc'));
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const userList = snapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
                     uid: doc.id,
@@ -61,39 +60,27 @@ export default function AdminUsersPage() {
                     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                     role: data.role || 'user',
                     referredBy: data.referredBy,
-                    // Initialize financial fields, they will be populated below
-                    totalDeposits: 0,
-                    totalWithdrawals: 0,
-                    totalBetSpend: 0,
-                    totalWinnings: 0,
+                    totalDeposits: data.totalDeposits || 0,
+                    totalWithdrawals: data.totalWithdrawals || 0,
+                    totalWagered: data.totalWagered || 0,
+                    totalWinnings: data.totalWinnings || 0,
                 } as UserProfile;
             });
-            
-            // Batch fetch all financial data
-            const financialPromises = userList.map(user => Promise.all([
-                getTotalDepositsForUser(user.uid),
-                getTotalWithdrawalsForUser(user.uid),
-                getTotalBetAmountForUser(user.uid),
-                getTotalWinningsForUser(user.uid),
-                getDocs(query(collection(db, 'users'), where('referredBy', '==', user.uid))).then(snap => snap.size)
-            ]));
 
-            const financialResults = await Promise.all(financialPromises);
-
-            const usersWithData = userList.map((user, index) => ({
-                ...user,
-                totalDeposits: financialResults[index][0],
-                totalWithdrawals: financialResults[index][1],
-                totalBetSpend: financialResults[index][2],
-                totalWinnings: financialResults[index][3],
-                totalReferrals: financialResults[index][4],
-            }));
-            
-            setUsers(usersWithData);
+            setUsers(userList);
             setIsLoading(false);
-        }
-        fetchAndProcessUsers();
-    }, []);
+        }, (error) => {
+            console.error("Error fetching users:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not load user data.'
+            });
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [toast]);
     
     const filteredUsers = users.filter(user => 
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,10 +88,7 @@ export default function AdminUsersPage() {
     );
 
     const handleViewReferrals = (user: UserProfile) => {
-        if (user.totalReferrals && user.totalReferrals > 0) {
-            setSelectedUser(user);
-            setIsReferredUsersDialogOpen(true);
-        }
+        // This is now handled client-side if we store referral count
     }
 
     const handleViewHistory = (user: UserProfile) => {
@@ -168,7 +152,7 @@ export default function AdminUsersPage() {
                                             <ArrowDown className="h-4 w-4" /> INR {user.totalWithdrawals?.toFixed(2)}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="text-right hidden lg:table-cell">INR {user.totalBetSpend?.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right hidden lg:table-cell">INR {user.totalWagered?.toFixed(2)}</TableCell>
                                     <TableCell className="text-right hidden lg:table-cell">
                                          <span className="text-indigo-600 flex items-center justify-end gap-1">
                                             <Trophy className="h-4 w-4" /> INR {user.totalWinnings?.toFixed(2)}

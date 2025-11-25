@@ -159,6 +159,11 @@ export default function SignupPage() {
                 isFirstBetPlaced: false,
                 referralBonusAwarded: false,
                 ...(referrerId && { referredBy: referrerId }),
+                // Initialize financial summary fields
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                totalWagered: 0,
+                totalWinnings: 0,
             }, { merge: true });
             
             // If a signup bonus was given, log the transaction for the new user

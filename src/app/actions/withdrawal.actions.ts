@@ -117,14 +117,16 @@ export async function approveWithdrawal(withdrawalId: string, userId: string, am
             if (!userDoc.exists()) {
                 throw new Error("User not found.");
             }
+            const userData = userDoc.data();
 
-            // Update user balance
-            const currentBalance = userDoc.data().walletBalance || 0;
-            if (currentBalance < amount) {
+            // Update user balance and total withdrawals
+            if (userData.walletBalance < amount) {
                 throw new Error("User has insufficient funds for this withdrawal.");
             }
-            const newBalance = currentBalance - amount;
-            transaction.update(userRef, { walletBalance: newBalance });
+            transaction.update(userRef, { 
+                walletBalance: increment(-amount),
+                totalWithdrawals: increment(amount)
+            });
 
             // Update withdrawal status
             transaction.update(withdrawalRef, { 

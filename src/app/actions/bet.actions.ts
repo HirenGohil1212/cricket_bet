@@ -10,7 +10,8 @@ import {
     runTransaction,
     query, 
     where,
-    Timestamp
+    Timestamp,
+    increment
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -90,9 +91,11 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
 
             const newBalance = currentBalance - amount;
             
-            const userUpdateData: { walletBalance: number; isFirstBetPlaced?: boolean } = {
+            const userUpdateData: { walletBalance: number; isFirstBetPlaced?: boolean, totalWagered: any } = {
                 walletBalance: newBalance,
+                totalWagered: increment(amount),
             };
+
             if (wasFirstBet) {
                 userUpdateData.isFirstBetPlaced = true;
             }
