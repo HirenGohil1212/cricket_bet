@@ -13,7 +13,7 @@ export function MatchTabs({ children }: { children: React.ReactNode }) {
          <TabsTrigger 
             key="All" 
             value="All" 
-            className="py-2 px-4 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=inactive]:bg-secondary/80 data-[state=inactive]:hover:bg-secondary flex items-center gap-2"
+            className="py-2 px-4 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=inactive]:bg-secondary/80 data-[state=inactive]:hover:bg-secondary flex items-center gap-2 font-headline"
           >
             <List className="h-4 w-4" />
             <span>All</span>
@@ -22,7 +22,7 @@ export function MatchTabs({ children }: { children: React.ReactNode }) {
           <TabsTrigger 
             key={sport} 
             value={sport} 
-            className="py-2 px-4 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=inactive]:bg-secondary/80 data-[state=inactive]:hover:bg-secondary flex items-center gap-2"
+            className="py-2 px-4 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=inactive]:bg-secondary/80 data-[state=inactive]:hover:bg-secondary flex items-center gap-2 font-headline"
           >
             <SportIcon sport={sport} className="w-5 h-5" />
             <span>{sport}</span>

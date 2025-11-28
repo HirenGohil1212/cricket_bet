@@ -121,12 +121,12 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
         <Header />
         <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col mb-28">
           <div className="mb-4 flex gap-2">
-              <Button asChild className="w-1/2 bg-green-500 hover:bg-green-600 text-white">
+              <Button asChild className="w-1/2 bg-green-500 hover:bg-green-600 text-white font-headline">
                 <Link href="/wallet?action=deposit">
                   <ArrowUpCircle className="mr-2 h-4 w-4" /> Deposit
                 </Link>
               </Button>
-              <Button asChild variant="destructive" className="w-1/2">
+              <Button asChild variant="destructive" className="w-1/2 font-headline">
                 <Link href="/wallet?action=withdraw">
                   <ArrowDownCircle className="mr-2 h-4 w-4" /> Withdraw
                 </Link>
