@@ -110,7 +110,7 @@ export default function AdminLayout({
         href={href}
         onClick={() => handleLinkClick(href, isMobile)}
         className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all font-body",
           pathname.startsWith(href)
             ? "bg-muted text-primary"
             : "text-muted-foreground hover:text-primary",
@@ -123,7 +123,7 @@ export default function AdminLayout({
     ));
 
   return (
-    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] font-body">
       <aside className="hidden border-r bg-background md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -131,8 +131,8 @@ export default function AdminLayout({
               href="/admin/dashboard"
               className="flex items-center gap-2 font-semibold"
             >
-              <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
-              <span className="">Admin</span>
+              <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
+              <span className="font-headline">Admin</span>
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -163,7 +163,7 @@ export default function AdminLayout({
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0">
+            <SheetContent side="left" className="flex flex-col p-0 font-body">
               <SheetHeader className="border-b p-4">
                 <SheetTitle asChild>
                    <Link
@@ -173,8 +173,8 @@ export default function AdminLayout({
                         handleLinkClick('/admin/dashboard', true);
                       }}
                     >
-                       <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
-                      <span>Admin</span>
+                       <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
+                      <span className="font-headline">Admin</span>
                     </Link>
                 </SheetTitle>
               </SheetHeader>
