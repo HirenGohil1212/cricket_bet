@@ -12,6 +12,7 @@ const playerSchema = z.object({
   playerImageFile: z.instanceof(File).optional(),
   playerImageUrl: z.string().optional(),
   imagePath: z.string().optional(),
+  bettingEnabled: z.boolean().default(true),
 });
 
 // Schema for the client-side form for adding/editing a match

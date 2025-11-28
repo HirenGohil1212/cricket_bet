@@ -11,6 +11,7 @@ export type Player = {
   imageUrl: string;
   imagePath?: string;
   sport?: Sport;
+  bettingEnabled?: boolean; // New field
 };
 
 export type DummyUser = {

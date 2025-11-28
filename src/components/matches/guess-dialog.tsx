@@ -42,11 +42,11 @@ interface GuessDialogProps {
 
 const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'teamA' | 'teamB', onPlayerSelect: (player: Player & {team: 'teamA' | 'teamB'}) => void, selectedPlayer: (Player & {team: 'teamA' | 'teamB'}) | null }) => {
     const { match } = useGuessDialogContext();
-    const players = team === 'teamA' ? match.teamA.players : match.teamB.players;
+    const players = (team === 'teamA' ? match.teamA.players : match.teamB.players)?.filter(p => p.bettingEnabled);
     const teamName = team === 'teamA' ? match.teamA.name : match.teamB.name;
     const [popoverOpen, setPopoverOpen] = React.useState(false);
     
-    if (!players || players.length === 0) return <p className="text-xs text-muted-foreground p-2 text-center">No players listed for {teamName}</p>;
+    if (!players || players.length === 0) return <p className="text-xs text-muted-foreground p-2 text-center">No players available for betting in {teamName}</p>;
     
     return (
         <div className="space-y-2">

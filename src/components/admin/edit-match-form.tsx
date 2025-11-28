@@ -123,8 +123,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 startTime: new Date(match.startTime),
                 isSpecialMatch: match.isSpecialMatch || false,
                 allowOneSidedBets: match.allowOneSidedBets || false,
-                teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
-                teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath })) || [],
+                teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath, bettingEnabled: p.bettingEnabled ?? true })) || [],
+                teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath, bettingEnabled: p.bettingEnabled ?? true })) || [],
                 questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [],
                 dummyWinners: match.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})) || [],
             });
@@ -232,7 +232,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                     imageUrl = downloadUrl;
                     imagePath = storagePath;
                 }
-                processedPlayers.push({ name: player.name, imageUrl, imagePath });
+                processedPlayers.push({ name: player.name, imageUrl, imagePath, bettingEnabled: player.bettingEnabled });
             }
             return processedPlayers;
         };
@@ -300,6 +300,23 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 <div key={field.id} className="flex items-center gap-3 p-2 border rounded-md">
                      <Image src={field.playerImageUrl || playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB']?.[index] || `https://placehold.co/40x40.png`} alt="Player" width={40} height={40} className="rounded-full w-10 h-10 object-cover" />
                      <span className="font-medium flex-1 truncate">{field.name}</span>
+                     <FormField
+                        control={form.control}
+                        name={`${fieldName}.${index}.bettingEnabled`}
+                        render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <FormLabel className="text-xs text-muted-foreground">
+                                    Betting
+                                </FormLabel>
+                            </FormItem>
+                        )}
+                    />
                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
                          <Trash2 className="h-4 w-4 text-muted-foreground" />
                      </Button>
@@ -333,7 +350,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                                     onSelect={(currentValue) => {
                                         const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
                                         if (selected) {
-                                            append({ name: selected.name, playerImageUrl: selected.imageUrl, imagePath: selected.imagePath });
+                                            append({ name: selected.name, playerImageUrl: selected.imageUrl, imagePath: selected.imagePath, bettingEnabled: true });
                                         }
                                         setOpen(false);
                                     }}
@@ -352,7 +369,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         </Popover>
 
         {/* Button to add new player fields */}
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined, bettingEnabled: true })}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Player Manually
         </Button>
         <FormMessage>{(form.formState.errors as any)[fieldName]?.message}</FormMessage>

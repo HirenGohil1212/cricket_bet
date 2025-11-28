@@ -148,12 +148,14 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
           </div>
         </CardContent>
 
-        {status === 'Upcoming' && (
+        {(status === 'Upcoming' || status === 'Live') && (
           <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
-            <div className="text-center bg-accent/10 text-accent p-2 rounded-md w-full">
-                <p className="text-xs font-semibold">Betting closes in:</p>
-                <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
-            </div>
+            {status === 'Upcoming' && (
+              <div className="text-center bg-accent/10 text-accent p-2 rounded-md w-full">
+                  <p className="text-xs font-semibold">Betting closes in:</p>
+                  <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
+              </div>
+            )}
             <Button
               className="w-full font-bold bg-primary hover:bg-primary/80 transform-gpu group-hover:scale-105 transition-transform duration-300 shadow-lg"
               onClick={() => onBetNow(match)}
@@ -161,15 +163,11 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
             >
               Play Your Game
             </Button>
-          </CardFooter>
-        )}
-
-        {status === 'Live' && (
-          <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
             <Button
               className="w-full font-bold"
               onClick={() => onViewMyBets(match)}
               variant="outline"
+              size="sm"
             >
               View My Bets
             </Button>
