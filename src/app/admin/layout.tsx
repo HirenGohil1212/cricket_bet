@@ -110,7 +110,7 @@ export default function AdminLayout({
         href={href}
         onClick={() => handleLinkClick(href, isMobile)}
         className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all font-body",
+          "flex items-center gap-3 rounded-lg px-3 py-2 transition-all font-headline",
           pathname.startsWith(href)
             ? "bg-muted text-primary"
             : "text-muted-foreground hover:text-primary",
