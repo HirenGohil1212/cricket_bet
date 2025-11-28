@@ -1,6 +1,6 @@
 
 import type {Metadata, Viewport} from 'next';
-import { PT_Sans, Cormorant_Garamond } from 'next/font/google';
+import { PT_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context-provider';
@@ -16,10 +16,10 @@ const ptSans = PT_Sans({
   display: 'swap',
 });
 
-const cormorantGaramond = Cormorant_Garamond({
+const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-cormorant-garamond',
+  weight: ['400', '700'],
+  variable: '--font-playfair-display',
   display: 'swap',
 });
 
@@ -47,7 +47,7 @@ export default function RootLayout({
        <head>
           <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={cn("font-body antialiased", ptSans.variable, cormorantGaramond.variable)}>
+      <body className={cn("font-body antialiased", ptSans.variable, playfairDisplay.variable)}>
         <AuthProvider>
             <PwaInstallProvider>
                 {children}
