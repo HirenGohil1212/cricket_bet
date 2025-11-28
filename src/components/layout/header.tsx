@@ -68,11 +68,11 @@ export function Header() {
             <SidebarTrigger />
         </div>
         <div className="md:hidden flex items-center gap-2 font-headline text-lg font-bold">
-            <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={70} height={35} />
+            <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
         </div>
       </div>
       <div className="hidden md:block">
-        <h1 className="font-headline text-2xl font-bold">{title}</h1>
+        <h1 className="font-headline text-2xl font-bold text-primary">{title}</h1>
       </div>
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
         {user && userProfile && (

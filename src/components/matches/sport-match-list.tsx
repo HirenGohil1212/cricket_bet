@@ -126,21 +126,21 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
       
       {(activeStatusTab === 'all' || activeStatusTab === 'live') && liveMatches.length > 0 && (
           <div>
-            <h2 className="font-headline text-2xl font-bold mb-4">Live Matches</h2>
+            <h2 className="font-headline text-2xl font-bold mb-4 text-primary">Live Matches</h2>
             <MatchList matches={liveMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Live" />
           </div>
       )}
 
       {(activeStatusTab === 'all' || activeStatusTab === 'upcoming') && upcomingMatches.length > 0 && (
           <div>
-            <h2 className="font-headline text-2xl font-bold mb-4">Upcoming Matches</h2>
+            <h2 className="font-headline text-2xl font-bold mb-4 text-primary">Upcoming Matches</h2>
             <MatchList matches={upcomingMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Upcoming" />
           </div>
       )}
       
       {(activeStatusTab === 'all' || activeStatusTab === 'finished') && finishedMatches.length > 0 && (
          <div>
-            <h2 className="font-headline text-2xl font-bold mb-4">Finished Matches</h2>
+            <h2 className="font-headline text-2xl font-bold mb-4 text-primary">Finished Matches</h2>
             <PaginatedFinishedMatches matches={finishedMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} />
         </div>
       )}
