@@ -45,6 +45,35 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
         if (!match) {
              return { error: 'Match not found. Please try again.' };
         }
+
+        // --- NEW VALIDATION LOGIC ---
+        if (betType === 'player') {
+            if (!match.isSpecialMatch) {
+                return { error: 'Player betting is currently disabled for this match.' };
+            }
+            const playerName = predictions[0].questionId.split(':')[0];
+            const playerInTeamA = match.teamA.players?.find(p => p.name === playerName);
+            const playerInTeamB = match.teamB.players?.find(p => p.name === playerName);
+            
+            if (playerInTeamA && !playerInTeamA.bettingEnabled) {
+                return { error: `Betting for player ${playerName} is currently disabled.` };
+            }
+             if (playerInTeamB && !playerInTeamB.bettingEnabled) {
+                return { error: `Betting for player ${playerName} is currently disabled.` };
+            }
+
+        } else { // qna bet type
+            const teamAPrediction = predictions.some(p => p.predictedAnswer?.teamA);
+            const teamBPrediction = predictions.some(p => p.predictedAnswer?.teamB);
+
+            if (teamAPrediction && !match.teamABettingEnabled) {
+                 return { error: `Betting for ${match.teamA.name} is currently disabled.` };
+            }
+             if (teamBPrediction && !match.teamBBettingEnabled) {
+                 return { error: `Betting for ${match.teamB.name} is currently disabled.` };
+            }
+        }
+        // --- END NEW VALIDATION LOGIC ---
         
         const bettingSettings = match.bettingSettings;
         if (!bettingSettings) {
@@ -116,7 +145,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 betType,
             });
             
-            return { shouldCheckReferral: true, referredBy: userData.referredBy };
+            return { shouldCheckReferral: wasFirstBet, referredBy: userData.referredBy };
         });
 
         if (result.shouldCheckReferral && result.referredBy) {
