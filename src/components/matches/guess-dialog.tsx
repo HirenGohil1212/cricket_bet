@@ -344,9 +344,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 </RadioGroup>
             </div>
         )}
-        <div className="grid grid-cols-1 gap-4">
-            {betOnSide === 'teamA' && <PlayerSelector team="teamA" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
-            {betOnSide === 'teamB' && <PlayerSelector team="teamB" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(betOnSide === 'teamA' || !match.allowOneSidedBets) && <PlayerSelector team="teamA" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
+            {(betOnSide === 'teamB' || !match.allowOneSidedBets) && <PlayerSelector team="teamB" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
         </div>
         
         {selectedPlayer && (
@@ -541,3 +541,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     </Dialog>
   );
 }
+
