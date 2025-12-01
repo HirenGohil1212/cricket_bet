@@ -26,6 +26,7 @@ export type Team = {
   logoPath?: string;
   countryCode?: string;
   players?: Player[];
+  bettingEnabled?: boolean;
 };
 
 export type Match = {
@@ -40,6 +41,8 @@ export type Match = {
   winners?: Winner[];
   isSpecialMatch?: boolean;
   allowOneSidedBets?: boolean;
+  teamABettingEnabled?: boolean;
+  teamBBettingEnabled?: boolean;
   dummyWinners?: { userId: string; amount: number }[];
   bettingSettings?: BettingSettings; // Snapshot of settings at match creation
   isFavorite?: boolean;

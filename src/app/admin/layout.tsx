@@ -26,6 +26,7 @@ import {
   DatabaseZap,
   Settings,
   UserRoundX,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -64,9 +65,6 @@ export default function AdminLayout({
     setIsNavigating(false);
   }, [pathname]);
   
-  // **FIX**: The check now correctly waits for loading to be false AND for the userProfile
-  // to be loaded before denying access. If the user is logged in but the profile is still
-  // loading, it will show the skeleton.
   if (loading || (user && !userProfile)) {
     return <AdminSkeleton />;
   }
@@ -87,6 +85,7 @@ export default function AdminLayout({
 
   const navLinks = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/control-panel", label: "Control Panel", icon: SlidersHorizontal },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/matches", label: "Matches", icon: Swords },
     { href: "/admin/players", label: "Players", icon: UsersRound },
@@ -123,34 +122,32 @@ export default function AdminLayout({
     ));
 
   return (
-    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] font-body">
-      <aside className="hidden border-r bg-background md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center gap-2 font-semibold"
-            >
-              <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
-              <span className="font-headline">Admin</span>
-            </Link>
-          </div>
-          <div className="flex-1 overflow-y-auto">
+    <div className="grid md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r bg-background md:flex flex-col">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link
+            href="/admin/dashboard"
+            className="flex items-center gap-2 font-semibold"
+          >
+            <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
+            <span className="font-headline">Admin</span>
+          </Link>
+        </div>
+        <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start space-y-1 px-2 py-4 text-sm font-medium lg:px-4">
               {renderNavLinks()}
             </nav>
-          </div>
-          <div className="mt-auto p-4">
-            <Button size="sm" asChild className="w-full">
-              <Link href="/">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to App
-              </Link>
-            </Button>
-          </div>
+        </div>
+        <div className="mt-auto p-4">
+          <Button size="sm" asChild className="w-full">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to App
+            </Link>
+          </Button>
         </div>
       </aside>
-      <div className="flex flex-col overflow-hidden">
+      <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
@@ -193,7 +190,7 @@ export default function AdminLayout({
           </Sheet>
           <div className="w-full flex-1" />
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
           {isNavigating ? <PageLoader /> : children}
         </main>
       </div>
@@ -221,31 +218,29 @@ function AccessDenied() {
 
 function AdminSkeleton() {
   return (
-    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-background md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Skeleton className="h-6 w-36" />
-          </div>
-          <div className="flex-1 p-4">
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-            </div>
-          </div>
-          <div className="mt-auto p-4">
-            <Skeleton className="h-9 w-full" />
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r bg-background md:flex flex-col">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Skeleton className="h-6 w-36" />
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
           </div>
         </div>
-      </div>
+        <div className="mt-auto p-4">
+          <Skeleton className="h-9 w-full" />
+        </div>
+      </aside>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Skeleton className="h-8 w-8 shrink-0 md:hidden" />
           <div className="w-full flex-1" />
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
           <Skeleton className="mb-4 h-8 w-32" />
           <Skeleton className="h-96 w-full" />
         </main>

@@ -38,27 +38,26 @@ export async function createMatch(payload: MatchServerPayload) {
             dummyWinners
         } = payload;
 
-        // ** NEW LOGIC **: Fetch current betting settings and snapshot them to the match
         const currentBettingSettings = await getBettingSettings();
-
         const now = new Date();
         const status = startTime > now ? 'Upcoming' : 'Live';
 
         const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
-            teamA,
-            teamB,
+            teamA: { ...teamA, bettingEnabled: true },
+            teamB: { ...teamB, bettingEnabled: true },
             startTime: Timestamp.fromDate(startTime),
             status,
             score: '',
             winner: '',
             isSpecialMatch,
             allowOneSidedBets,
+            teamABettingEnabled: true,
+            teamBBettingEnabled: true,
             dummyWinners: dummyWinners || [],
-            bettingSettings: currentBettingSettings, // Store a snapshot of settings
+            bettingSettings: currentBettingSettings,
         });
 
-        // ** NEW LOGIC **: Add questions directly from the payload
         if (questions && questions.length > 0) {
             const batch = writeBatch(db);
             const questionsCollectionRef = collection(db, `matches/${newMatchRef.id}/questions`);
@@ -100,7 +99,6 @@ export async function deleteMatch(matchId: string) {
         
         const matchData = matchDoc.data();
         
-        // Delete team logos if they have a path
         if (matchData.teamA?.logoPath) {
             await deleteFileByPath(matchData.teamA.logoPath);
         }
@@ -108,11 +106,6 @@ export async function deleteMatch(matchId: string) {
             await deleteFileByPath(matchData.teamB.logoPath);
         }
 
-        // Delete player images - this part seems to be missing in the original logic. Assuming player objects have an imagePath.
-        // We need to ensure player objects have `imagePath` when created/updated if we want to delete their images.
-        // For now, let's assume they don't and focus on the logos as requested.
-
-        // Finally, delete the Firestore document for the match
         await deleteDoc(matchRef);
 
         revalidatePath('/admin/matches');
@@ -157,6 +150,8 @@ export async function getMatches(): Promise<Match[]> {
                 score: data.score || '', 
                 winner: data.winner || '',
                 isSpecialMatch: data.isSpecialMatch || false,
+                teamABettingEnabled: data.teamABettingEnabled ?? true,
+                teamBBettingEnabled: data.teamBBettingEnabled ?? true,
                 allowOneSidedBets: data.allowOneSidedBets || false,
                 dummyWinners: data.dummyWinners || [],
                 bettingSettings: data.bettingSettings, // Pass along the settings
@@ -204,9 +199,11 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
             score: data.score || '',
             winner: data.winner || '',
             isSpecialMatch: data.isSpecialMatch || false,
+            teamABettingEnabled: data.teamABettingEnabled ?? true,
+            teamBBettingEnabled: data.teamBBettingEnabled ?? true,
             allowOneSidedBets: data.allowOneSidedBets || false,
             dummyWinners: data.dummyWinners || [],
-            bettingSettings: data.bettingSettings, // Pass along the settings
+            bettingSettings: data.bettingSettings,
         } as Match;
     } catch (error) {
         console.error("Error fetching match by ID:", error);
@@ -234,11 +231,9 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             dummyWinners
         } = payload;
 
-        // If a new logo was uploaded for team A, delete the old one
         if (teamA.logoPath && teamA.logoPath !== existingMatchData.teamA.logoPath) {
             await deleteFileByPath(existingMatchData.teamA.logoPath!);
         }
-        // If a new logo was uploaded for team B, delete the old one
         if (teamB.logoPath && teamB.logoPath !== existingMatchData.teamB.logoPath) {
             await deleteFileByPath(existingMatchData.teamB.logoPath!);
         }
@@ -248,7 +243,6 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
 
         const batch = writeBatch(db);
 
-        // Update the main match document
         batch.update(matchRef, {
             sport,
             teamA,
@@ -260,7 +254,6 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
             dummyWinners: dummyWinners || [],
         });
         
-        // ** NEW LOGIC **: Overwrite the questions for this match
         const questionsCollectionRef = collection(db, `matches/${matchId}/questions`);
         const existingQuestionsSnapshot = await getDocs(questionsCollectionRef);
         existingQuestionsSnapshot.forEach(doc => {
@@ -313,13 +306,10 @@ export async function cancelMatch(matchId: string) {
 
         const betsSnapshot = await getDocs(betsToRefundQuery);
         
-        // Use a transaction for all writes to ensure atomicity
         await runTransaction(db, async (transaction) => {
-            // All reads must be done before writes in a transaction
             const userDocs = new Map<string, any>();
             const userRefs: { [key: string]: any } = {};
 
-            // Collect all user documents that need updating
             for (const betDoc of betsSnapshot.docs) {
                 const userId = betDoc.data().userId;
                 if (!userDocs.has(userId)) {
@@ -333,7 +323,6 @@ export async function cancelMatch(matchId: string) {
                 }
             }
 
-            // Perform all writes
             for (const betDoc of betsSnapshot.docs) {
                 const betData = betDoc.data();
                 const userId = betData.userId;
@@ -343,23 +332,71 @@ export async function cancelMatch(matchId: string) {
                 const currentBalance = userDoc.data().walletBalance || 0;
                 const newBalance = currentBalance + betData.amount;
                 
-                // Refund user
                 transaction.update(userRef, { walletBalance: newBalance });
-                // Update bet status
                 transaction.update(betDoc.ref, { status: 'Refunded' });
             }
 
-            // Update match status to Cancelled
             transaction.update(matchRef, { status: 'Cancelled' });
         });
 
         revalidatePath('/admin/matches');
         revalidatePath('/admin/q-and-a');
         revalidatePath('/');
-        revalidatePath('/wallet'); // Users need to see their refund
+        revalidatePath('/wallet');
         return { success: 'Match cancelled and all pending bets refunded successfully.' };
     } catch (error: any) {
         console.error("Error cancelling match:", error);
         return { error: error.message || 'An unknown error occurred during cancellation.' };
+    }
+}
+
+
+export async function updateMatchControls(matchId: string, payload: {
+    isSpecialMatch: boolean;
+    teamABettingEnabled: boolean;
+    teamBBettingEnabled: boolean;
+    players: { name: string; bettingEnabled: boolean }[];
+}) {
+    if (!matchId) return { error: 'Match ID is required.' };
+
+    const matchRef = doc(db, 'matches', matchId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const matchDoc = await transaction.get(matchRef);
+            if (!matchDoc.exists()) {
+                throw new Error('Match not found');
+            }
+            const matchData = matchDoc.data();
+
+            const updatedTeamA = { ...matchData.teamA };
+            const updatedTeamB = { ...matchData.teamB };
+
+            payload.players.forEach(playerUpdate => {
+                const playerA = updatedTeamA.players.find((p: Player) => p.name === playerUpdate.name);
+                if (playerA) {
+                    playerA.bettingEnabled = playerUpdate.bettingEnabled;
+                }
+                const playerB = updatedTeamB.players.find((p: Player) => p.name === playerUpdate.name);
+                if (playerB) {
+                    playerB.bettingEnabled = playerUpdate.bettingEnabled;
+                }
+            });
+
+            transaction.update(matchRef, {
+                isSpecialMatch: payload.isSpecialMatch,
+                teamABettingEnabled: payload.teamABettingEnabled,
+                teamBBettingEnabled: payload.teamBBettingEnabled,
+                teamA: updatedTeamA,
+                teamB: updatedTeamB,
+            });
+        });
+
+        revalidatePath('/admin/control-panel');
+        revalidatePath('/');
+        return { success: 'Match controls updated successfully.' };
+    } catch (error: any) {
+        console.error('Error updating match controls:', error);
+        return { error: error.message || 'Failed to update match controls.' };
     }
 }
