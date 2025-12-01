@@ -187,7 +187,7 @@ export function AddMatchForm() {
                     imageUrl = downloadUrl;
                     imagePath = storagePath;
                 }
-                processedPlayers.push({ name: player.name, imageUrl, imagePath });
+                processedPlayers.push({ name: player.name, imageUrl, imagePath, bettingEnabled: player.bettingEnabled });
             }
             return processedPlayers;
         }
@@ -289,7 +289,7 @@ export function AddMatchForm() {
                                     onSelect={(currentValue) => {
                                         const selected = availablePlayers.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
                                         if (selected) {
-                                            append({ name: selected.name, playerImageUrl: selected.imageUrl, imagePath: selected.imagePath });
+                                            append({ name: selected.name, playerImageUrl: selected.imageUrl, imagePath: selected.imagePath, bettingEnabled: true });
                                         }
                                         setOpen(false);
                                     }}
@@ -308,7 +308,7 @@ export function AddMatchForm() {
         </Popover>
 
         {/* Button to add new player fields */}
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', playerImageUrl: '', playerImageFile: undefined, bettingEnabled: true })}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Player Manually
         </Button>
         <FormMessage>{(form.formState.errors as any)[fieldName]?.message}</FormMessage>
@@ -788,3 +788,5 @@ export function AddMatchForm() {
     </Form>
   )
 }
+
+    

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -327,7 +326,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                 <Label className="text-sm font-semibold text-center block">Bet on</Label>
                 <RadioGroup
                     value={betOnSide}
-                    onValueChange={(value: 'teamA' | 'teamB' | 'both') => {
+                    onValueChange={(value: 'teamA' | 'teamB') => {
                         setBetOnSide(value);
                         setSelectedPlayer(null); // Reset player selection when team changes
                     }}
@@ -345,8 +344,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(betOnSide === 'teamA' || !match.allowOneSidedBets) && <PlayerSelector team="teamA" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
-            {(betOnSide === 'teamB' || !match.allowOneSidedBets) && <PlayerSelector team="teamB" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
+            {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && <PlayerSelector team="teamA" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
+            {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && <PlayerSelector team="teamB" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
         </div>
         
         {selectedPlayer && (
@@ -542,3 +541,4 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   );
 }
 
+    
