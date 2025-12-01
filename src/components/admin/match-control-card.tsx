@@ -98,17 +98,17 @@ export function MatchControlCard({ match, onUpdate }: MatchControlCardProps) {
 
     return (
         <Card className="bg-secondary">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-md overflow-hidden flex items-center justify-center">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0">
                         <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={40} height={40} className="object-cover" />
                     </div>
-                    <CardTitle className="text-lg">{match.teamA.name} vs {match.teamB.name}</CardTitle>
-                    <div className="w-10 h-10 rounded-md overflow-hidden flex items-center justify-center">
+                    <CardTitle className="text-lg text-center sm:text-left">{match.teamA.name} vs {match.teamB.name}</CardTitle>
+                    <div className="w-10 h-10 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0">
                         <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="object-cover" />
                     </div>
                 </div>
-                <Button onClick={handleSave} disabled={isSaving}>
+                <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto flex-shrink-0">
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                 </Button>
