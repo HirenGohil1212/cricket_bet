@@ -48,14 +48,14 @@ export function TransactionHistory() {
 
     setIsDownloading(true);
     try {
-        const from = Timestamp.fromDate(dateRange.from);
-        const to = Timestamp.fromDate(dateRange.to);
+        const from = dateRange.from;
+        const to = dateRange.to;
 
-        // Fetch all data within the range
-        const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid), where('timestamp', '>=', from), where('timestamp', '<=', to));
-        const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('createdAt', '>=', from), where('createdAt', '<=', to));
-        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('createdAt', '>=', from), where('createdAt', '<=', to));
-        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('timestamp', '>=', from), where('timestamp', '<=', to), where('type', 'in', ['referral_bonus', 'deposit_commission']));
+        // Fetch all data without date filtering first
+        const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid));
+        const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid));
+        const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid));
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', 'in', ['referral_bonus', 'deposit_commission']));
 
         const [betsSnap, depositsSnap, withdrawalsSnap, bonusesSnap] = await Promise.all([
             getDocs(betsQuery),
@@ -66,26 +66,46 @@ export function TransactionHistory() {
 
         const historyItems: CombinedHistoryItem[] = [];
 
-        betsSnap.forEach(doc => {
+        const processAndFilter = (snap: any, processor: (doc: any) => CombinedHistoryItem | CombinedHistoryItem[] | null) => {
+            snap.forEach((doc: any) => {
+                const itemOrItems = processor(doc);
+                if (itemOrItems) {
+                    const itemsArray = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems];
+                    itemsArray.forEach(item => {
+                        if (item.date >= from && item.date <= to) {
+                            historyItems.push(item);
+                        }
+                    });
+                }
+            });
+        };
+        
+        processAndFilter(betsSnap, (doc) => {
             const data = doc.data() as Bet;
+            const items: CombinedHistoryItem[] = [];
             if (data.status === 'Won') {
-                historyItems.push({ id: doc.id, type: 'Win', amount: data.potentialWin, description: `Win on ${data.matchDescription}`, date: (data.timestamp as Timestamp).toDate(), status: data.status });
+                items.push({ id: doc.id, type: 'Win', amount: data.potentialWin, description: `Win on ${data.matchDescription}`, date: (data.timestamp as Timestamp).toDate(), status: data.status });
             } else if (data.status === 'Lost') {
-                historyItems.push({ id: doc.id, type: 'Loss', amount: data.amount, description: `Loss on ${data.matchDescription}`, date: (data.timestamp as Timestamp).toDate(), status: data.status });
+                items.push({ id: doc.id, type: 'Loss', amount: data.amount, description: `Loss on ${data.matchDescription}`, date: (data.timestamp as Timestamp).toDate(), status: data.status });
             }
+            return items;
         });
-        depositsSnap.forEach(doc => {
+
+        processAndFilter(depositsSnap, (doc) => {
             const data = doc.data() as DepositRequest;
-            historyItems.push({ id: doc.id, type: 'Deposit', amount: data.amount, description: `Deposit`, date: (data.createdAt as Timestamp).toDate(), status: data.status });
+            return { id: doc.id, type: 'Deposit', amount: data.amount, description: `Deposit`, date: (data.createdAt as Timestamp).toDate(), status: data.status };
         });
-        withdrawalsSnap.forEach(doc => {
+
+        processAndFilter(withdrawalsSnap, (doc) => {
             const data = doc.data() as WithdrawalRequest;
-            historyItems.push({ id: doc.id, type: 'Withdrawal', amount: data.amount, description: 'Withdrawal', date: (data.createdAt as Timestamp).toDate(), status: data.status });
+            return { id: doc.id, type: 'Withdrawal', amount: data.amount, description: 'Withdrawal', date: (data.createdAt as Timestamp).toDate(), status: data.status };
         });
-        bonusesSnap.forEach(doc => {
+
+        processAndFilter(bonusesSnap, (doc) => {
             const data = doc.data() as Transaction;
-            historyItems.push({ id: doc.id, type: 'Bonus', amount: data.amount, description: data.description, date: (data.timestamp as Timestamp).toDate(), status: 'Completed' });
+            return { id: doc.id, type: 'Bonus', amount: data.amount, description: data.description, date: (data.timestamp as Timestamp).toDate(), status: 'Completed' };
         });
+
 
         if (historyItems.length === 0) {
             toast({ title: 'No Data', description: 'No transactions found for the selected date range.' });
