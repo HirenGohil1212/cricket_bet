@@ -31,7 +31,6 @@ export function WinsLossesHistoryTable({ type }: WinsLossesHistoryTableProps) {
     if (user) {
       setIsLoading(true);
       const betsCol = collection(db, 'bets');
-      // FIX: Removed date filtering and status filtering from query
       const q = query(betsCol, where('userId', '==', user.uid));
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
