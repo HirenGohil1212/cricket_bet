@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart } from 'lucide-react';
+import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -146,6 +146,30 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                   )}
               </div>
           </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="info" className="border-b-0">
+                <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent bg-muted/50 rounded-md">
+                    <div className="flex items-center gap-2 mx-auto">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Match Info</span>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-2 space-y-4">
+                    <div className="text-center text-xs text-muted-foreground">
+                        <p className="font-semibold">Match Time</p>
+                        <p>{new Date(startTime).toLocaleString()}</p>
+                    </div>
+                    {(teamA.players && teamA.players.length > 0) || (teamB.players && teamB.players.length > 0) ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            <PlayerList team={teamA} />
+                            <PlayerList team={teamB} />
+                        </div>
+                    ) : (
+                        <p className="text-center text-xs text-muted-foreground pt-2">Player lists are not available for this match.</p>
+                    )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
         </CardContent>
 
         {(status === 'Upcoming' || status === 'Live') && (
