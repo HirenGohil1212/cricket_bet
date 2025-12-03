@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info } from 'lucide-react';
+import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info, Calendar, Swords } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Separator } from '../ui/separator';
 
 
 interface MatchCardProps {
@@ -42,57 +43,69 @@ const StatusIndicator = ({ status }: { status: Match['status'] }) => {
 
 const PlayerList = ({ team }: { team: Team }) => {
     if (!team.players || team.players.length === 0) {
-        return (
-            <div>
-                <h4 className="font-semibold text-sm mb-2 text-center">{team.name}</h4>
-                <p className="text-xs text-muted-foreground text-center">No players listed.</p>
-            </div>
-        );
+        return <p className="text-xs text-muted-foreground text-center col-span-full py-4">No players listed.</p>;
     }
     return (
-        <div>
-            <h4 className="font-semibold text-sm mb-2 text-center">{team.name}</h4>
-            <ScrollArea className="h-32">
-                <div className="space-y-2 pr-4">
-                    {team.players.map((player, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                                <AvatarImage src={player.imageUrl} alt={player.name} />
-                                <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs font-medium truncate">{player.name}</span>
-                        </div>
-                    ))}
+        <div className="space-y-3">
+            {team.players.map((player, index) => (
+                <div key={index} className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9 border">
+                        <AvatarImage src={player.imageUrl} alt={player.name} />
+                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium truncate">{player.name}</span>
                 </div>
-            </ScrollArea>
+            ))}
         </div>
     );
 };
 
 const MatchInfoDialogContent = ({ match }: { match: Match }) => (
-    <DialogContent>
+    <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-            <DialogTitle>Match Information</DialogTitle>
-            <DialogDescription>
-                Details for {match.teamA.name} vs {match.teamB.name}
+            <DialogTitle className="font-headline text-3xl text-center text-primary">Match Information</DialogTitle>
+            <DialogDescription className="text-center">
+                Get all the details about the upcoming clash.
             </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-             <div className="text-center text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground">Match Time</p>
-                <p>{new Date(match.startTime).toLocaleString()}</p>
-            </div>
-            {(match.teamA.players && match.teamA.players.length > 0) || (match.teamB.players && match.teamB.players.length > 0) ? (
-                <div className="grid grid-cols-2 gap-4">
-                    <PlayerList team={match.teamA} />
-                    <PlayerList team={match.teamB} />
+        <div className="my-6">
+            <div className="relative flex justify-center items-center">
+                <Separator />
+                <div className="absolute bg-background px-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4"/>
+                        <span>{new Date(match.startTime).toLocaleString()}</span>
+                    </div>
                 </div>
-            ) : (
-                <p className="text-center text-sm text-muted-foreground pt-2">Player lists are not available for this match.</p>
-            )}
+            </div>
+        </div>
+        <div className="grid grid-cols-2 gap-8 items-start">
+            {/* Team A */}
+            <div className="space-y-4 text-center">
+                 <div className="flex flex-col items-center gap-3">
+                    <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={64} height={64} className="h-16 w-16 object-contain rounded-full border-2 p-1 bg-white/10" data-ai-hint="logo" />
+                    <h3 className="text-xl font-bold font-headline">{match.teamA.name}</h3>
+                </div>
+                <Separator />
+                <ScrollArea className="h-48 pr-4">
+                    <PlayerList team={match.teamA} />
+                </ScrollArea>
+            </div>
+            
+            {/* Team B */}
+            <div className="space-y-4 text-center">
+                 <div className="flex flex-col items-center gap-3">
+                    <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={64} height={64} className="h-16 w-16 object-contain rounded-full border-2 p-1 bg-white/10" data-ai-hint="logo" />
+                    <h3 className="text-xl font-bold font-headline">{match.teamB.name}</h3>
+                </div>
+                <Separator />
+                 <ScrollArea className="h-48 pr-4">
+                    <PlayerList team={match.teamB} />
+                </ScrollArea>
+            </div>
         </div>
     </DialogContent>
-)
+);
 
 
 export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onToggleFavorite }: MatchCardProps) {
