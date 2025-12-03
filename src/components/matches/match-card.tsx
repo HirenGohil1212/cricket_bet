@@ -2,6 +2,7 @@
 
 "use client";
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 
 
 interface MatchCardProps {
@@ -67,10 +69,36 @@ const PlayerList = ({ team }: { team: Team }) => {
     );
 };
 
+const MatchInfoDialogContent = ({ match }: { match: Match }) => (
+    <DialogContent>
+        <DialogHeader>
+            <DialogTitle>Match Information</DialogTitle>
+            <DialogDescription>
+                Details for {match.teamA.name} vs {match.teamB.name}
+            </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+             <div className="text-center text-sm text-muted-foreground">
+                <p className="font-semibold text-foreground">Match Time</p>
+                <p>{new Date(match.startTime).toLocaleString()}</p>
+            </div>
+            {(match.teamA.players && match.teamA.players.length > 0) || (match.teamB.players && match.teamB.players.length > 0) ? (
+                <div className="grid grid-cols-2 gap-4">
+                    <PlayerList team={match.teamA} />
+                    <PlayerList team={match.teamB} />
+                </div>
+            ) : (
+                <p className="text-center text-sm text-muted-foreground pt-2">Player lists are not available for this match.</p>
+            )}
+        </div>
+    </DialogContent>
+)
+
 
 export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onToggleFavorite }: MatchCardProps) {
   const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch, isFavorite } = match;
   const { user } = useAuth();
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
 
@@ -146,30 +174,6 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                   )}
               </div>
           </div>
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="info" className="border-b-0">
-                <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent bg-muted/50 rounded-md">
-                    <div className="flex items-center gap-2 mx-auto">
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Match Info</span>
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 pb-2 space-y-4">
-                    <div className="text-center text-xs text-muted-foreground">
-                        <p className="font-semibold">Match Time</p>
-                        <p>{new Date(startTime).toLocaleString()}</p>
-                    </div>
-                    {(teamA.players && teamA.players.length > 0) || (teamB.players && teamB.players.length > 0) ? (
-                        <div className="grid grid-cols-2 gap-4">
-                            <PlayerList team={teamA} />
-                            <PlayerList team={teamB} />
-                        </div>
-                    ) : (
-                        <p className="text-center text-xs text-muted-foreground pt-2">Player lists are not available for this match.</p>
-                    )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
         </CardContent>
 
         {(status === 'Upcoming' || status === 'Live') && (
@@ -187,14 +191,29 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
             >
               Play Your Game
             </Button>
-            <Button
-              className="w-full font-bold"
-              onClick={() => onViewMyBets(match)}
-              variant="outline"
-              size="sm"
-            >
-              View My Bets
-            </Button>
+            <div className="flex gap-2">
+                <Button
+                    className="w-full font-bold"
+                    onClick={() => onViewMyBets(match)}
+                    variant="outline"
+                    size="sm"
+                >
+                    View My Bets
+                </Button>
+                 <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+                    <DialogTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                            aria-label="View Match Info"
+                        >
+                            <Info className="h-4 w-4" />
+                        </Button>
+                    </DialogTrigger>
+                    <MatchInfoDialogContent match={match} />
+                </Dialog>
+            </div>
           </CardFooter>
         )}
 
@@ -238,6 +257,6 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
             </Accordion>
           </CardFooter>
         )}
-      </Card>
+    </Card>
   );
 }
