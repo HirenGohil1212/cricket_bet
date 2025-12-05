@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, ReactNode, useContext } from 'react';
@@ -68,14 +67,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 // A hook to protect routes
 export const useRequireAuth = () => {
-    const { user, loading } = useContext(AuthContext);
+    const authContext = useContext(AuthContext);
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && !user) {
+        if (!authContext.loading && !authContext.user) {
             router.push('/login');
         }
-    }, [user, loading, router]);
+    }, [authContext.user, authContext.loading, router]);
 
-    return { user, loading };
+    return authContext;
 }
