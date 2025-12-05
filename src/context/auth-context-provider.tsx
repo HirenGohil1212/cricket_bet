@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode, useContext } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -37,6 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     referredBy: data.referredBy,
                     isFirstBetPlaced: data.isFirstBetPlaced,
                     referralBonusAwarded: data.referralBonusAwarded,
+                    totalWagered: data.totalWagered || 0,
+                    totalWinnings: data.totalWinnings || 0,
+                    totalDeposits: data.totalDeposits || 0,
+                    totalWithdrawals: data.totalWithdrawals || 0,
                 };
                 setUserProfile(profile);
             } else {
