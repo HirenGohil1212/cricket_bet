@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'firebase/auth';
@@ -21,14 +22,14 @@ import {
 } from "@/components/ui/sidebar";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Ticket, History, Award, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download, Swords, Heart } from "lucide-react";
+import { Ticket, History, LogIn, LogOut, User as UserIcon, Shield, Wallet, Download, Swords, Heart } from "lucide-react";
 import { ReferralCard } from "@/components/dashboard/referral-card";
-import { BettingHistoryDialog } from "@/components/dashboard/betting-history-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { usePwaInstall } from '@/context/pwa-install-context';
 import Image from 'next/image';
+import { navLinks } from '@/lib/admin-nav';
+
 
 interface AppSidebarProps {
   onNavigate: () => void;
@@ -86,6 +87,18 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       setOpenMobile(false);
     }
   }
+
+  // Determine the correct admin link
+  const adminPanelLink = useMemo(() => {
+    if (userProfile?.role === 'admin') {
+      return '/admin/dashboard';
+    }
+    if (userProfile?.role === 'sub-admin') {
+      const firstAllowedLink = navLinks.find(link => userProfile.permissions?.[link.permission]);
+      return firstAllowedLink?.href || '/admin/dashboard'; // Fallback to dashboard
+    }
+    return '/admin/dashboard';
+  }, [userProfile]);
 
   const HeaderContent = () => (
     <div className="flex items-center gap-2">
@@ -171,8 +184,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                     <p className="text-xs font-semibold text-muted-foreground px-2 mb-1">Admin</p>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton onClick={() => handleLinkClick('/admin/dashboard')} asChild isActive={pathname.startsWith('/admin')}>
-                                <Link href="/admin/dashboard">
+                            <SidebarMenuButton onClick={() => handleLinkClick(adminPanelLink)} asChild isActive={pathname.startsWith('/admin')}>
+                                <Link href={adminPanelLink}>
                                     <Shield />
                                     Admin Panel
                                 </Link>

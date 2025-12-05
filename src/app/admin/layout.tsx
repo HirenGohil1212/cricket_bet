@@ -7,27 +7,8 @@ import { useAuth } from "@/context/auth-context";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Terminal,
-  LayoutDashboard,
-  Users,
   ArrowLeft,
-  Swords,
   Menu,
-  Award,
-  Banknote,
-  Wallet,
-  CircleDollarSign,
-  MessageSquareQuote,
-  Gift,
-  GalleryHorizontal,
-  LineChart,
-  Percent,
-  Loader2,
-  UsersRound,
-  DatabaseZap,
-  Settings,
-  UserRoundX,
-  SlidersHorizontal,
-  Lock,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -43,42 +24,16 @@ import {
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { UserPermissions } from "@/lib/types";
+import { getPermissionForPath, navLinks } from "@/lib/admin-nav";
+
 
 function PageLoader() {
   return (
     <div className="flex flex-1 items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
     </div>
   );
 }
-
-const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: 'canManageDashboard' as keyof UserPermissions },
-    { href: "/admin/control-panel", label: "Control Panel", icon: SlidersHorizontal, permission: 'canManageControlPanel' as keyof UserPermissions },
-    { href: "/admin/users", label: "Users", icon: Users, permission: 'canManageUsers' as keyof UserPermissions },
-    { href: "/admin/matches", label: "Matches", icon: Swords, permission: 'canManageMatches' as keyof UserPermissions },
-    { href: "/admin/players", label: "Players", icon: UsersRound, permission: 'canManagePlayers' as keyof UserPermissions },
-    { href: "/admin/dummy-users", label: "Dummy Users", icon: UserRoundX, permission: 'canManageDummyUsers' as keyof UserPermissions },
-    { href: "/admin/q-and-a", label: "Result", icon: MessageSquareQuote, permission: 'canManageResults' as keyof UserPermissions },
-    { href: "/admin/deposits", label: "Deposits", icon: Wallet, permission: 'canManageDeposits' as keyof UserPermissions },
-    { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign, permission: 'canManageWithdrawals' as keyof UserPermissions },
-    { href: "/admin/financial-reports", label: "Financials", icon: LineChart, permission: 'canViewFinancials' as keyof UserPermissions },
-    { href: "/admin/referrals", label: "Referrals", icon: Gift, permission: 'canManageReferrals' as keyof UserPermissions },
-    { href: "/admin/betting-settings", label: "Betting Settings", icon: Percent, permission: 'canManageBettingSettings' as keyof UserPermissions },
-    { href: "/admin/bank-details", label: "Bank Details", icon: Banknote, permission: 'canManageBankDetails' as keyof UserPermissions },
-    { href: "/admin/content", label: "Content", icon: GalleryHorizontal, permission: 'canManageContent' as keyof UserPermissions },
-    { href: "/admin/data-management", label: "Data Management", icon: DatabaseZap, permission: 'canManageDataManagement' as keyof UserPermissions },
-    { href: "/admin/settings", label: "Support", icon: Settings, permission: 'canManageSupport' as keyof UserPermissions },
-    { href: "/admin/permissions", label: "Permissions", icon: Lock, permission: 'canManagePermissions' as keyof UserPermissions },
-];
-
-// Helper to get the required permission for a given path
-const getPermissionForPath = (path: string): keyof UserPermissions | null => {
-    // Find the link that matches the start of the path
-    const matchedLink = navLinks.find(link => path.startsWith(link.href));
-    return matchedLink ? matchedLink.permission : null;
-};
-
 
 export default function AdminLayout({
   children,
@@ -105,16 +60,17 @@ export default function AdminLayout({
   
   const isAdmin = userProfile.role === 'admin';
 
-  // **CRITICAL FIX**: Check if the current user has permission to view the current page.
   const requiredPermission = getPermissionForPath(pathname);
   let hasPageAccess = false;
   if (isAdmin) {
       hasPageAccess = true;
   } else if (userProfile.role === 'sub-admin' && requiredPermission) {
       hasPageAccess = !!userProfile.permissions?.[requiredPermission];
+  } else if (userProfile.role === 'sub-admin' && !requiredPermission) {
+      // Deny access if no specific permission is defined for a route, for safety.
+      hasPageAccess = false;
   }
-  // If no specific permission is required for a route (like a nested "add" page), inherit from parent.
-  // The check on getPermissionForPath handles this. If it returns null, we deny access for safety unless admin.
+
 
   const visibleNavLinks = navLinks.filter(link => {
     if (isAdmin) return true; // Admins see all links
@@ -225,7 +181,6 @@ export default function AdminLayout({
           <div className="w-full flex-1" />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
-          {/* **CRITICAL FIX**: Render AccessDenied if user doesn't have page access */}
           {hasPageAccess ? (isNavigating ? <PageLoader /> : children) : <AccessDenied />}
         </main>
       </div>
