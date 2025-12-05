@@ -164,7 +164,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
              )}
           </SidebarMenu>
           
-          {userProfile?.role === 'admin' && (
+          {(userProfile?.role === 'admin' || userProfile?.role === 'sub-admin') && (
             <>
                 <SidebarSeparator className="my-2" />
                 <div className="px-2">
@@ -216,3 +216,5 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     </>
   );
 }
+
+    
