@@ -5,6 +5,29 @@ export type Sport = typeof sports[number];
 
 export type MatchStatus = "Upcoming" | "Live" | "Finished" | "Cancelled";
 
+export type UserRole = 'admin' | 'sub-admin' | 'user';
+
+export type UserPermissions = {
+    canManageDashboard: boolean;
+    canManageControlPanel: boolean;
+    canManageUsers: boolean;
+    canManageMatches: boolean;
+    canManagePlayers: boolean;
+    canManageDummyUsers: boolean;
+    canManageResults: boolean;
+    canManageDeposits: boolean;
+    canManageWithdrawals: boolean;
+    canViewFinancials: boolean;
+    canManageReferrals: boolean;
+    canManageBettingSettings: boolean;
+    canManageBankDetails: boolean;
+    canManageContent: boolean;
+    canManageDataManagement: boolean;
+    canManageSupport: boolean;
+    canManagePermissions: boolean;
+};
+
+
 export type Player = {
   id?: string; // Player ID from the 'players' collection
   name: string;
@@ -81,11 +104,12 @@ export type UserProfile = {
   createdAt: string; // Changed from Date to string
   walletBalance: number;
   referralCode: string;
-  role: 'admin' | 'user';
+  role: UserRole;
   bankAccount?: UserBankAccount;
   referredBy?: string; // UID of the referrer
   isFirstBetPlaced?: boolean; // Has the user placed their first bet
   referralBonusAwarded?: boolean; // Has this user received their signup bonus
+  permissions?: Partial<UserPermissions>;
   totalReferrals?: number; // New field for referral count
   totalWagered: number;
   totalWinnings: number;

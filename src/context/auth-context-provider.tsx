@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, ReactNode } from 'react';
@@ -30,7 +31,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     walletBalance: data.walletBalance,
                     referralCode: data.referralCode,
                     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
-                    role: data.role,
+                    role: data.role || 'user',
+                    permissions: data.permissions || {},
                     bankAccount: data.bankAccount || undefined,
                     referredBy: data.referredBy,
                     isFirstBetPlaced: data.isFirstBetPlaced,

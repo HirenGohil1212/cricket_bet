@@ -4,7 +4,7 @@
 
 import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { UserBankAccount, UserProfile } from '@/lib/types';
+import type { UserBankAccount, UserProfile, UserRole, UserPermissions } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 import { deleteFileByPath } from '@/lib/storage';
@@ -51,6 +51,38 @@ export async function updateUserBankAccount(userId: string, data: UserBankAccoun
     } catch (error: any) {
         console.error("Error updating bank details: ", error);
         return { error: 'Failed to update bank details.' };
+    }
+}
+
+// Server action to update a user's role and permissions
+export async function updateUserRoleAndPermissions(
+    userId: string, 
+    role: UserRole, 
+    permissions: Partial<UserPermissions>
+) {
+    if (!userId) {
+        return { error: 'User ID is required.' };
+    }
+
+    try {
+        const userRef = doc(db, 'users', userId);
+        const updateData: { role: UserRole, permissions?: Partial<UserPermissions> } = { role };
+        
+        if (role === 'sub-admin') {
+            updateData.permissions = permissions;
+        } else {
+            // If role is not sub-admin, ensure permissions are cleared
+            updateData.permissions = {};
+        }
+
+        await updateDoc(userRef, updateData);
+        
+        revalidatePath('/admin/users');
+        return { success: "User's role and permissions updated successfully." };
+
+    } catch (error: any) {
+        console.error("Error updating user role:", error);
+        return { error: 'Failed to update user role.' };
     }
 }
 

@@ -27,6 +27,7 @@ import {
   Settings,
   UserRoundX,
   SlidersHorizontal,
+  Lock,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import type { UserPermissions } from "@/lib/types";
 
 function PageLoader() {
   return (
@@ -49,6 +51,26 @@ function PageLoader() {
     </div>
   );
 }
+
+const navLinks = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: 'canManageDashboard' as keyof UserPermissions },
+    { href: "/admin/control-panel", label: "Control Panel", icon: SlidersHorizontal, permission: 'canManageControlPanel' as keyof UserPermissions },
+    { href: "/admin/users", label: "Users", icon: Users, permission: 'canManageUsers' as keyof UserPermissions },
+    { href: "/admin/matches", label: "Matches", icon: Swords, permission: 'canManageMatches' as keyof UserPermissions },
+    { href: "/admin/players", label: "Players", icon: UsersRound, permission: 'canManagePlayers' as keyof UserPermissions },
+    { href: "/admin/dummy-users", label: "Dummy Users", icon: UserRoundX, permission: 'canManageDummyUsers' as keyof UserPermissions },
+    { href: "/admin/q-and-a", label: "Result", icon: MessageSquareQuote, permission: 'canManageResults' as keyof UserPermissions },
+    { href: "/admin/deposits", label: "Deposits", icon: Wallet, permission: 'canManageDeposits' as keyof UserPermissions },
+    { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign, permission: 'canManageWithdrawals' as keyof UserPermissions },
+    { href: "/admin/financial-reports", label: "Financials", icon: LineChart, permission: 'canViewFinancials' as keyof UserPermissions },
+    { href: "/admin/referrals", label: "Referrals", icon: Gift, permission: 'canManageReferrals' as keyof UserPermissions },
+    { href: "/admin/betting-settings", label: "Betting Settings", icon: Percent, permission: 'canManageBettingSettings' as keyof UserPermissions },
+    { href: "/admin/bank-details", label: "Bank Details", icon: Banknote, permission: 'canManageBankDetails' as keyof UserPermissions },
+    { href: "/admin/content", label: "Content", icon: GalleryHorizontal, permission: 'canManageContent' as keyof UserPermissions },
+    { href: "/admin/data-management", label: "Data Management", icon: DatabaseZap, permission: 'canManageDataManagement' as keyof UserPermissions },
+    { href: "/admin/settings", label: "Support", icon: Settings, permission: 'canManageSupport' as keyof UserPermissions },
+    { href: "/admin/permissions", label: "Permissions", icon: Lock, permission: 'canManagePermissions' as keyof UserPermissions },
+];
 
 export default function AdminLayout({
   children,
@@ -69,9 +91,20 @@ export default function AdminLayout({
     return <AdminSkeleton />;
   }
 
-  if (!user || userProfile.role !== "admin") {
+  if (!user || (userProfile.role !== "admin" && userProfile.role !== "sub-admin")) {
     return <AccessDenied />;
   }
+  
+  const isAdmin = userProfile.role === 'admin';
+
+  const visibleNavLinks = navLinks.filter(link => {
+    if (isAdmin) return true; // Admins see all links
+    if (userProfile.role === 'sub-admin') {
+        return !!userProfile.permissions?.[link.permission];
+    }
+    return false;
+  });
+
 
   const handleLinkClick = (href: string, isMobile: boolean) => {
     // Only show loader if navigating to a different page
@@ -83,27 +116,8 @@ export default function AdminLayout({
     }
   };
 
-  const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/control-panel", label: "Control Panel", icon: SlidersHorizontal },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/matches", label: "Matches", icon: Swords },
-    { href: "/admin/players", label: "Players", icon: UsersRound },
-    { href: "/admin/dummy-users", label: "Dummy Users", icon: UserRoundX },
-    { href: "/admin/q-and-a", label: "Result", icon: MessageSquareQuote },
-    { href: "/admin/deposits", label: "Deposits", icon: Wallet },
-    { href: "/admin/withdrawals", label: "Withdrawals", icon: CircleDollarSign },
-    { href: "/admin/financial-reports", label: "Financials", icon: LineChart },
-    { href: "/admin/referrals", label: "Referrals", icon: Gift },
-    { href: "/admin/betting-settings", label: "Betting Settings", icon: Percent },
-    { href: "/admin/bank-details", label: "Bank Details", icon: Banknote },
-    { href: "/admin/content", label: "Content", icon: GalleryHorizontal },
-    { href: "/admin/data-management", label: "Data Management", icon: DatabaseZap },
-    { href: "/admin/settings", label: "Support", icon: Settings },
-  ];
-
   const renderNavLinks = (isMobile = false) =>
-    navLinks.map(({ href, label, icon: Icon }) => (
+    visibleNavLinks.map(({ href, label, icon: Icon }) => (
       <Link
         key={href}
         href={href}
