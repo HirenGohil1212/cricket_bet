@@ -53,8 +53,8 @@ function PageLoader() {
 }
 
 const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: 'canManageDashboard' as keyof UserPermissions },
-    { href: "/admin/control-panel", label: "Control Panel", icon: SlidersHorizontal, permission: 'canManageControlPanel' as keyof UserPermissions },
+    { href: "/admin/dashboard", label: "Dashboard", permission: 'canManageDashboard' as keyof UserPermissions },
+    { href: "/admin/control-panel", label: "Control Panel", permission: 'canManageControlPanel' as keyof UserPermissions },
     { href: "/admin/users", label: "Users", icon: Users, permission: 'canManageUsers' as keyof UserPermissions },
     { href: "/admin/matches", label: "Matches", icon: Swords, permission: 'canManageMatches' as keyof UserPermissions },
     { href: "/admin/players", label: "Players", icon: UsersRound, permission: 'canManagePlayers' as keyof UserPermissions },
@@ -71,6 +71,14 @@ const navLinks = [
     { href: "/admin/settings", label: "Support", icon: Settings, permission: 'canManageSupport' as keyof UserPermissions },
     { href: "/admin/permissions", label: "Permissions", icon: Lock, permission: 'canManagePermissions' as keyof UserPermissions },
 ];
+
+// Helper to get the required permission for a given path
+const getPermissionForPath = (path: string): keyof UserPermissions | null => {
+    // Find the link that matches the start of the path
+    const matchedLink = navLinks.find(link => path.startsWith(link.href));
+    return matchedLink ? matchedLink.permission : null;
+};
+
 
 export default function AdminLayout({
   children,
@@ -97,10 +105,22 @@ export default function AdminLayout({
   
   const isAdmin = userProfile.role === 'admin';
 
+  // **CRITICAL FIX**: Check if the current user has permission to view the current page.
+  const requiredPermission = getPermissionForPath(pathname);
+  let hasPageAccess = false;
+  if (isAdmin) {
+      hasPageAccess = true;
+  } else if (userProfile.role === 'sub-admin' && requiredPermission) {
+      hasPageAccess = !!userProfile.permissions?.[requiredPermission];
+  }
+  // If no specific permission is required for a route (like a nested "add" page), inherit from parent.
+  // The check on getPermissionForPath handles this. If it returns null, we deny access for safety unless admin.
+
   const visibleNavLinks = navLinks.filter(link => {
     if (isAdmin) return true; // Admins see all links
+    // Sub-admins only see links if their permission for that link is explicitly true
     if (userProfile.role === 'sub-admin') {
-        return !!userProfile.permissions?.[link.permission];
+        return userProfile.permissions?.[link.permission] === true;
     }
     return false;
   });
@@ -205,7 +225,8 @@ export default function AdminLayout({
           <div className="w-full flex-1" />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
-          {isNavigating ? <PageLoader /> : children}
+          {/* **CRITICAL FIX**: Render AccessDenied if user doesn't have page access */}
+          {hasPageAccess ? (isNavigating ? <PageLoader /> : children) : <AccessDenied />}
         </main>
       </div>
     </div>
@@ -214,7 +235,7 @@ export default function AdminLayout({
 
 function AccessDenied() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+    <div className="flex flex-1 flex-col items-center justify-center p-4">
       <Alert variant="destructive" className="max-w-lg">
         <Terminal className="h-4 w-4" />
         <AlertTitle>Access Denied</AlertTitle>
