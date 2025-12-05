@@ -53,8 +53,8 @@ function PageLoader() {
 }
 
 const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", permission: 'canManageDashboard' as keyof UserPermissions },
-    { href: "/admin/control-panel", label: "Control Panel", permission: 'canManageControlPanel' as keyof UserPermissions },
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: 'canManageDashboard' as keyof UserPermissions },
+    { href: "/admin/control-panel", label: "Control Panel", icon: SlidersHorizontal, permission: 'canManageControlPanel' as keyof UserPermissions },
     { href: "/admin/users", label: "Users", icon: Users, permission: 'canManageUsers' as keyof UserPermissions },
     { href: "/admin/matches", label: "Matches", icon: Swords, permission: 'canManageMatches' as keyof UserPermissions },
     { href: "/admin/players", label: "Players", icon: UsersRound, permission: 'canManagePlayers' as keyof UserPermissions },
