@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Forgot Password</CardTitle>
+                <CardTitle className="font-headline">Forgot Password</CardTitle>
                 <CardDescription>
                     {step === 'mobile' && "Enter your mobile number to receive a reset OTP."}
                     {step === 'otp' && "Enter the OTP and your new password."}

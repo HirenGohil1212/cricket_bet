@@ -215,7 +215,7 @@ export default function SignupPage() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Create an account</CardTitle>
+                <CardTitle className="font-headline">Create an account</CardTitle>
                 <CardDescription>
                     {step === 'details' 
                         ? "Enter your details below to get started."

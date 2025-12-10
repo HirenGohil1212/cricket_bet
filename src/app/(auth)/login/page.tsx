@@ -55,7 +55,7 @@ export default function LoginPage() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Login</CardTitle>
+                <CardTitle className="font-headline">Login</CardTitle>
                 <CardDescription>
                     Enter your mobile number and password to login.
                 </CardDescription>
