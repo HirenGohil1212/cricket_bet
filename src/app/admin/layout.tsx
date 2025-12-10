@@ -119,8 +119,11 @@ export default function AdminLayout({
             href="/admin/dashboard"
             className="flex items-center gap-2 font-semibold"
           >
-            <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
-            <span className="font-headline">Admin</span>
+            <h1 className="font-headline text-2xl font-bold text-primary">
+                <span>UPI</span>
+                <span className="ml-1">11</span>
+            </h1>
+            <span className="font-headline text-lg">Admin</span>
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -160,8 +163,11 @@ export default function AdminLayout({
                         handleLinkClick('/admin/dashboard', true);
                       }}
                     >
-                       <Image src="/logo_upi.png" alt="UPI11 Logo" width={80} height={40} />
-                      <span className="font-headline">Admin</span>
+                      <h1 className="font-headline text-2xl font-bold text-primary">
+                          <span>UPI</span>
+                          <span className="ml-1">11</span>
+                      </h1>
+                      <span className="font-headline text-lg">Admin</span>
                     </Link>
                 </SheetTitle>
               </SheetHeader>

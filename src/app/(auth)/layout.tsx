@@ -43,7 +43,10 @@ export default function AuthLayout({
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
             <div className="w-full max-w-sm">
                 <div className="mb-8 flex justify-center">
-                    <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={140} height={70} />
+                    <h1 className="font-headline text-5xl font-bold text-primary">
+                        <span>UPI</span>
+                        <span className="ml-1">11</span>
+                    </h1>
                 </div>
                 {children}
                  <div className="mt-6 flex justify-center gap-4">

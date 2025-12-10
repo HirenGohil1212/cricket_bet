@@ -102,14 +102,17 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   const HeaderContent = () => (
     <div className="flex items-center gap-2">
-      <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
+      <h1 className="font-headline text-3xl font-bold text-primary">
+          <span>UPI</span>
+          <span className="ml-1">11</span>
+      </h1>
     </div>
   );
 
   const MobileHeader = () => (
     <SheetHeader className="p-4 border-b">
-        <SheetTitle className={cn("flex items-center gap-2 font-headline text-2xl font-bold")}>
-            <Image src="/UPI11 LOGO GREEN.png" alt="UPI11 Logo" width={80} height={40} />
+        <SheetTitle className={cn("flex items-center gap-2")}>
+             <HeaderContent />
         </SheetTitle>
     </SheetHeader>
   )
