@@ -45,7 +45,7 @@ export default function AuthLayout({
                 <div className="mb-8 flex justify-center">
                      <h1 className="font-headline text-5xl font-bold text-primary flex items-baseline">
                         <span>UPI</span>
-                        <span className="text-[1.3em] leading-none ml-1">11</span>
+                        <span className="text-[1.5em] leading-none ml-1">11</span>
                     </h1>
                 </div>
                 {children}
