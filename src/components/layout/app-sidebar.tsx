@@ -103,7 +103,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
     <div className="flex items-center gap-2">
       <h1 className="font-headline text-3xl font-bold text-primary flex items-baseline">
         <span>UPI</span>
-        <span className="text-[1.2em] leading-none ml-1">11</span>
+        <span className="text-[1.3em] leading-none ml-1">11</span>
       </h1>
     </div>
   );

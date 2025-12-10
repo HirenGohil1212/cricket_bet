@@ -120,7 +120,7 @@ export default function AdminLayout({
           >
             <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
                 <span>UPI</span>
-                <span className="text-[1.2em] leading-none ml-1">11</span>
+                <span className="text-[1.3em] leading-none ml-1">11</span>
             </h1>
             <span className="font-headline text-lg">Admin</span>
           </Link>
@@ -164,7 +164,7 @@ export default function AdminLayout({
                     >
                       <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
                           <span>UPI</span>
-                          <span className="text-[1.2em] leading-none ml-1">11</span>
+                          <span className="text-[1.3em] leading-none ml-1">11</span>
                       </h1>
                       <span className="font-headline text-lg">Admin</span>
                     </Link>
