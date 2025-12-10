@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -119,9 +118,9 @@ export default function AdminLayout({
             href="/admin/dashboard"
             className="flex items-center gap-2 font-semibold"
           >
-            <h1 className="font-headline text-2xl font-bold text-primary">
+            <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
                 <span>UPI</span>
-                <span className="ml-1">11</span>
+                <span className="text-[1.2em] leading-none ml-1">11</span>
             </h1>
             <span className="font-headline text-lg">Admin</span>
           </Link>
@@ -163,9 +162,9 @@ export default function AdminLayout({
                         handleLinkClick('/admin/dashboard', true);
                       }}
                     >
-                      <h1 className="font-headline text-2xl font-bold text-primary">
+                      <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
                           <span>UPI</span>
-                          <span className="ml-1">11</span>
+                          <span className="text-[1.2em] leading-none ml-1">11</span>
                       </h1>
                       <span className="font-headline text-lg">Admin</span>
                     </Link>

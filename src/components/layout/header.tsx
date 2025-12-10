@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -68,9 +67,9 @@ export function Header() {
             <SidebarTrigger />
         </div>
         <div className="md:hidden flex items-center gap-2 font-headline text-lg font-bold">
-            <h1 className="font-headline text-2xl font-bold text-primary">
+            <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
                 <span>UPI</span>
-                <span className="ml-1">11</span>
+                <span className="text-[1.2em] leading-none ml-1">11</span>
             </h1>
         </div>
       </div>

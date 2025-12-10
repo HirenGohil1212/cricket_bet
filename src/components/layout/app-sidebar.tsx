@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -102,9 +101,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   const HeaderContent = () => (
     <div className="flex items-center gap-2">
-      <h1 className="font-headline text-3xl font-bold text-primary">
-          <span>UPI</span>
-          <span className="ml-1">11</span>
+      <h1 className="font-headline text-3xl font-bold text-primary flex items-baseline">
+        <span>UPI</span>
+        <span className="text-[1.2em] leading-none ml-1">11</span>
       </h1>
     </div>
   );
