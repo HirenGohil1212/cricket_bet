@@ -31,7 +31,7 @@ export function PromotionalCarousel({ banners }: PromotionalCarouselProps) {
   return (
     <Carousel
       plugins={[plugin.current]}
-      className="w-full max-w-4xl mx-auto mb-6"
+      className="w-full mb-6"
       onMouseEnter={plugin.current.stop}
       onMouseLeave={plugin.current.reset}
       opts={{
