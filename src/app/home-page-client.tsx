@@ -11,7 +11,7 @@ import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AppSettings, ContentSettings } from "@/lib/types";
 import { PromotionalVideoDialog } from "@/components/promotional-video-dialog";
-import { BannerAd } from "@/components/banner-ad";
+import { PromotionalCarousel } from "@/components/promotional-carousel";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -132,7 +132,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
                 </Link>
               </Button>
           </div>
-          <BannerAd imageUrl={content?.bannerImageUrl} />
+          <PromotionalCarousel />
           {isNavigating ? <PageLoader /> : children}
         </main>
         <Footer />
