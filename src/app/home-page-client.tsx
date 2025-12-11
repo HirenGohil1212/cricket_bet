@@ -132,7 +132,7 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
                 </Link>
               </Button>
           </div>
-          <PromotionalCarousel />
+          <PromotionalCarousel banners={content?.banners} />
           {isNavigating ? <PageLoader /> : children}
         </main>
         <Footer />

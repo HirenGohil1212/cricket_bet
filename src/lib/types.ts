@@ -204,13 +204,19 @@ export type AppSettings = {
   whatsappNumber: string;
 };
 
+export type Banner = {
+    id?: string;
+    imageUrl: string;
+    imagePath: string;
+};
+
 export type ContentSettings = {
+    banners: Banner[];
     youtubeUrl: string;
-    bannerImageUrl: string;
-    bannerImagePath?: string;
     smallVideoUrl: string;
     smallVideoPath?: string;
 };
+
 
 export type DailyFinancialActivity = {
     date: string;

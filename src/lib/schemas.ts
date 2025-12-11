@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { sports, type Sport } from "@/lib/types";
 
@@ -147,10 +148,6 @@ const ACCEPTED_VIDEO_TYPES = ["video/mp4"];
 
 export const contentManagementSchema = z.object({
   youtubeUrl: z.string().url({ message: "Please enter a valid YouTube URL." }).optional().or(z.literal('')),
-  bannerImageFile: z.any()
-    .optional()
-    .refine((file) => !file || (file instanceof File && file.size <= MAX_BANNER_SIZE), `Max banner size is 5MB.`)
-    .refine((file) => !file || (file instanceof File && ACCEPTED_BANNER_TYPES.includes(file.type)), ".jpg, .jpeg, .png and .webp files are accepted."),
   smallVideoFile: z.any()
     .optional()
     .refine((file) => !file || (file instanceof File && file.size <= MAX_VIDEO_SIZE), `Max video size is 10MB.`)
