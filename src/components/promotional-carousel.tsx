@@ -31,7 +31,7 @@ export function PromotionalCarousel({ banners }: PromotionalCarouselProps) {
   return (
     <Carousel
       plugins={[plugin.current]}
-      className="w-full mb-6"
+      className="w-full max-w-4xl mx-auto mb-6"
       onMouseEnter={plugin.current.stop}
       onMouseLeave={plugin.current.reset}
       opts={{
@@ -42,13 +42,13 @@ export function PromotionalCarousel({ banners }: PromotionalCarouselProps) {
         {banners.map((banner, index) => (
           <CarouselItem key={banner.id || index}>
             <Card className="overflow-hidden">
-                <div className="relative aspect-video h-40 md:h-64">
+                <div className="relative aspect-video">
                   <Image
                     src={banner.imageUrl}
                     alt={`Promotional banner ${index + 1}`}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
             </Card>
