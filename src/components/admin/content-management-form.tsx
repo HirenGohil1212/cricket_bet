@@ -37,7 +37,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "../ui/separator";
-import { Label } from "@/components/ui/label";
+import { Label } from "../ui/label";
 
 interface ContentManagementFormProps {
     initialData: ContentSettings | null;
@@ -210,7 +210,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                          <div className="p-4 border rounded-lg bg-background">
                             <Label className="font-medium">Add New Banner</Label>
                             <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
-                                <div className="w-full sm:w-1/2 md:w-1/3 aspect-video border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
+                                <div className="w-full sm:w-1/2 md:w-1/3 aspect-[1200/224] border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
                                      {newBannerPreview ? (
                                         <Image src={newBannerPreview} alt="New Banner Preview" width={320} height={180} className="object-cover"/>
                                      ) : (
@@ -225,7 +225,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         className="max-w-xs"
                                     />
                                     <FormDescription>
-                                        Recommended ratio: 16:9 (e.g., 1280x720 pixels). Max 5MB.
+                                        Recommended size: 1200x224 pixels. Max 5MB.
                                     </FormDescription>
                                     <Button type="button" size="sm" onClick={handleAddBanner} disabled={isSubmitting || !newBannerFile}>
                                         <PlusCircle className="mr-2 h-4 w-4" />
