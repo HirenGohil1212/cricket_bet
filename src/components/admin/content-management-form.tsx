@@ -212,7 +212,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                             <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
                                 <div className="w-full sm:w-1/2 md:w-1/3 aspect-video border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
                                      {newBannerPreview ? (
-                                        <Image src={newBannerPreview} alt="New Banner Preview" width={320} height={180} className="object-contain"/>
+                                        <Image src={newBannerPreview} alt="New Banner Preview" width={320} height={180} className="object-cover"/>
                                      ) : (
                                         <ImageIcon className="h-8 w-8 text-muted-foreground" />
                                      )}
@@ -224,7 +224,9 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         onChange={handleNewBannerFileChange} 
                                         className="max-w-xs"
                                     />
-                                    <FormDescription>Upload a banner image. Recommended ratio: 16:9. Max 5MB.</FormDescription>
+                                    <FormDescription>
+                                        Recommended ratio: 16:9 (e.g., 1280x720 pixels). Max 5MB.
+                                    </FormDescription>
                                     <Button type="button" size="sm" onClick={handleAddBanner} disabled={isSubmitting || !newBannerFile}>
                                         <PlusCircle className="mr-2 h-4 w-4" />
                                         {isSubmitting ? 'Uploading...' : 'Add Banner'}
