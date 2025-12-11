@@ -42,7 +42,7 @@ export function PromotionalCarousel({ banners }: PromotionalCarouselProps) {
         {banners.map((banner, index) => (
           <CarouselItem key={banner.id || index}>
             <Card className="overflow-hidden">
-                <div className="relative aspect-video">
+                <div className="relative h-40">
                   <Image
                     src={banner.imageUrl}
                     alt={`Promotional banner ${index + 1}`}

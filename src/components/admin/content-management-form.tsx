@@ -224,7 +224,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                         onChange={handleNewBannerFileChange} 
                                         className="max-w-xs"
                                     />
-                                    <FormDescription>Upload a banner image (e.g., 16:9 ratio). Max 5MB.</FormDescription>
+                                    <FormDescription>Upload a banner image. Recommended ratio: 16:9. Max 5MB.</FormDescription>
                                     <Button type="button" size="sm" onClick={handleAddBanner} disabled={isSubmitting || !newBannerFile}>
                                         <PlusCircle className="mr-2 h-4 w-4" />
                                         {isSubmitting ? 'Uploading...' : 'Add Banner'}
