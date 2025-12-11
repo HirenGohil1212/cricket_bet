@@ -37,6 +37,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "../ui/separator";
+import { Label } from "@/components/ui/label";
 
 interface ContentManagementFormProps {
     initialData: ContentSettings | null;
@@ -134,7 +135,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
     } else {
         toast({ title: 'Success!', description: result.success });
         setVideoPreview(null);
-        form.setValue('smallVideoFile', null);
+        form.setValue('smallVideoFile', undefined);
         router.refresh();
     }
     setIsDeleting(null);
@@ -165,7 +166,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
             toast({ variant: "destructive", title: "Error", description: result.error });
         } else {
             toast({ title: "Success!", description: "Video settings updated." });
-            form.setValue('smallVideoFile', null);
+            form.setValue('smallVideoFile', undefined);
             router.refresh();
         }
     } catch (error: any) {
