@@ -141,10 +141,11 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isAdmin = userProfile?.role === 'admin';
+    const hasPermission = isAdmin || (userProfile?.role === 'sub-admin' && userProfile?.permissions?.canManageDeposits);
     const isProcessing = deposit.status === 'Processing';
 
     const handleApprove = async () => {
-        if (!isAdmin || !isProcessing) {
+        if (!hasPermission || !isProcessing) {
             toast({ variant: 'destructive', title: 'Permission Denied' });
             return;
         }
@@ -161,7 +162,7 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
     };
 
     const handleReject = async () => {
-        if (!isAdmin || !isProcessing) {
+        if (!hasPermission || !isProcessing) {
             toast({ variant: 'destructive', title: 'Permission Denied' });
             return;
         }
@@ -226,10 +227,10 @@ function ReviewDialog({ isOpen, onClose, deposit }: ReviewDialogProps) {
                 </div>
                 {isProcessing ? (
                     <DialogFooter className="grid grid-cols-2 gap-2">
-                        <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !isAdmin}>
+                        <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !hasPermission}>
                             {isSubmitting ? 'Rejecting...' : 'Reject'}
                         </Button>
-                        <Button onClick={handleApprove} disabled={isSubmitting || !isAdmin}>
+                        <Button onClick={handleApprove} disabled={isSubmitting || !hasPermission}>
                             {isSubmitting ? 'Approving...' : 'Approve'}
                         </Button>
                     </DialogFooter>

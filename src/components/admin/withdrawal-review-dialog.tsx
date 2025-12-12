@@ -30,6 +30,7 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
     const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
     const isAdmin = userProfile?.role === 'admin';
+    const hasPermission = isAdmin || (userProfile?.role === 'sub-admin' && userProfile?.permissions?.canManageWithdrawals);
 
     useEffect(() => {
         if (isOpen && withdrawal.userId) {
@@ -52,7 +53,7 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
 
 
     const handleApprove = async () => {
-        if (!isAdmin) {
+        if (!hasPermission) {
             toast({ variant: 'destructive', title: 'Permission Denied' });
             return;
         }
@@ -69,7 +70,7 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
     };
 
     const handleReject = async () => {
-        if (!isAdmin) {
+        if (!hasPermission) {
             toast({ variant: 'destructive', title: 'Permission Denied' });
             return;
         }
@@ -120,10 +121,10 @@ export function WithdrawalReviewDialog({ isOpen, onClose, withdrawal }: ReviewDi
                      </Card>
                 </div>
                 <DialogFooter className="grid grid-cols-2 gap-2">
-                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !isAdmin}>
+                    <Button variant="destructive" onClick={handleReject} disabled={isSubmitting || !hasPermission}>
                         {isSubmitting ? 'Rejecting...' : 'Reject'}
                     </Button>
-                    <Button onClick={handleApprove} disabled={isSubmitting || !isAdmin}>
+                    <Button onClick={handleApprove} disabled={isSubmitting || !hasPermission}>
                         {isSubmitting ? 'Approving...' : 'Approve & Pay'}
                     </Button>
                 </DialogFooter>
