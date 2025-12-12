@@ -8,6 +8,7 @@ import {
   Terminal,
   ArrowLeft,
   Menu,
+  Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePathname } from "next/navigation";
@@ -26,10 +27,54 @@ import type { UserPermissions } from "@/lib/types";
 import { getPermissionForPath, navLinks } from "@/lib/admin-nav";
 
 
-function PageLoader() {
+function AdminSkeleton() {
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r bg-background md:flex flex-col">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Skeleton className="h-6 w-36" />
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </div>
+        <div className="mt-auto p-4">
+          <Skeleton className="h-9 w-full" />
+        </div>
+      </aside>
+      <div className="flex flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <Skeleton className="h-8 w-8 shrink-0 md:hidden" />
+          <div className="w-full flex-1" />
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
+          <div className="flex flex-1 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function AccessDenied() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center p-4">
+      <Alert variant="destructive" className="max-w-lg">
+        <Terminal className="h-4 w-4" />
+        <AlertTitle>Access Denied</AlertTitle>
+        <AlertDescription>
+          You do not have permission to view this page. Please contact an
+          administrator if you believe this is an error.
+          <Button variant="outline" size="sm" className="mt-4" asChild>
+            <Link href="/">Go to Homepage</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
@@ -42,19 +87,17 @@ export default function AdminLayout({
   const { user, userProfile, loading } = useAuth();
   const pathname = usePathname();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  // This effect will run when a new page has finished loading, turning off the loader.
-  useEffect(() => {
-    setIsNavigating(false);
-  }, [pathname]);
   
   if (loading || (user && !userProfile)) {
     return <AdminSkeleton />;
   }
 
   if (!user || (userProfile.role !== "admin" && userProfile.role !== "sub-admin")) {
-    return <AccessDenied />;
+    return (
+       <div className="flex min-h-screen items-center justify-center">
+        <AccessDenied />
+      </div>
+    );
   }
   
   const isAdmin = userProfile.role === 'admin';
@@ -64,7 +107,6 @@ export default function AdminLayout({
   if (isAdmin) {
       hasPageAccess = true;
   } else if (userProfile.role === 'sub-admin') {
-      // Allow access to the main dashboard for sub-admins by default
       if (pathname === '/admin/dashboard') {
           hasPageAccess = true;
       } else if (requiredPermission) {
@@ -74,21 +116,16 @@ export default function AdminLayout({
 
 
   const visibleNavLinks = navLinks.filter(link => {
-    if (isAdmin) return true; // Admins see all links
-    // Sub-admins only see links if their permission for that link is explicitly true
+    if (isAdmin) return true;
     if (userProfile.role === 'sub-admin') {
-        if (link.permission === 'canManageDashboard') return true; // Always show dashboard link
+        if (link.permission === 'canManageDashboard') return true;
         return userProfile.permissions?.[link.permission] === true;
     }
     return false;
   });
 
 
-  const handleLinkClick = (href: string, isMobile: boolean) => {
-    // Only show loader if navigating to a different page
-    if (pathname !== href) {
-      setIsNavigating(true);
-    }
+  const handleLinkClick = (isMobile: boolean) => {
     if (isMobile) {
       setIsSheetOpen(false);
     }
@@ -99,7 +136,7 @@ export default function AdminLayout({
       <Link
         key={href}
         href={href}
-        onClick={() => handleLinkClick(href, isMobile)}
+        onClick={() => handleLinkClick(isMobile)}
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 transition-all font-headline",
           pathname.startsWith(href)
@@ -161,9 +198,7 @@ export default function AdminLayout({
                    <Link
                       href="/admin/dashboard"
                       className="flex items-center gap-2 text-lg font-semibold"
-                      onClick={() => {
-                        handleLinkClick('/admin/dashboard', true);
-                      }}
+                      onClick={() => handleLinkClick(true)}
                     >
                       <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
                           <span>UPI</span>
@@ -189,60 +224,11 @@ export default function AdminLayout({
           <div className="w-full flex-1" />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
-          {hasPageAccess ? (isNavigating ? <PageLoader /> : children) : <AccessDenied />}
+          {hasPageAccess ? children : <AccessDenied />}
         </main>
       </div>
     </div>
   );
 }
 
-function AccessDenied() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center p-4">
-      <Alert variant="destructive" className="max-w-lg">
-        <Terminal className="h-4 w-4" />
-        <AlertTitle>Access Denied</AlertTitle>
-        <AlertDescription>
-          You do not have permission to view this page. Please contact an
-          administrator if you believe this is an error.
-          <Button variant="outline" size="sm" className="mt-4" asChild>
-            <Link href="/">Go to Homepage</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
-    </div>
-  );
-}
-
-function AdminSkeleton() {
-  return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <aside className="hidden border-r bg-background md:flex flex-col">
-        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Skeleton className="h-6 w-36" />
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </div>
-        <div className="mt-auto p-4">
-          <Skeleton className="h-9 w-full" />
-        </div>
-      </aside>
-      <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Skeleton className="h-8 w-8 shrink-0 md:hidden" />
-          <div className="w-full flex-1" />
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
-          <Skeleton className="mb-4 h-8 w-32" />
-          <Skeleton className="h-96 w-full" />
-        </main>
-      </div>
-    </div>
-  );
-}
+    

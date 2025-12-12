@@ -21,7 +21,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(authUser);
         const userDocRef = doc(db, 'users', authUser.uid);
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
-            if (doc.exists()) {
+            // **CRITICAL FIX**: Only update the profile if the changed document
+            // belongs to the currently authenticated user. This prevents an admin's
+            // session from being overwritten when they modify another user's data.
+            if (doc.exists() && doc.id === authUser.uid) {
                 const data = doc.data();
                 const profile: UserProfile = {
                     uid: doc.id,
@@ -42,8 +45,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     totalWithdrawals: data.totalWithdrawals || 0,
                 };
                 setUserProfile(profile);
-            } else {
-                setUserProfile(null);
+            }
+            // If the user's own document is deleted, log them out.
+            else if (!doc.exists() && userProfile && doc.id === userProfile.uid) {
+                 setUserProfile(null);
             }
             setLoading(false);
         });
@@ -56,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [userProfile]);
 
   return (
     <AuthContext.Provider value={{ user, userProfile, loading }}>
@@ -78,3 +83,5 @@ export const useRequireAuth = () => {
 
     return authContext;
 }
+
+    
