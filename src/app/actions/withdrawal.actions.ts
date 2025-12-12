@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { 
@@ -12,7 +13,8 @@ import {
     orderBy,
     updateDoc,
     getDoc,
-    increment
+    increment,
+    setDoc
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
@@ -134,10 +136,10 @@ export async function approveWithdrawal(withdrawalId: string, userId: string, am
                 updatedAt: Timestamp.now(),
             });
 
-            // Update all-time financial summary
-            transaction.update(summaryRef, {
+            // Update all-time financial summary (using set with merge to create if not exists)
+            transaction.set(summaryRef, {
                 totalWithdrawals: increment(amount)
-            });
+            }, { merge: true });
         });
 
         revalidatePath('/admin/withdrawals');

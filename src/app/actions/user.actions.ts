@@ -2,7 +2,7 @@
 
 'use server';
 
-import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy, setDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserBankAccount, UserProfile, UserRole, UserPermissions } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
@@ -227,6 +227,12 @@ export async function resetFinancialStats() {
             totalWithdrawals: 0,
             totalWagered: 0,
             totalPayouts: 0,
+            // also resetting income, revenue, profit fields
+            betIncome: 0,
+            grossRevenue: 0,
+            finalProfit: 0,
+            totalReferralBonuses: 0,
+            totalUserWalletFunds: 0
         };
         await setDoc(summaryRef, initialSummary);
 

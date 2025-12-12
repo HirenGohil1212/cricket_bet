@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { 
@@ -14,7 +15,8 @@ import {
     updateDoc,
     writeBatch,
     increment,
-    getDoc
+    getDoc,
+    setDoc
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
@@ -166,10 +168,10 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
                 amount: amount // Update amount if admin changed it
             });
 
-            // Update all-time financial summary
-            transaction.update(summaryRef, {
+            // Update all-time financial summary (using set with merge to create if not exists)
+            transaction.set(summaryRef, {
                 totalDeposits: increment(amount)
-            });
+            }, { merge: true });
 
             // Handle referral deposit commission
             if (
