@@ -63,11 +63,13 @@ export default function AdminLayout({
   let hasPageAccess = false;
   if (isAdmin) {
       hasPageAccess = true;
-  } else if (userProfile.role === 'sub-admin' && requiredPermission) {
-      hasPageAccess = !!userProfile.permissions?.[requiredPermission];
-  } else if (userProfile.role === 'sub-admin' && !requiredPermission) {
-      // Deny access if no specific permission is defined for a route, for safety.
-      hasPageAccess = false;
+  } else if (userProfile.role === 'sub-admin') {
+      // Allow access to the main dashboard for sub-admins by default
+      if (pathname === '/admin/dashboard') {
+          hasPageAccess = true;
+      } else if (requiredPermission) {
+          hasPageAccess = !!userProfile.permissions?.[requiredPermission];
+      }
   }
 
 
@@ -75,6 +77,7 @@ export default function AdminLayout({
     if (isAdmin) return true; // Admins see all links
     // Sub-admins only see links if their permission for that link is explicitly true
     if (userProfile.role === 'sub-admin') {
+        if (link.permission === 'canManageDashboard') return true; // Always show dashboard link
         return userProfile.permissions?.[link.permission] === true;
     }
     return false;
