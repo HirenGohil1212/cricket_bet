@@ -127,20 +127,23 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
     setIsDeleting(null);
   };
   
-  const handleDeleteVideo = async () => {
-    setIsDeleting('video');
-    const result = await deleteContentAsset({ assetType: 'video' });
+  const handleDeleteVideo = async (assetType: 'video' | 'youtube') => {
+    setIsDeleting(assetType);
+    const result = await deleteContentAsset({ assetType });
     if (result.error) {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.error });
     } else {
         toast({ title: 'Success!', description: result.success });
-        setVideoPreview(null);
-        form.setValue('smallVideoFile', undefined);
+        if (assetType === 'video') {
+            setVideoPreview(null);
+            form.setValue('smallVideoFile', undefined);
+        } else {
+            form.setValue('youtubeUrl', '');
+        }
         router.refresh();
     }
     setIsDeleting(null);
   };
-
 
   async function onSubmit(data: ContentManagementFormValues) {
     setIsSubmitting(true);
@@ -155,7 +158,6 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
         }
 
         const payload = {
-            youtubeUrl: data.youtubeUrl || '',
             smallVideoUrl,
             smallVideoPath,
         };
@@ -175,6 +177,19 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
         setIsSubmitting(false);
     }
   }
+
+  const handleSaveYouTubeLink = async () => {
+    setIsSubmitting(true);
+    const youtubeUrl = form.getValues('youtubeUrl');
+    const result = await updateContent({ youtubeUrl });
+    if (result.error) {
+      toast({ variant: 'destructive', title: 'Error', description: result.error });
+    } else {
+      toast({ title: 'Success!', description: 'YouTube link updated.' });
+      router.refresh();
+    }
+    setIsSubmitting(false);
+  };
 
   return (
     <Form {...form}>
@@ -246,7 +261,11 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 font-semibold"><LinkIcon className="h-5 w-5"/> YouTube Video Link</FormLabel>
-                          <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                          <div className="flex items-center gap-2">
+                            <FormControl><Input placeholder="https://www.youtube.com/watch?v=..." {...field} /></FormControl>
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleDeleteVideo('youtube')} disabled={isSubmitting || isDeleting === 'youtube' || !field.value}>Clear</Button>
+                            <Button type="button" size="sm" onClick={handleSaveYouTubeLink} disabled={isSubmitting || isDeleting === 'youtube'}>Save</Button>
+                          </div>
                           <FormDescription>This video might be shown on the home page or other promotional areas.</FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -295,7 +314,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleDeleteVideo} disabled={isDeleting === 'video'}>
+                                                    <AlertDialogAction onClick={() => handleDeleteVideo('video')} disabled={isDeleting === 'video'}>
                                                         {isDeleting === 'video' ? 'Deleting...' : 'Confirm Delete'}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
@@ -314,7 +333,7 @@ export function ContentManagementForm({ initialData }: ContentManagementFormProp
 
         <div className="flex items-center justify-end">
             <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Video Settings"}
+                {isSubmitting ? "Saving..." : "Save Video File"}
             </Button>
         </div>
       </form>

@@ -9,14 +9,10 @@ import { deleteFileByPath, listFiles } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 
-// --- DEPRECATED FIELDS ---
-// youtubeUrl: string;
-// bannerImageUrl?: string;
-// bannerImagePath?: string;
-
 interface UpdateContentPayload {
     smallVideoUrl?: string;
     smallVideoPath?: string;
+    youtubeUrl?: string;
 }
 
 // Function to get existing content settings
@@ -43,8 +39,8 @@ export async function getContent(): Promise<ContentSettings> {
     }
 }
 
-// Server action to update content settings (now only for video)
-export async function updateContent(payload: UpdateContentPayload) {
+// Server action to update content settings
+export async function updateContent(payload: Partial<UpdateContentPayload>) {
     if (!payload) {
       return { error: 'Invalid data provided.' };
     }
@@ -52,19 +48,31 @@ export async function updateContent(payload: UpdateContentPayload) {
     try {
         const docRef = doc(db, 'adminSettings', 'content');
         const currentContent = await getContent();
+        
+        const updateData: Partial<ContentSettings> = {};
 
-        // If a new video is being uploaded and an old one exists, delete the old one
         if (payload.smallVideoPath && currentContent?.smallVideoPath && payload.smallVideoPath !== currentContent.smallVideoPath) {
             await deleteFileByPath(currentContent.smallVideoPath);
         }
         
-        await updateDoc(docRef, {
-            smallVideoUrl: payload.smallVideoUrl || currentContent.smallVideoUrl || '',
-            smallVideoPath: payload.smallVideoPath || currentContent.smallVideoPath || '',
-        });
+        if (payload.smallVideoUrl !== undefined) {
+            updateData.smallVideoUrl = payload.smallVideoUrl;
+        }
+         if (payload.smallVideoPath !== undefined) {
+            updateData.smallVideoPath = payload.smallVideoPath;
+        }
+        if (payload.youtubeUrl !== undefined) {
+            updateData.youtubeUrl = payload.youtubeUrl;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return { success: 'No changes to update.' };
+        }
+        
+        await updateDoc(docRef, updateData);
         
         revalidatePath('/admin/content');
-        revalidatePath('/'); // Also revalidate home page
+        revalidatePath('/');
         return { success: 'Content updated successfully!' };
 
     } catch (error: any) {
@@ -116,7 +124,7 @@ export async function deleteBanner(bannerId: string) {
 
 
 // Server action to delete a specific content asset
-export async function deleteContentAsset({ assetType }: { assetType: 'video' }) {
+export async function deleteContentAsset({ assetType }: { assetType: 'video' | 'youtube' }) {
     if (!assetType) {
         return { error: 'Asset type is required.' };
     }
@@ -135,6 +143,10 @@ export async function deleteContentAsset({ assetType }: { assetType: 'video' }) 
             await updateDoc(docRef, {
                 smallVideoUrl: '',
                 smallVideoPath: ''
+            });
+        } else if (assetType === 'youtube') {
+            await updateDoc(docRef, {
+                youtubeUrl: '',
             });
         }
 
