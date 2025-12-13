@@ -189,5 +189,6 @@ export type BettingSettingsFormValues = z.infer<typeof bettingSettingsSchema>;
 // Schema for App Settings (Admin)
 export const appSettingsSchema = z.object({
   whatsappNumber: z.string().min(10, "Please enter a valid phone number with country code.").optional().or(z.literal('')),
+  depositBonusPercentage: z.coerce.number().min(0, "Percentage must be 0 or more.").max(100, "Percentage cannot be more than 100.").optional(),
 });
 export type AppSettingsFormValues = z.infer<typeof appSettingsSchema>;

@@ -138,6 +138,7 @@ export type DepositRequest = {
   status: 'Processing' | 'Approved' | 'Rejected';
   createdAt: string | { toDate: () => Date }; // Allow for Firestore Timestamp
   updatedAt: string | { toDate: () => Date };
+  bonusApplied?: number;
 };
 
 export type WithdrawalRequest = {
@@ -175,7 +176,7 @@ export type Question = {
 export type Transaction = {
     id: string;
     userId: string;
-    type: 'referral_bonus' | 'deposit_commission';
+    type: 'referral_bonus' | 'deposit_commission' | 'deposit_bonus';
     amount: number; // positive for credit
     description: string;
     timestamp: string | { toDate: () => Date }; // Allow for Firestore Timestamp
@@ -202,6 +203,7 @@ export type Referral = {
 
 export type AppSettings = {
   whatsappNumber: string;
+  depositBonusPercentage?: number;
 };
 
 export type Banner = {

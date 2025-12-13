@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function getAppSettings(): Promise<AppSettings> {
     const defaultSettings: AppSettings = {
         whatsappNumber: '',
+        depositBonusPercentage: 0,
     };
     try {
         const docRef = doc(db, 'adminSettings', 'app');
@@ -34,7 +35,7 @@ export async function getAppSettings(): Promise<AppSettings> {
 }
 
 // Server action to update app settings
-export async function updateAppSettings(data: AppSettingsFormValues) {
+export async function updateAppSettings(data: Partial<AppSettingsFormValues>) {
     const validatedFields = appSettingsSchema.safeParse(data);
     if (!validatedFields.success) {
       return { error: 'Invalid data provided.' };
@@ -45,6 +46,7 @@ export async function updateAppSettings(data: AppSettingsFormValues) {
         await setDoc(docRef, validatedFields.data, { merge: true });
         
         revalidatePath('/admin/settings');
+        revalidatePath('/admin/deposits');
         revalidatePath('/'); // Revalidate home page to update support button
         return { success: 'App settings updated successfully!' };
 

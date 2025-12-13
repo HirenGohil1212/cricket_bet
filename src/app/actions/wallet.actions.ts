@@ -22,6 +22,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { DepositRequest } from '@/lib/types';
 import { getReferralSettings } from './referral.actions';
+import { getAppSettings } from './settings.actions';
 
 interface CreateDepositRequestParams {
     userId: string;
@@ -146,7 +147,14 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
         const userRef = doc(db, 'users', userId);
         const summaryRef = doc(db, 'statistics', 'financialSummary');
 
-        const referralSettings = await getReferralSettings();
+        const [referralSettings, appSettings] = await Promise.all([
+            getReferralSettings(),
+            getAppSettings()
+        ]);
+        
+        const depositBonusPercentage = appSettings.depositBonusPercentage || 0;
+        const bonusAmount = amount * (depositBonusPercentage / 100);
+        const totalAmountToCredit = amount + bonusAmount;
 
         await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
@@ -157,15 +165,16 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
 
             // Update user balance and total deposits
             transaction.update(userRef, { 
-                walletBalance: increment(amount),
-                totalDeposits: increment(amount)
+                walletBalance: increment(totalAmountToCredit),
+                totalDeposits: increment(amount) // Only log original amount in summary
             });
             
             // Update deposit status
             transaction.update(depositRef, { 
                 status: 'Approved',
                 updatedAt: Timestamp.now(),
-                amount: amount // Update amount if admin changed it
+                amount: amount, // Update amount if admin changed it
+                bonusApplied: bonusAmount > 0 ? bonusAmount : null,
             });
 
             // Update all-time financial summary (using set with merge to create if not exists)
@@ -194,6 +203,18 @@ export async function approveDeposit(depositId: string, userId: string, amount: 
                         timestamp: Timestamp.now(),
                     });
                 }
+            }
+
+            // Log the deposit bonus if applicable
+            if (bonusAmount > 0) {
+                const bonusLogRef = doc(collection(db, 'transactions'));
+                transaction.set(bonusLogRef, {
+                    userId: userId,
+                    amount: bonusAmount,
+                    type: 'deposit_bonus',
+                    description: `${depositBonusPercentage}% bonus on deposit of ${amount}.`,
+                    timestamp: Timestamp.now(),
+                });
             }
         });
 
