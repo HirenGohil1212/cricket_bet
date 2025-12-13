@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import type { ContentSettings, Banner } from '@/lib/types';
@@ -69,7 +69,7 @@ export async function updateContent(payload: Partial<UpdateContentPayload>) {
             return { success: 'No changes to update.' };
         }
         
-        await updateDoc(docRef, updateData);
+        await setDoc(docRef, updateData, { merge: true });
         
         revalidatePath('/admin/content');
         revalidatePath('/');
@@ -89,7 +89,7 @@ export async function addBanner(newBanner: { imageUrl: string; imagePath: string
     try {
         const currentContent = await getContent();
         const updatedBanners = [...currentContent.banners, { ...newBanner, id: uuidv4() }];
-        await updateDoc(docRef, { banners: updatedBanners });
+        await setDoc(docRef, { banners: updatedBanners }, { merge: true });
         revalidatePath('/admin/content');
         revalidatePath('/');
         return { success: 'New banner added.', newBanner: { ...newBanner, id: uuidv4() } };
@@ -112,7 +112,7 @@ export async function deleteBanner(bannerId: string) {
         }
 
         const updatedBanners = currentContent.banners.filter(b => b.id !== bannerId);
-        await updateDoc(docRef, { banners: updatedBanners });
+        await setDoc(docRef, { banners: updatedBanners }, { merge: true });
         
         revalidatePath('/admin/content');
         revalidatePath('/');
@@ -140,14 +140,14 @@ export async function deleteContentAsset({ assetType }: { assetType: 'video' | '
              if (currentContent.smallVideoPath) {
                 await deleteFileByPath(currentContent.smallVideoPath);
             }
-            await updateDoc(docRef, {
+            await setDoc(docRef, {
                 smallVideoUrl: '',
                 smallVideoPath: ''
-            });
+            }, { merge: true });
         } else if (assetType === 'youtube') {
-            await updateDoc(docRef, {
+            await setDoc(docRef, {
                 youtubeUrl: '',
-            });
+            }, { merge: true });
         }
 
         revalidatePath('/admin/content');
