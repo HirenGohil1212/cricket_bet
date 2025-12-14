@@ -107,9 +107,7 @@ export default function AdminLayout({
   if (isAdmin) {
       hasPageAccess = true;
   } else if (userProfile.role === 'sub-admin') {
-      if (pathname === '/admin/dashboard') {
-          hasPageAccess = true;
-      } else if (requiredPermission) {
+      if (requiredPermission) {
           hasPageAccess = !!userProfile.permissions?.[requiredPermission];
       }
   }
