@@ -81,7 +81,7 @@ export function Header() {
             <Button asChild variant="outline" className="border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary">
                 <Link href="/wallet">
                     <Wallet className="h-5 w-5" />
-                    <span className="hidden sm:inline-block">INR {userProfile.walletBalance.toFixed(2)}</span>
+                    <span className="inline-block">INR {userProfile.walletBalance.toFixed(2)}</span>
                 </Link>
             </Button>
         )}
