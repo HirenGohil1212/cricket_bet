@@ -193,7 +193,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
           <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
             {status === 'Upcoming' && (
               <div className="text-center bg-accent/10 text-accent p-2 rounded-md w-full">
-                  <p className="text-xs font-semibold">Betting closes in:</p>
+                  <p className="text-xs font-semibold">Game will starts in:</p>
                   <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
               </div>
             )}
