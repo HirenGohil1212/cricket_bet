@@ -106,17 +106,14 @@ export default function AdminLayout({
   let hasPageAccess = false;
   if (isAdmin) {
       hasPageAccess = true;
-  } else if (userProfile.role === 'sub-admin') {
-      if (requiredPermission) {
-          hasPageAccess = !!userProfile.permissions?.[requiredPermission];
-      }
+  } else if (userProfile.role === 'sub-admin' && requiredPermission) {
+      hasPageAccess = !!userProfile.permissions?.[requiredPermission];
   }
 
 
   const visibleNavLinks = navLinks.filter(link => {
     if (isAdmin) return true;
     if (userProfile.role === 'sub-admin') {
-        if (link.permission === 'canManageDashboard') return true;
         return userProfile.permissions?.[link.permission] === true;
     }
     return false;
