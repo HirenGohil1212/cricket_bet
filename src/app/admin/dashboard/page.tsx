@@ -147,11 +147,11 @@ export default async function AdminDashboardPage() {
                  <Card className={isProfit ? "bg-primary text-primary-foreground" : "bg-destructive text-destructive-foreground"}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">{isProfit ? 'Final Profit' : 'Final Loss'}</CardTitle>
-                        <CircleDollarSign className="h-4 w-4 text-white/70" />
+                        <CircleDollarSign className="h-4 w-4 text-primary-foreground/70" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">INR {Math.abs(financialSummary.finalProfit).toFixed(2)}</div>
-                        <p className="text-xs text-white/70">Bet Income - Payouts - Bonuses</p>
+                        <p className="text-xs text-primary-foreground/70">Bet Income - Payouts - Bonuses</p>
                     </CardContent>
                  </Card>
             </div>
