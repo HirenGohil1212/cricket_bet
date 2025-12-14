@@ -10,12 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
-import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Gift, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Gift, Clock, PiggyBank } from 'lucide-react';
 import { subDays, startOfDay } from 'date-fns';
 
 type CombinedHistoryItem = {
     id: string;
-    type: 'Win' | 'Loss' | 'Deposit' | 'Withdrawal' | 'Bonus' | 'Pending Bonus';
+    type: 'Win' | 'Loss' | 'Deposit' | 'Withdrawal' | 'Bonus' | 'Pending Bonus' | 'Commission';
     amount: number;
     description: string;
     date: Date;
@@ -34,7 +34,7 @@ export function AllHistoryTable() {
         const betsQuery = query(collection(db, 'bets'), where('userId', '==', user.uid));
         const depositsQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid));
         const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid));
-        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', '==', 'referral_bonus'));
+        const bonusesQuery = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('type', 'in', ['referral_bonus', 'deposit_commission', 'deposit_bonus']));
         const pendingQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid), where('status', '==', 'pending'));
 
         const [betsSnap, depositsSnap, withdrawalsSnap, bonusesSnap, pendingSnap] = await Promise.all([
@@ -92,9 +92,14 @@ export function AllHistoryTable() {
 
         const bonusesData = bonusesSnap.docs.map(doc => {
             const data = doc.data() as Transaction;
+            const typeMap = {
+                'referral_bonus': 'Bonus',
+                'deposit_commission': 'Commission',
+                'deposit_bonus': 'Bonus',
+            };
             return {
                 id: doc.id,
-                type: 'Bonus',
+                type: typeMap[data.type] || 'Bonus',
                 amount: data.amount,
                 description: data.description,
                 date: (data.timestamp as Timestamp).toDate(),
@@ -142,13 +147,14 @@ export function AllHistoryTable() {
       case 'Deposit': return <Badge variant="secondary" className="bg-blue-100 text-blue-800"><ArrowUp className="h-3 w-3 mr-1" />Deposit</Badge>;
       case 'Withdrawal': return <Badge variant="secondary" className="bg-orange-100 text-orange-800"><ArrowDown className="h-3 w-3 mr-1" />Withdrawal</Badge>;
       case 'Bonus': return <Badge variant="secondary" className="bg-purple-100 text-purple-800"><Gift className="h-3 w-3 mr-1" />Bonus</Badge>;
+      case 'Commission': return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800"><PiggyBank className="h-3 w-3 mr-1" />Commission</Badge>;
       case 'Pending Bonus': return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
       default: return null;
     }
   };
 
    const renderAmount = (item: CombinedHistoryItem) => {
-    const isCredit = ['Win', 'Deposit', 'Bonus'].includes(item.type);
+    const isCredit = ['Win', 'Deposit', 'Bonus', 'Commission'].includes(item.type);
     const isDebit = ['Loss', 'Withdrawal'].includes(item.type);
     
     if (item.type === 'Pending Bonus') {
