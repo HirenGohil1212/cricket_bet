@@ -39,13 +39,15 @@ export function PromotionalCarousel({ banners }: PromotionalCarouselProps) {
         {banners.map((banner, index) => (
           <CarouselItem key={banner.id || index}>
             <Card className="overflow-hidden">
-                <div className="relative aspect-[1200/400] md:aspect-[1200/224]">
+                <div className="relative w-full">
                   <Image
                     src={banner.imageUrl}
                     alt={`Promotional banner ${index + 1}`}
-                    fill
-                    className="object-cover"
+                    width={1200}
+                    height={224}
+                    className="object-contain w-full h-auto"
                     quality={100}
+                    priority={index === 0}
                   />
                 </div>
             </Card>
