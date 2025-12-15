@@ -231,7 +231,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
         )}
 
         {status === 'Finished' && (
-          <CardFooter className="p-2 border-t bg-black/10">
+          <CardFooter className="p-2 border-t bg-black/10 flex-col gap-2">
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="winners" className="border-b-0">
                 <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
@@ -268,6 +268,29 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+            <div className="flex gap-2 w-full">
+                <Button
+                    className="w-full font-bold"
+                    onClick={() => onViewMyBets(match)}
+                    variant="outline"
+                    size="sm"
+                >
+                    View My Bets
+                </Button>
+                 <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+                    <DialogTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                            aria-label="View Match Info"
+                        >
+                            <Info className="h-4 w-4" />
+                        </Button>
+                    </DialogTrigger>
+                    <MatchInfoDialogContent match={match} />
+                </Dialog>
+            </div>
           </CardFooter>
         )}
     </Card>
