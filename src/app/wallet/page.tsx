@@ -7,18 +7,20 @@ import type { AppSettings, ContentSettings } from "@/lib/types";
 import { WalletView } from "@/components/wallet/wallet-view";
 import { WalletActions } from "@/components/wallet/wallet-actions";
 
+export const dynamic = 'force-dynamic';
 
 export default async function WalletPage() {
-    const [content, appSettings] = await Promise.all([
+    const [content, appSettings, bankAccounts] = await Promise.all([
       getContent(),
-      getAppSettings()
+      getAppSettings(),
+      getBankDetails()
     ]);
 
     return (
         <HomePageClient content={content} appSettings={appSettings}>
             <div className="space-y-8">
                 <Suspense fallback={<Skeleton className="h-[450px] w-full" />}>
-                   <WalletActions />
+                   <WalletView bankAccounts={bankAccounts} />
                 </Suspense>
             </div>
         </HomePageClient>

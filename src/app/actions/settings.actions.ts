@@ -93,6 +93,7 @@ export async function addBankAccount(newAccount: BankAccount) {
         await setDoc(docRef, { accounts: updatedAccounts });
         
         revalidatePath('/admin/bank-details');
+        revalidatePath('/wallet');
         return { success: 'New bank account added successfully!' };
 
     } catch (error: any) {
@@ -128,6 +129,7 @@ export async function deleteBankAccount(accountId: string) {
         await setDoc(docRef, { accounts: updatedAccounts });
         
         revalidatePath('/admin/bank-details');
+        revalidatePath('/wallet');
         return { success: 'Bank account deleted successfully!' };
 
     } catch (error: any) {
