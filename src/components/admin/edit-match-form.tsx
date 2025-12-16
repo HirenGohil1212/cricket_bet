@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check, MessageSquare } from "lucide-react";
+import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check, MessageSquare, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import Image from "next/image";
@@ -41,7 +41,7 @@ import { CountrySelect } from "./country-select";
 import { Separator } from "../ui/separator";
 import { uploadFile } from "@/lib/storage";
 import { countries } from "@/lib/countries";
-import { getPlayersBySport } from "@/app/actions/player.actions";
+import { getPlayersBySport, createPlayer } from "@/app/actions/player.actions";
 import { getQuestionsForMatch, getQuestionsFromBank } from "@/app/actions/qna.actions";
 import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
@@ -282,9 +282,59 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
 
   const PlayerManager = ({ teamLetter }: { teamLetter: 'A' | 'B' }) => {
     const fieldName = teamLetter === 'A' ? 'teamAPlayers' : 'teamBPlayers';
-    const { fields, append, remove } = useFieldArray({ control: form.control, name: fieldName });
+    const { fields, append, remove, update } = useFieldArray({ control: form.control, name: fieldName });
     const currentPlayers = useWatch({ control: form.control, name: fieldName }) || [];
     const [open, setOpen] = React.useState(false);
+    const [savingPlayer, setSavingPlayer] = React.useState<number | null>(null);
+
+     const handleSavePlayer = async (index: number) => {
+        setSavingPlayer(index);
+        const player = form.getValues(`${fieldName}.${index}`);
+        if (!player.name) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Player name cannot be empty.' });
+            setSavingPlayer(null);
+            return;
+        }
+        if (!player.playerImageFile) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Player image is required.' });
+            setSavingPlayer(null);
+            return;
+        }
+
+        try {
+            const { downloadUrl, storagePath } = await uploadFile(player.playerImageFile, 'players');
+            const result = await createPlayer({
+                name: player.name,
+                sport: selectedSport,
+                imageUrl: downloadUrl,
+                imagePath: storagePath,
+            });
+
+            if (result.error) {
+                toast({ variant: "destructive", title: "Error", description: result.error });
+            } else {
+                toast({ title: "Player Saved", description: `${player.name} has been saved to the database.` });
+                const newPlayer = { id: result.id!, ...result.playerData! };
+                
+                // Update the form state for this player
+                update(index, {
+                    name: newPlayer.name,
+                    playerImageUrl: newPlayer.imageUrl,
+                    imagePath: newPlayer.imagePath,
+                    bettingEnabled: true,
+                    playerImageFile: undefined, // Clear the file
+                });
+                
+                // Add to available players list
+                setAvailablePlayers(prev => [...prev, newPlayer as Player]);
+            }
+
+        } catch (e: any) {
+            toast({ variant: "destructive", title: "Operation Failed", description: e.message });
+        } finally {
+            setSavingPlayer(null);
+        }
+    }
     
     const unselectedPlayers = availablePlayers.filter(p => !currentPlayers.some(cp => cp.name === p.name));
     
@@ -295,32 +345,35 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         
         {/* Render selected players */}
         <div className="space-y-2">
-            {fields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-3 p-2 border rounded-md">
-                     <Image src={field.playerImageUrl || playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB']?.[index] || `https://placehold.co/40x40.png`} alt="Player" width={40} height={40} className="rounded-full w-10 h-10 object-cover" />
-                     <span className="font-medium flex-1 truncate">{field.name}</span>
-                     <FormField
-                        control={form.control}
-                        name={`${fieldName}.${index}.bettingEnabled`}
-                        render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                                <FormLabel className="text-xs text-muted-foreground">
-                                    Betting
-                                </FormLabel>
-                            </FormItem>
-                        )}
-                    />
-                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
-                         <Trash2 className="h-4 w-4 text-muted-foreground" />
-                     </Button>
-                </div>
-            ))}
+            {fields.map((field, index) => {
+                 if (!field.playerImageUrl) return null;
+                 return (
+                    <div key={field.id} className="flex items-center gap-3 p-2 border rounded-md">
+                        <Image src={field.playerImageUrl} alt="Player" width={40} height={40} className="rounded-full w-10 h-10 object-cover" />
+                        <span className="font-medium flex-1 truncate">{field.name}</span>
+                        <FormField
+                            control={form.control}
+                            name={`${fieldName}.${index}.bettingEnabled`}
+                            render={({ field }) => (
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="text-xs text-muted-foreground">
+                                        Betting
+                                    </FormLabel>
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                    </div>
+                 )
+            })}
         </div>
 
         <Popover open={open} onOpenChange={setOpen}>
@@ -379,42 +432,48 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 // Only show inputs for players that don't have an existing image URL (i.e., new players)
                 if (field.playerImageUrl) return null; 
                 return (
-                    <div key={field.id} className="flex items-start gap-3 p-3 border rounded-md relative border-dashed">
-                        <FormField
-                            control={form.control}
-                            name={`${fieldName}.${index}.playerImageFile`}
-                            render={() => (
-                                <FormItem className="flex flex-col items-center gap-2">
-                                    <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
-                                        {playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB']?.[index] ? (
-                                            <Image src={playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB'][index]} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
-                                        ) : (
-                                            <User className="h-8 w-8 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <FormControl>
-                                      <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `${fieldName}.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <div className="flex-1 space-y-2">
-                          <FormField
-                              control={form.control}
-                              name={`${fieldName}.${index}.name`}
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel className="text-xs">New Player Name</FormLabel>
-                                      <FormControl>
-                                          <Input placeholder="Enter name" {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                        </div>
+                     <div key={field.id} className="flex flex-col gap-3 p-3 border rounded-md relative border-dashed">
                         <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => remove(index)}>
                             <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <div className="flex items-start gap-3">
+                            <FormField
+                                control={form.control}
+                                name={`${fieldName}.${index}.playerImageFile`}
+                                render={() => (
+                                    <FormItem className="flex flex-col items-center gap-2">
+                                        <div className="w-16 h-16 border rounded-full flex items-center justify-center bg-muted/50 overflow-hidden">
+                                            {playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB']?.[index] ? (
+                                                <Image src={playerPreviews[teamLetter === 'A' ? 'teamA' : 'teamB'][index]} alt="Player Preview" width={64} height={64} className="object-cover w-full h-full"/>
+                                            ) : (
+                                                <User className="h-8 w-8 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                        <FormControl>
+                                        <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleFileChange(e, `${fieldName}.${index}.playerImageFile`)} className="max-w-xs text-xs h-8" />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="flex-1 space-y-2">
+                            <FormField
+                                control={form.control}
+                                name={`${fieldName}.${index}.name`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs">New Player Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter name" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            </div>
+                        </div>
+                        <Button type="button" size="sm" onClick={() => handleSavePlayer(index)} disabled={savingPlayer === index}>
+                            <Save className="mr-2 h-4 w-4" />
+                            {savingPlayer === index ? "Saving..." : "Save Player"}
                         </Button>
                     </div>
                 )
@@ -841,5 +900,3 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     </Form>
   )
 }
-
-    

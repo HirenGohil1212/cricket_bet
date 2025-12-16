@@ -15,6 +15,8 @@ export async function createPlayer(playerData: { name: string; imageUrl: string;
             createdAt: Timestamp.now(),
         });
         revalidatePath('/admin/players');
+        revalidatePath('/admin/matches/add');
+        revalidatePath('/admin/matches/edit/*');
         return { success: 'Player created successfully!', id: docRef.id, playerData };
     } catch (error: any) {
         console.error("Error creating player: ", error);
