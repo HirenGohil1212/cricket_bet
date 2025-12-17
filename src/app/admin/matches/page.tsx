@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -47,6 +48,10 @@ export default function AdminMatchesPage() {
         fetchMatches();
     }, []);
 
+    const handleMatchDeleted = (matchId: string) => {
+        setMatches(currentMatches => currentMatches.filter(match => match.id !== matchId));
+    };
+
     if (isLoading) {
         return <MatchesPageSkeleton />;
     }
@@ -65,7 +70,7 @@ export default function AdminMatchesPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                <MatchesTable matches={matches} />
+                <MatchesTable matches={matches} onMatchDeleted={handleMatchDeleted} />
             </CardContent>
         </Card>
     );

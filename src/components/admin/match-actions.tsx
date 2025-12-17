@@ -30,9 +30,10 @@ import type { Match } from "@/lib/types";
 interface MatchActionsProps {
     matchId: string;
     status: Match['status'];
+    onMatchDeleted: (matchId: string) => void;
 }
 
-export function MatchActions({ matchId, status }: MatchActionsProps) {
+export function MatchActions({ matchId, status, onMatchDeleted }: MatchActionsProps) {
     const { toast } = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
     const isFinished = status === 'Finished';
@@ -51,6 +52,7 @@ export function MatchActions({ matchId, status }: MatchActionsProps) {
                 title: "Match Deleted",
                 description: "The match has been successfully deleted.",
             });
+            onMatchDeleted(matchId);
         }
         setIsDeleting(false);
     };

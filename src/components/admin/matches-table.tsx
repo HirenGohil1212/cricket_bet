@@ -18,9 +18,10 @@ import { Separator } from "@/components/ui/separator";
 
 interface MatchesTableProps {
     matches: Match[];
+    onMatchDeleted: (matchId: string) => void;
 }
 
-export function MatchesTable({ matches }: MatchesTableProps) {
+export function MatchesTable({ matches, onMatchDeleted }: MatchesTableProps) {
     const getStatusVariant = (status: Match['status']) => {
         switch (status) {
             case "Live": return "destructive";
@@ -53,7 +54,7 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                                         <span className="truncate font-medium">{match.teamB.name}</span>
                                     </div>
                                 </div>
-                                <MatchActions matchId={match.id} status={match.status} />
+                                <MatchActions matchId={match.id} status={match.status} onMatchDeleted={onMatchDeleted} />
                             </div>
                             <Separator />
                             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -114,7 +115,7 @@ export function MatchesTable({ matches }: MatchesTableProps) {
                                 <Badge variant={getStatusVariant(match.status)}>{match.status}</Badge>
                             </TableCell>
                             <TableCell>
-                                <MatchActions matchId={match.id} status={match.status} />
+                                <MatchActions matchId={match.id} status={match.status} onMatchDeleted={onMatchDeleted} />
                             </TableCell>
                         </TableRow>
                     ))}
