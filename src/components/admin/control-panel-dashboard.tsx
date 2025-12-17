@@ -4,7 +4,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Match } from "@/lib/types";
 import { MatchControlCard } from "./match-control-card";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { getMatches } from "@/app/actions/match.actions";
 import { Skeleton } from "../ui/skeleton";
 
@@ -33,14 +33,25 @@ export function ControlPanelDashboard({
 
   const refreshMatches = useCallback(async () => {
     setIsLoading(true);
-    const updatedMatches = await getMatches();
-    setLiveMatches(updatedMatches.filter(m => m.status === 'Live'));
-    setUpcomingMatches(updatedMatches.filter(m => m.status === 'Upcoming'));
-    setIsLoading(false);
+    try {
+        const updatedMatches = await getMatches();
+        setLiveMatches(updatedMatches.filter(m => m.status === 'Live'));
+        setUpcomingMatches(updatedMatches.filter(m => m.status === 'Upcoming'));
+    } catch (error) {
+        console.error("Failed to refresh matches:", error);
+    } finally {
+        setIsLoading(false);
+    }
   }, []);
 
+  const handleTabChange = (value: string) => {
+    // Refresh data whenever the tab is changed to ensure status is up-to-date
+    refreshMatches();
+  };
+
+
   return (
-    <Tabs defaultValue="live" className="w-full">
+    <Tabs defaultValue="live" className="w-full" onValueChange={handleTabChange}>
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="live">Live Matches ({liveMatches.length})</TabsTrigger>
         <TabsTrigger value="upcoming">Upcoming Matches ({upcomingMatches.length})</TabsTrigger>
