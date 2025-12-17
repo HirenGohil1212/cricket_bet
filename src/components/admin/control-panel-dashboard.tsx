@@ -31,8 +31,10 @@ export function ControlPanelDashboard({
   const [upcomingMatches, setUpcomingMatches] = useState(initialUpcoming);
   const [isLoading, setIsLoading] = useState(false);
 
-  const refreshMatches = useCallback(async () => {
-    setIsLoading(true);
+  const refreshMatches = useCallback(async (showLoader = true) => {
+    if (showLoader) {
+      setIsLoading(true);
+    }
     try {
         const updatedMatches = await getMatches();
         setLiveMatches(updatedMatches.filter(m => m.status === 'Live'));
@@ -40,18 +42,25 @@ export function ControlPanelDashboard({
     } catch (error) {
         console.error("Failed to refresh matches:", error);
     } finally {
-        setIsLoading(false);
+        if (showLoader) {
+          setIsLoading(false);
+        }
     }
   }, []);
 
-  const handleTabChange = (value: string) => {
-    // Refresh data whenever the tab is changed to ensure status is up-to-date
-    refreshMatches();
-  };
+  useEffect(() => {
+    // Set up an interval to refresh the matches every 30 seconds
+    const intervalId = setInterval(() => {
+        refreshMatches(false); // Refresh without showing the main loader
+    }, 30000); // 30 seconds
+
+    // Clear the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, [refreshMatches]);
 
 
   return (
-    <Tabs defaultValue="live" className="w-full" onValueChange={handleTabChange}>
+    <Tabs defaultValue="live" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="live">Live Matches ({liveMatches.length})</TabsTrigger>
         <TabsTrigger value="upcoming">Upcoming Matches ({upcomingMatches.length})</TabsTrigger>
@@ -77,3 +86,4 @@ export function ControlPanelDashboard({
     </Tabs>
   );
 }
+
