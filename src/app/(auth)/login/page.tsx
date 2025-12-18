@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 
+const QUIET_LOGIN_SESSION_KEY = 'quietLogin';
+
 export default function LoginPage() {
     const { toast } = useToast();
     const router = useRouter();
@@ -37,7 +39,13 @@ export default function LoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            toast({ title: "Login Successful", description: "Welcome back!" });
+            try {
+                sessionStorage.setItem(QUIET_LOGIN_SESSION_KEY, 'true');
+            } catch (error) {
+                // If session storage fails, default to showing the toast as a fallback.
+                console.error("Session storage is not available.", error);
+                toast({ title: "Login Successful", description: "Welcome back!" });
+            }
             router.push("/");
         } catch (error: any) {
             // The 'auth/invalid-credential' error is the modern, secure way Firebase

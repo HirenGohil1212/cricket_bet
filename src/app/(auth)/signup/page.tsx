@@ -29,6 +29,8 @@ declare global {
     }
 }
 
+const QUIET_LOGIN_SESSION_KEY = 'quietLogin';
+
 export default function SignupPage() {
     const { toast } = useToast();
     const router = useRouter();
@@ -195,7 +197,12 @@ export default function SignupPage() {
 
             await batch.commit();
 
-            toast({ title: "Account Created!", description: "You have been successfully signed up." });
+            try {
+                sessionStorage.setItem(QUIET_LOGIN_SESSION_KEY, 'true');
+            } catch (error) {
+                console.error("Session storage is not available.", error);
+                toast({ title: "Account Created!", description: "You have been successfully signed up." });
+            }
             router.push("/");
 
         } catch (error: any) {

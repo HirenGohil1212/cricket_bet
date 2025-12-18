@@ -16,6 +16,7 @@ import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Footer } from "@/components/layout/footer";
+import { useToast } from "@/hooks/use-toast";
 
 interface HomePageClientProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ interface HomePageClientProps {
 }
 
 const PROMO_VIDEO_SESSION_KEY = 'promoVideoShown';
+const QUIET_LOGIN_SESSION_KEY = 'quietLogin';
 
 function PageLoader() {
   return (
@@ -34,7 +36,8 @@ function PageLoader() {
 }
 
 export function HomePageClient({ children, content, appSettings }: HomePageClientProps) {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   
   const [isPromoOpen, setIsPromoOpen] = useState(false);
@@ -55,19 +58,31 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
     
     if (!loading && !initialAuthCheckComplete) {
       setInitialAuthCheckComplete(true);
-      if (user && promoVideoUrl) {
+      if (user) {
         try {
-          const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY);
-          if (!hasBeenShown) {
-            setIsPromoOpen(true);
-            sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
+          const isQuietLogin = sessionStorage.getItem(QUIET_LOGIN_SESSION_KEY) === 'true';
+          sessionStorage.removeItem(QUIET_LOGIN_SESSION_KEY); // Clean up the flag
+
+          const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY) === 'true';
+          
+          if (isQuietLogin && promoVideoUrl && !hasBeenShown) {
+             // If it's a quiet login and there's a video to show, open it
+             setIsPromoOpen(true);
+             sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
+          } else if (isQuietLogin) {
+             // It was a quiet login but no video, so show a welcome toast
+             toast({
+                title: `Welcome, ${userProfile?.name || 'friend'}!`,
+                description: "You've successfully signed in."
+             });
           }
+
         } catch (error) {
           console.error("Session storage is not available.", error);
         }
       }
     }
-  }, [loading, initialAuthCheckComplete, user, promoVideoUrl, router]);
+  }, [loading, initialAuthCheckComplete, user, userProfile, promoVideoUrl, router, toast]);
 
 
   if (loading || !user) {
