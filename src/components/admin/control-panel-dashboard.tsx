@@ -4,7 +4,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Match } from "@/lib/types";
 import { MatchControlCard } from "./match-control-card";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { getMatches } from "@/app/actions/match.actions";
 import { Skeleton } from "../ui/skeleton";
 
@@ -27,8 +27,7 @@ export function ControlPanelDashboard({
     upcomingMatches: initialUpcoming 
 }: ControlPanelDashboardProps) {
   
-  const [liveMatches, setLiveMatches] = useState(initialLive);
-  const [upcomingMatches, setUpcomingMatches] = useState(initialUpcoming);
+  const [matches, setMatches] = useState([...initialLive, ...initialUpcoming]);
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshMatches = useCallback(async (showLoader = true) => {
@@ -37,8 +36,7 @@ export function ControlPanelDashboard({
     }
     try {
         const updatedMatches = await getMatches();
-        setLiveMatches(updatedMatches.filter(m => m.status === 'Live'));
-        setUpcomingMatches(updatedMatches.filter(m => m.status === 'Upcoming'));
+        setMatches(updatedMatches);
     } catch (error) {
         console.error("Failed to refresh matches:", error);
     } finally {
@@ -58,6 +56,11 @@ export function ControlPanelDashboard({
     return () => clearInterval(intervalId);
   }, [refreshMatches]);
 
+  const { liveMatches, upcomingMatches } = useMemo(() => {
+    const live = matches.filter(m => m.status === 'Live');
+    const upcoming = matches.filter(m => m.status === 'Upcoming');
+    return { liveMatches: live, upcomingMatches: upcoming };
+  }, [matches]);
 
   return (
     <Tabs defaultValue="live" className="w-full">
