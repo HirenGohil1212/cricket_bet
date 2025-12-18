@@ -45,7 +45,7 @@ export const Countdown = ({ targetDate, onEnd }: CountdownProps) => {
   }, [targetDate, onEnd]);
 
   if (!isClient || Object.keys(timeLeft).length === 0) {
-    return <span>Starting now...</span>;
+    return <span className="font-mono text-sm tabular-nums">Starting now...</span>;
   }
   
   const { days, hours, minutes, seconds } = timeLeft;

@@ -11,7 +11,8 @@ import { updateMatchControls } from '@/app/actions/match.actions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Clock } from 'lucide-react';
+import { Countdown } from '../countdown';
 
 interface MatchControlCardProps {
     match: Match;
@@ -108,10 +109,18 @@ export function MatchControlCard({ match, onUpdate }: MatchControlCardProps) {
                         <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={40} height={40} className="object-cover" />
                     </div>
                 </div>
-                <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto flex-shrink-0">
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                </Button>
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    {match.status === 'Upcoming' && (
+                        <div className="text-center bg-accent/10 text-accent p-2 rounded-md w-full sm:w-auto">
+                            <p className="text-xs font-semibold flex items-center justify-center gap-1"><Clock className="h-3 w-3"/> Starts in:</p>
+                            <Countdown targetDate={new Date(match.startTime)} onEnd={() => onUpdate()} />
+                        </div>
+                    )}
+                    <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto flex-shrink-0">
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
