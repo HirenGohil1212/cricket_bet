@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { Match, Sport } from "@/lib/types";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Search, ChevronDown } from "lucide-react";
 import { PaginatedFinishedMatches } from "./paginated-finished-matches";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { getMatches } from "@/app/actions/match.actions";
 
 
 interface SportMatchListProps {
@@ -32,14 +32,23 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
   const [favoriteIds, setFavoriteIds] = useState<string[]>(getFavoriteMatchIds());
   const [activeStatusTab, setActiveStatusTab] = useState<'all' | 'live' | 'upcoming' | 'finished'>('all');
 
-  const updateMatchData = useCallback(() => {
+  const updateMatchData = useCallback(async (isRefresh = false) => {
     const favIds = getFavoriteMatchIds();
     setFavoriteIds(favIds);
+    
+    let currentUpcomingAndLive = initialUpcoming;
+    let currentFinished = initialFinished;
+
+    if (isRefresh) {
+        const allMatches = await getMatches();
+        currentUpcomingAndLive = allMatches.filter(m => m.status === 'Upcoming' || m.status === 'Live');
+        currentFinished = allMatches.filter(m => m.status === 'Finished');
+    }
 
     const markFavorites = (matches: Match[]) => matches.map(m => ({ ...m, isFavorite: favIds.includes(m.id) }));
     
-    let upcoming = markFavorites(initialUpcoming);
-    let finished = markFavorites(initialFinished);
+    let upcoming = markFavorites(currentUpcomingAndLive);
+    let finished = markFavorites(currentFinished);
 
     if (isFavoritesPage) {
         upcoming = upcoming.filter(m => favIds.includes(m.id));
@@ -52,8 +61,8 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
 
   useEffect(() => {
     updateMatchData();
-    window.addEventListener('storage', updateMatchData);
-    return () => window.removeEventListener('storage', updateMatchData);
+    window.addEventListener('storage', () => updateMatchData());
+    return () => window.removeEventListener('storage', () => updateMatchData());
   }, [updateMatchData]);
 
 
@@ -70,6 +79,12 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
     localStorage.setItem('favoriteMatches', JSON.stringify(newFavorites));
     window.dispatchEvent(new Event('storage'));
   };
+  
+  const handleCountdownEnd = useCallback(() => {
+    // When a countdown ends, trigger a refresh of the match data
+    updateMatchData(true);
+  }, [updateMatchData]);
+
 
   const { liveMatches, upcomingMatches } = useMemo(() => {
     const live = upcomingAndLiveMatches.filter(m => m.status === 'Live');
@@ -127,14 +142,14 @@ export function SportMatchList({ sport, upcomingAndLiveMatches: initialUpcoming,
       {(activeStatusTab === 'all' || activeStatusTab === 'live') && liveMatches.length > 0 && (
           <div>
             <h2 className="font-headline text-2xl font-bold mb-4 text-primary">Live Matches</h2>
-            <MatchList matches={liveMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Live" />
+            <MatchList matches={liveMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Live" onCountdownEnd={handleCountdownEnd} />
           </div>
       )}
 
       {(activeStatusTab === 'all' || activeStatusTab === 'upcoming') && upcomingMatches.length > 0 && (
           <div>
             <h2 className="font-headline text-2xl font-bold mb-4 text-primary">Upcoming Matches</h2>
-            <MatchList matches={upcomingMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Upcoming" />
+            <MatchList matches={upcomingMatches} searchTerm={searchTerm} onToggleFavorite={handleToggleFavorite} status="Upcoming" onCountdownEnd={handleCountdownEnd} />
           </div>
       )}
       

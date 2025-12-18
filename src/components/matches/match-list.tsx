@@ -11,10 +11,11 @@ interface MatchListProps {
   matches: Match[];
   searchTerm: string;
   onToggleFavorite: (matchId: string) => void;
+  onCountdownEnd: (matchId: string) => void;
   status: 'Live' | 'Upcoming'
 }
 
-export function MatchList({ matches, searchTerm, onToggleFavorite, status }: MatchListProps) {
+export function MatchList({ matches, searchTerm, onToggleFavorite, onCountdownEnd, status }: MatchListProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
   const [localMatches, setLocalMatches] = useState(matches);
@@ -24,11 +25,6 @@ export function MatchList({ matches, searchTerm, onToggleFavorite, status }: Mat
   useEffect(() => {
     setLocalMatches(matches);
   }, [matches]);
-
-  const handleCountdownEnd = (matchId: string) => {
-    // This is now handled by the parent component re-fetching, 
-    // but kept here in case of direct state manipulation needs in the future.
-  };
 
   const handleBetNow = (match: Match) => {
     setSelectedMatch(match);
@@ -80,7 +76,7 @@ export function MatchList({ matches, searchTerm, onToggleFavorite, status }: Mat
       <section>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredMatches.map((match) => (
-            <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={handleCountdownEnd} onToggleFavorite={onToggleFavorite} />
+            <MatchCard key={match.id} match={match} onBetNow={handleBetNow} onViewMyBets={handleViewMyBets} onCountdownEnd={onCountdownEnd} onToggleFavorite={onToggleFavorite} />
           ))}
         </div>
       </section>
