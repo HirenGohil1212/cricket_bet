@@ -47,10 +47,10 @@ export function ControlPanelDashboard({
   }, []);
 
   useEffect(() => {
-    // Set up an interval to refresh the matches every 30 seconds
+    // Set up an interval to refresh the matches every 10 seconds
     const intervalId = setInterval(() => {
         refreshMatches(false); // Refresh without showing the main loader
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds
 
     // Clear the interval when the component unmounts
     return () => clearInterval(intervalId);
