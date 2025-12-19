@@ -4,12 +4,56 @@
 
 import { doc, getDoc, updateDoc, collection, writeBatch, query, where, getDocs, Timestamp, deleteDoc, orderBy, setDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import type { UserBankAccount, UserProfile, UserRole, UserPermissions } from '@/lib/types';
 import { userBankAccountSchema, type UserBankAccountFormValues } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 import { deleteFileByPath } from '@/lib/storage';
 import { endOfDay, startOfDay } from 'date-fns';
 import { getReferralSettings } from './referral.actions';
+import { deleteUser as deleteAuthUser, updateProfile } from 'firebase/auth';
+
+
+// --- Admin-only User Management Actions ---
+export async function resetUserPassword(email: string) {
+    try {
+        await sendPasswordResetEmail(auth, email);
+        return { success: 'Password reset email sent successfully.' };
+    } catch (error: any) {
+        console.error("Error sending password reset email:", error);
+        return { error: error.message || "Could not send reset email." };
+    }
+}
+
+export async function toggleUserAccount(uid: string, disable: boolean) {
+    try {
+        const userRef = doc(db, 'users', uid);
+        await updateDoc(userRef, { disabled: disable });
+        // NOTE: Firebase Admin SDK is required to disable auth user.
+        // This Firestore flag will prevent login in the app logic.
+        revalidatePath('/admin/users');
+        return { success: `User account has been ${disable ? 'disabled' : 'enabled'}.` };
+    } catch (error: any) {
+        console.error("Error toggling user account:", error);
+        return { error: 'Failed to update user status.' };
+    }
+}
+
+export async function deleteUserAccount(uid: string) {
+    try {
+        const userRef = doc(db, 'users', uid);
+        await deleteDoc(userRef);
+        // NOTE: Firebase Admin SDK is required to truly delete the auth user.
+        // This will remove their data from your Firestore database.
+        revalidatePath('/admin/users');
+        return { success: 'User data has been deleted from Firestore.' };
+    } catch (error: any) {
+        console.error("Error deleting user account:", error);
+        return { error: 'Failed to delete user data.' };
+    }
+}
+
 
 // Function to get user's bank account
 export async function getUserBankAccount(userId: string): Promise<UserBankAccount | null> {
@@ -321,7 +365,7 @@ export async function getTotalWinningsForUser(userId: string): Promise<number> {
 
         return totalWinnings;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error fetching total winnings for user ${userId}:`, error);
         return 0;
     }

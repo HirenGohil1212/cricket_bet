@@ -115,6 +115,7 @@ export type UserProfile = {
   totalWinnings: number;
   totalDeposits: number;
   totalWithdrawals: number;
+  disabled?: boolean;
 };
 
 export type BankAccount = {

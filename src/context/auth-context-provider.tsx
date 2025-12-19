@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, ReactNode, useContext } from 'react';
@@ -23,6 +24,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
             if (doc.exists() && doc.id === authUser.uid) {
                 const data = doc.data();
+                if (data.disabled) { // Check for the disabled flag
+                    setUser(null);
+                    setUserProfile(null);
+                    setLoading(false);
+                    auth.signOut(); // Force sign out if disabled
+                    return;
+                }
                 const profile: UserProfile = {
                     uid: doc.id,
                     name: data.name,
@@ -40,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     totalWinnings: data.totalWinnings || 0,
                     totalDeposits: data.totalDeposits || 0,
                     totalWithdrawals: data.totalWithdrawals || 0,
+                    disabled: data.disabled || false,
                 };
                 setUserProfile(profile);
             }
@@ -79,5 +88,3 @@ export const useRequireAuth = () => {
 
     return authContext;
 }
-
-    

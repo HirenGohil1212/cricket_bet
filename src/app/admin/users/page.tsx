@@ -21,27 +21,33 @@ import {
     CardTitle, 
     CardDescription
 } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from '@/components/ui/badge';
-import { Users, Loader2, History, ArrowUp, ArrowDown, Trophy, UserCog } from 'lucide-react';
+import { Users, Loader2, History, ArrowUp, ArrowDown, Trophy, UserCog, MoreHorizontal, KeyRound, UserX, Trash2, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ReferredUsersDialog } from '@/components/admin/referred-users-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getTotalBetAmountForUser } from '@/app/actions/bet.actions';
 import { BettingHistoryDialog } from '@/components/dashboard/betting-history-dialog';
-import { getTotalDepositsForUser, getTotalWithdrawalsForUser } from '@/app/actions/wallet.actions';
-import { getTotalWinningsForUser } from '@/app/actions/user.actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from "@/components/ui/input";
 import { ManagePermissionsDialog } from '@/components/admin/manage-permissions-dialog';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
+import { resetUserPassword, toggleUserAccount, deleteUserAccount } from '@/app/actions/user.actions';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 export default function AdminUsersPage() {
     const { userProfile: adminProfile } = useAuth();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-    const [isReferredUsersDialogOpen, setIsReferredUsersDialogOpen] = useState(false);
     const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const [historyUser, setHistoryUser] = useState<UserProfile | null>(null);
@@ -70,6 +76,7 @@ export default function AdminUsersPage() {
                     totalWithdrawals: data.totalWithdrawals || 0,
                     totalWagered: data.totalWagered || 0,
                     totalWinnings: data.totalWinnings || 0,
+                    disabled: data.disabled || false,
                 } as UserProfile;
             });
 
@@ -102,6 +109,33 @@ export default function AdminUsersPage() {
         setSelectedUser(user);
         setIsPermissionsDialogOpen(true);
     };
+
+    const handleResetPassword = async (email: string) => {
+        const result = await resetUserPassword(email);
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Failed', description: result.error });
+        } else {
+            toast({ title: 'Success', description: 'Password reset email sent.' });
+        }
+    };
+    
+    const handleToggleAccount = async (user: UserProfile) => {
+        const result = await toggleUserAccount(user.uid, !user.disabled);
+         if (result.error) {
+            toast({ variant: 'destructive', title: 'Failed', description: result.error });
+        } else {
+            toast({ title: 'Success', description: `User account has been ${!user.disabled ? 'disabled' : 'enabled'}.` });
+        }
+    }
+    
+    const handleDeleteAccount = async (user: UserProfile) => {
+        const result = await deleteUserAccount(user.uid);
+         if (result.error) {
+            toast({ variant: 'destructive', title: 'Failed', description: result.error });
+        } else {
+            toast({ title: 'Success', description: 'User account has been deleted.' });
+        }
+    }
 
     const getRoleBadge = (role: UserProfile['role']) => {
         const variants = {
@@ -155,10 +189,11 @@ export default function AdminUsersPage() {
                                     </TableRow>
                                 ))
                             ) : filteredUsers.length > 0 ? filteredUsers.map((user) => (
-                                <TableRow key={user.uid} className={cn(user.role === 'admin' && 'bg-primary/10')}>
+                                <TableRow key={user.uid} className={cn(user.role === 'admin' && 'bg-primary/10', user.disabled && 'bg-destructive/10 text-muted-foreground')}>
                                     <TableCell>
                                         <div className="font-medium">{user.name}</div>
-                                        <div className="text-xs text-muted-foreground">{user.phoneNumber}</div>
+                                        <div className="text-xs">{user.phoneNumber}</div>
+                                         {user.disabled && <Badge variant="destructive" className="mt-1">Disabled</Badge>}
                                     </TableCell>
                                     <TableCell className="hidden sm:table-cell">{getRoleBadge(user.role)}</TableCell>
                                     <TableCell className="text-right font-semibold">
@@ -181,18 +216,71 @@ export default function AdminUsersPage() {
                                         </span>
                                     </TableCell>
                                      <TableCell className="text-right">
-                                        <div className="flex justify-end items-center">
-                                            {adminProfile?.role === 'admin' && adminProfile.uid !== user.uid && (
-                                                <Button variant="ghost" size="icon" onClick={() => handleManagePermissions(user)}>
-                                                    <UserCog className="h-4 w-4" />
-                                                    <span className="sr-only">Manage Permissions</span>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                    <span className="sr-only">User Actions</span>
                                                 </Button>
-                                            )}
-                                            <Button variant="ghost" size="icon" onClick={() => handleViewHistory(user)}>
-                                                <History className="h-4 w-4" />
-                                                <span className="sr-only">View History</span>
-                                            </Button>
-                                        </div>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => handleViewHistory(user)}>
+                                                    <History className="mr-2 h-4 w-4" /> View History
+                                                </DropdownMenuItem>
+                                                 {adminProfile?.role === 'admin' && adminProfile.uid !== user.uid && (
+                                                    <DropdownMenuItem onClick={() => handleManagePermissions(user)}>
+                                                        <UserCog className="mr-2 h-4 w-4" /> Manage Permissions
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => handleResetPassword(`${user.phoneNumber}@guessandwin.app`)}>
+                                                    <KeyRound className="mr-2 h-4 w-4" /> Reset Password
+                                                </DropdownMenuItem>
+
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className={cn(user.disabled ? 'text-green-600 focus:text-green-600' : 'text-orange-600 focus:text-orange-600')}>
+                                                            {user.disabled ? <UserCheck className="mr-2 h-4 w-4" /> : <UserX className="mr-2 h-4 w-4" />}
+                                                            {user.disabled ? 'Enable Account' : 'Disable Account'}
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you sure you want to {user.disabled ? 'enable' : 'disable'} this account?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                {user.disabled ? 'Enabling this account will allow the user to log in and use the app again.' : 'Disabling this account will prevent the user from logging in.'}
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleToggleAccount(user)}>Confirm</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                                
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete Account
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                         <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action cannot be undone. This will permanently delete the user's account and all associated data from the system.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDeleteAccount(user)}>Delete Permanently</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                                
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             )) : (
@@ -223,3 +311,4 @@ export default function AdminUsersPage() {
         </>
     );
 }
+
