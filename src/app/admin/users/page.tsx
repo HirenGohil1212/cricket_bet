@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
         if (result.error) {
             toast({ variant: 'destructive', title: 'Failed', description: result.error });
         } else {
-            toast({ title: 'Success', description: 'Password reset email sent.' });
+            toast({ title: 'Success', description: result.success });
         }
     };
     
@@ -311,4 +311,5 @@ export default function AdminUsersPage() {
         </>
     );
 }
+
 

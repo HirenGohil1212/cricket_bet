@@ -19,10 +19,10 @@ import { deleteUser as deleteAuthUser, updateProfile } from 'firebase/auth';
 export async function resetUserPassword(email: string) {
     try {
         await sendPasswordResetEmail(auth, email);
-        return { success: 'Password reset email sent successfully.' };
+        return { success: 'Password reset link sent to the user\'s phone via SMS.' };
     } catch (error: any) {
         console.error("Error sending password reset email:", error);
-        return { error: error.message || "Could not send reset email." };
+        return { error: error.message || "Could not send reset link." };
     }
 }
 
@@ -398,4 +398,5 @@ export async function getTotalWinningsForUser(userId: string): Promise<number> {
         return 0;
     }
 }
+
 
