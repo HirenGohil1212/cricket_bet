@@ -42,14 +42,42 @@ export async function toggleUserAccount(uid: string, disable: boolean) {
 
 export async function deleteUserAccount(uid: string) {
     try {
+        const batch = writeBatch(db);
+
+        // 1. Delete user's main document
         const userRef = doc(db, 'users', uid);
-        await deleteDoc(userRef);
-        // NOTE: Firebase Admin SDK is required to truly delete the auth user.
-        // This will remove their data from your Firestore database.
+        batch.delete(userRef);
+
+        // Collections to clean up
+        const collectionsToClean = ['bets', 'deposits', 'withdrawals', 'transactions'];
+
+        for (const collectionName of collectionsToClean) {
+            const userDocsQuery = query(collection(db, collectionName), where('userId', '==', uid));
+            const userDocsSnapshot = await getDocs(userDocsQuery);
+            
+            for (const docSnapshot of userDocsSnapshot.docs) {
+                // Special handling for deposits to delete screenshots
+                if (collectionName === 'deposits') {
+                    const depositData = docSnapshot.data();
+                    if (depositData.screenshotPath) {
+                        try {
+                            await deleteFileByPath(depositData.screenshotPath);
+                        } catch (storageError) {
+                             console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
+                        }
+                    }
+                }
+                batch.delete(docSnapshot.ref);
+            }
+        }
+        
+        // 2. Commit all deletions in a single batch
+        await batch.commit();
+
         revalidatePath('/admin/users');
-        return { success: 'User data has been deleted from Firestore.' };
+        return { success: "User's account and all associated data have been permanently deleted." };
     } catch (error: any) {
-        console.error("Error deleting user account:", error);
+        console.error("Error deleting user account and data:", error);
         return { error: 'Failed to delete user data.' };
     }
 }
@@ -365,8 +393,9 @@ export async function getTotalWinningsForUser(userId: string): Promise<number> {
 
         return totalWinnings;
 
-    } catch (error: any) {
-        console.error(`Error fetching total winnings for user ${userId}:`, error);
+    } catch (any) {
+        console.error(`Error fetching total winnings for user ${userId}:`, any);
         return 0;
     }
 }
+
