@@ -16,16 +16,6 @@ import { deleteUser as deleteAuthUser, updateProfile } from 'firebase/auth';
 
 
 // --- Admin-only User Management Actions ---
-export async function resetUserPassword(email: string) {
-    try {
-        await sendPasswordResetEmail(auth, email);
-        return { success: 'Password reset link sent to the user\'s phone via SMS.' };
-    } catch (error: any) {
-        console.error("Error sending password reset email:", error);
-        return { error: error.message || "Could not send reset link." };
-    }
-}
-
 export async function toggleUserAccount(uid: string, disable: boolean) {
     try {
         const userRef = doc(db, 'users', uid);
@@ -398,5 +388,6 @@ export async function getTotalWinningsForUser(userId: string): Promise<number> {
         return 0;
     }
 }
+
 
 

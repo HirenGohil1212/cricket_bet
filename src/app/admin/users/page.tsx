@@ -39,7 +39,7 @@ import { Input } from "@/components/ui/input";
 import { ManagePermissionsDialog } from '@/components/admin/manage-permissions-dialog';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
-import { resetUserPassword, toggleUserAccount, deleteUserAccount } from '@/app/actions/user.actions';
+import { toggleUserAccount, deleteUserAccount } from '@/app/actions/user.actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
@@ -110,15 +110,6 @@ export default function AdminUsersPage() {
         setIsPermissionsDialogOpen(true);
     };
 
-    const handleResetPassword = async (email: string) => {
-        const result = await resetUserPassword(email);
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Failed', description: result.error });
-        } else {
-            toast({ title: 'Success', description: result.success });
-        }
-    };
-    
     const handleToggleAccount = async (user: UserProfile) => {
         const result = await toggleUserAccount(user.uid, !user.disabled);
          if (result.error) {
@@ -234,9 +225,6 @@ export default function AdminUsersPage() {
                                                     </DropdownMenuItem>
                                                 )}
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleResetPassword(`${user.phoneNumber}@guessandwin.app`)}>
-                                                    <KeyRound className="mr-2 h-4 w-4" /> Reset Password
-                                                </DropdownMenuItem>
 
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
@@ -311,5 +299,6 @@ export default function AdminUsersPage() {
         </>
     );
 }
+
 
 
