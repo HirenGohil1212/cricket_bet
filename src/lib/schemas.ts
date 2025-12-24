@@ -21,8 +21,8 @@ export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
   teamA: z.string().optional(),
   teamB: z.string().optional(),
-  teamACountry: z.string({ required_error: "Country for Team A is required." }).min(1, { message: "Country for Team A is required."}),
-  teamBCountry: z.string({ required_error: "Country for Team B is required." }).min(1, { message: "Country for Team B is required."}),
+  teamACountry: z.string().optional(),
+  teamBCountry: z.string().optional(),
   startTime: z.date({ required_error: "A start date and time is required." }),
   
   teamALogoFile: z.any()
@@ -48,6 +48,21 @@ export const matchSchema = z.object({
     userId: z.string().min(1, "Please select a dummy user."),
     amount: z.coerce.number().min(1, "Amount must be at least 1."),
   })).optional(),
+}).superRefine((data, ctx) => {
+    if (!data.teamA && !data.teamACountry) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["teamACountry"],
+            message: "Either Team A name or country is required.",
+        });
+    }
+    if (!data.teamB && !data.teamBCountry) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["teamBCountry"],
+            message: "Either Team B name or country is required.",
+        });
+    }
 });
 
 export type MatchFormValues = z.infer<typeof matchSchema>;
