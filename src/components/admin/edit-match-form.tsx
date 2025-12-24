@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -209,6 +210,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             const { downloadUrl, storagePath } = await uploadFile(data.teamALogoFile, 'logos');
             teamALogoUrl = downloadUrl;
             teamALogoPath = storagePath;
+        } else if (data.teamACountry) {
+             teamALogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamACountry.toLowerCase()}.webp`;
         }
 
         let teamBLogoUrl = match.teamB.logoUrl;
@@ -217,6 +220,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             const { downloadUrl, storagePath } = await uploadFile(data.teamBLogoFile, 'logos');
             teamBLogoUrl = downloadUrl;
             teamBLogoPath = storagePath;
+        } else if (data.teamBCountry) {
+            teamBLogoUrl = `https://flagpedia.net/data/flags/w320/${data.teamBCountry.toLowerCase()}.webp`;
         }
         
         const processPlayers = async (newPlayers: MatchFormValues['teamAPlayers']): Promise<Player[]> => {
@@ -239,8 +244,9 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         const teamAPlayers = await processPlayers(data.teamAPlayers);
         const teamBPlayers = await processPlayers(data.teamBPlayers);
 
-        const countryA = countries.find(c => c.code.toLowerCase() === data.teamACountry.toLowerCase());
-        const countryB = countries.find(c => c.code.toLowerCase() === data.teamBCountry.toLowerCase());
+        const countryA = data.teamACountry ? countries.find(c => c.code.toLowerCase() === data.teamACountry!.toLowerCase()) : null;
+        const countryB = data.teamBCountry ? countries.find(c => c.code.toLowerCase() === data.teamBCountry!.toLowerCase()) : null;
+
 
         const payload = {
             sport: data.sport,
@@ -253,14 +259,14 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 name: data.teamA || countryA!.name,
                 logoUrl: teamALogoUrl,
                 logoPath: teamALogoPath,
-                countryCode: data.teamACountry,
+                countryCode: data.teamACountry || '',
                 players: teamAPlayers
             },
             teamB: {
                 name: data.teamB || countryB!.name,
                 logoUrl: teamBLogoUrl,
                 logoPath: teamBLogoPath,
-                countryCode: data.teamBCountry,
+                countryCode: data.teamBCountry || '',
                 players: teamBPlayers
             }
         };
