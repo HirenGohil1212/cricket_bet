@@ -171,57 +171,49 @@ export async function deleteDataHistory({ startDate, endDate, collectionsToDelet
             const dateField = dateFieldMap[collectionName];
             if (!dateField) continue;
             
-            // FIX: Query the entire collection first, then filter by date in code to avoid indexing errors.
             const collectionRef = collection(db, collectionName);
-            const snapshot = await getDocs(collectionRef);
+            const q = query(collectionRef, where(dateField, '>=', finalStartDate), where(dateField, '<=', finalEndDate));
+            const snapshot = await getDocs(q);
 
             if (snapshot.empty) continue;
 
             const deleteBatch = writeBatch(db);
             let deletedInCollection = 0;
 
-            for (const docSnapshot of snapshot.docs) {
+            snapshot.docs.forEach(docSnapshot => {
                 const data = docSnapshot.data();
-                const docDate = (data[dateField] as Timestamp)?.toDate();
-                
-                // Perform date filtering in code
-                if (!docDate || docDate < finalStartDate || docDate > finalEndDate) {
-                    continue;
-                }
                 
                 // Safety Check: Do not delete pending requests or active matches.
                 if ((collectionName === 'deposits' || collectionName === 'withdrawals') && data.status === 'Processing') {
-                    continue; 
+                    return; 
                 }
                 if (collectionName === 'matches' && ['Upcoming', 'Live'].includes(data.status)) {
-                    continue;
+                    return;
                 }
                 
                 // Handle associated file deletions before document deletion
                 if (collectionName === 'deposits') {
                     const pathToDelete = data.screenshotPath || data.screenshotUrl;
                     if (pathToDelete) {
-                        try {
-                            await deleteFileByPath(pathToDelete);
-                        } catch (storageError) {
+                        deleteFileByPath(pathToDelete).catch(storageError => {
                             console.error(`Could not delete storage file for deposit ${docSnapshot.id}, but will still delete Firestore record. Error:`, storageError);
-                        }
+                        });
                     }
                 }
                 
                 if (collectionName === 'matches') {
                     if (data.teamA?.logoPath) {
-                        try { await deleteFileByPath(data.teamA.logoPath); } catch (e) { console.error(e); }
+                        deleteFileByPath(data.teamA.logoPath).catch(e => console.error(e));
                     }
                      if (data.teamB?.logoPath) {
-                        try { await deleteFileByPath(data.teamB.logoPath); } catch (e) { console.error(e); }
+                        deleteFileByPath(data.teamB.logoPath).catch(e => console.error(e));
                     }
                 }
                 
                 // Add the document to the delete batch
                 deleteBatch.delete(docSnapshot.ref);
                 deletedInCollection++;
-            }
+            });
             
             if (deletedInCollection > 0) {
                  await deleteBatch.commit();
@@ -388,6 +380,3 @@ export async function getTotalWinningsForUser(userId: string): Promise<number> {
         return 0;
     }
 }
-
-
-

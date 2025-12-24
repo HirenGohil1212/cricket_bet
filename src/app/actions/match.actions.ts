@@ -327,12 +327,8 @@ export async function cancelMatch(matchId: string) {
                 const betData = betDoc.data();
                 const userId = betData.userId;
                 const userRef = userRefs[userId];
-                const userDoc = userDocs.get(userId);
                 
-                const currentBalance = userDoc.data().walletBalance || 0;
-                const newBalance = currentBalance + betData.amount;
-                
-                transaction.update(userRef, { walletBalance: newBalance });
+                transaction.update(userRef, { walletBalance: increment(betData.amount) });
                 transaction.update(betDoc.ref, { status: 'Refunded' });
             }
 

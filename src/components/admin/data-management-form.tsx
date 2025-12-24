@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -122,7 +123,7 @@ export function DataManagementForm() {
           <CardHeader>
             <CardTitle>Historical Data Deletion</CardTitle>
             <CardDescription>
-              Permanently delete historical records within a specific date range. This will create a backup before deleting.
+              Permanently delete historical records within a specific date range. This action is irreversible.
             </CardDescription>
           </CardHeader>
           <CardContent>
