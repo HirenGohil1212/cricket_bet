@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from 'react';
@@ -64,11 +63,13 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
     <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
             <DialogTitle className="font-headline text-3xl text-center text-primary">Match Information</DialogTitle>
-             <DialogDescription className="text-center pt-2">
-                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                    {match.league && <span className="font-semibold">{match.league}</span>}
-                    {match.league && match.location && <span>|</span>}
-                    {match.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3"/>{match.location}</span>}
+             <DialogDescription asChild>
+                <div className="text-center pt-2">
+                    <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                        {match.league && <span className="font-semibold">{match.league}</span>}
+                        {match.league && match.location && <span>|</span>}
+                        {match.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3"/>{match.location}</span>}
+                    </div>
                 </div>
             </DialogDescription>
         </DialogHeader>
