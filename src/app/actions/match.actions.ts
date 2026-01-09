@@ -15,6 +15,8 @@ import { getBettingSettings } from './settings.actions';
 // This is a simplified payload that the server action will receive
 interface MatchServerPayload {
     sport: Match['sport'];
+    league?: string;
+    location?: string;
     teamA: { name: string; logoUrl: string; logoPath?: string; countryCode: string; players: Player[] };
     teamB: { name: string; logoUrl: string; logoPath?: string; countryCode: string; players: Player[] };
     startTime: Date;
@@ -28,7 +30,9 @@ interface MatchServerPayload {
 export async function createMatch(payload: MatchServerPayload) {
     try {
         const { 
-            sport, 
+            sport,
+            league,
+            location, 
             teamA, 
             teamB, 
             startTime, 
@@ -44,6 +48,8 @@ export async function createMatch(payload: MatchServerPayload) {
 
         const newMatchRef = await addDoc(collection(db, "matches"), {
             sport,
+            league,
+            location,
             teamA: { ...teamA, bettingEnabled: true },
             teamB: { ...teamB, bettingEnabled: true },
             startTime: Timestamp.fromDate(startTime),
@@ -144,6 +150,8 @@ export async function getMatches(): Promise<Match[]> {
             return {
                 id: doc.id,
                 sport: data.sport,
+                league: data.league || '',
+                location: data.location || '',
                 teamA: data.teamA,
                 teamB: data.teamB,
                 status: currentStatus,
@@ -193,6 +201,8 @@ export async function getMatchById(matchId: string): Promise<Match | null> {
         return {
             id: matchSnap.id,
             sport: data.sport,
+            league: data.league || '',
+            location: data.location || '',
             teamA: data.teamA,
             teamB: data.teamB,
             status: currentStatus,
@@ -223,6 +233,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
 
         const {
             sport,
+            league,
+            location,
             teamA,
             teamB,
             startTime,
@@ -246,6 +258,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
 
         batch.update(matchRef, {
             sport,
+            league,
+            location,
             teamA,
             teamB,
             startTime: Timestamp.fromDate(startTime),
