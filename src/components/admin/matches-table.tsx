@@ -39,22 +39,22 @@ export function MatchesTable({ matches, onMatchDeleted }: MatchesTableProps) {
                     <Card key={match.id}>
                         <CardContent className="p-4 space-y-3">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                     <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
-                                        <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="object-cover" />
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
+                                            <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="object-cover" />
+                                        </div>
+                                        <span className="truncate font-medium">{match.teamA.name}</span>
                                     </div>
-                                    <span className="font-semibold text-sm line-clamp-1">{match.teamA.name}</span>
+                                    <span className="text-xs text-muted-foreground">vs</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
+                                            <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="object-cover" />
+                                        </div>
+                                        <span className="truncate font-medium">{match.teamB.name}</span>
+                                    </div>
                                 </div>
                                 <MatchActions matchId={match.id} status={match.status} onMatchDeleted={onMatchDeleted} />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
-                                        <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="object-cover" />
-                                    </div>
-                                    <span className="font-semibold text-sm line-clamp-1">{match.teamB.name}</span>
-                                </div>
-                                <span className="text-xs text-muted-foreground">vs</span>
                             </div>
                             <Separator />
                             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -69,7 +69,7 @@ export function MatchesTable({ matches, onMatchDeleted }: MatchesTableProps) {
                             </div>
                             <div>
                                 <p className="text-muted-foreground text-xs">Start Time</p>
-                                <p className="font-medium text-xs">{new Date(match.startTime).toLocaleString()}</p>
+                                <p className="font-medium">{new Date(match.startTime).toLocaleString()}</p>
                             </div>
                         </CardContent>
                     </Card>
