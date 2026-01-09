@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info, Calendar, Swords } from 'lucide-react';
+import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info, Calendar, Swords, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,8 +64,12 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
     <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
             <DialogTitle className="font-headline text-3xl text-center text-primary">Match Information</DialogTitle>
-            <DialogDescription className="text-center">
-                Get all the details about the upcoming clash.
+             <DialogDescription className="text-center pt-2">
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                    {match.league && <span className="font-semibold">{match.league}</span>}
+                    {match.league && match.location && <span>|</span>}
+                    {match.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3"/>{match.location}</span>}
+                </div>
             </DialogDescription>
         </DialogHeader>
         <div className="my-6">
@@ -109,7 +113,7 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
 
 
 export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onToggleFavorite }: MatchCardProps) {
-  const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch, isFavorite } = match;
+  const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch, isFavorite, league } = match;
   const { user } = useAuth();
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
@@ -143,10 +147,13 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                 </div>
             </div>
 
-            <div className="relative flex items-center justify-around w-full px-4 pb-4 gap-2">
-                <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamA.name}</p>
-                <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
-                <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
+            <div className="relative flex flex-col items-center justify-around w-full px-4 pb-4 gap-2">
+                <div className="flex items-center justify-around w-full gap-2">
+                    <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamA.name}</p>
+                    <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
+                    <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
+                </div>
+                 {league && <p className="text-xs text-white/70 font-semibold tracking-wider mt-1">{league}</p>}
             </div>
         </CardHeader>
         
