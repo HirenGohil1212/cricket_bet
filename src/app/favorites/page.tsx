@@ -26,7 +26,7 @@ async function FavoritesMatchData() {
         const matchDate = new Date(m.startTime);
         return matchDate >= sevenDaysAgo;
     }
-  );
+  ).reverse(); // Reverse to show most recent first
   
   const winnersPromises = finished.map(match => getWinnersForMatch(match.id));
   const winnersResults = await Promise.all(winnersPromises);

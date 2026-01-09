@@ -30,7 +30,7 @@ async function MatchData({ sport }: { sport?: Sport }) {
         const matchDate = new Date(m.startTime);
         return matchDate >= sevenDaysAgo;
     }
-  );
+  ).reverse(); // Reverse to show most recent first
   
   // Fetch winners for all finished matches in parallel
   const winnersPromises = finished.map(match => getWinnersForMatch(match.id));

@@ -120,7 +120,7 @@ export async function deleteMatch(matchId: string) {
 export async function getMatches(): Promise<Match[]> {
     try {
         const matchesCol = collection(db, 'matches');
-        const q = query(matchesCol, orderBy('startTime', 'desc'), limit(50));
+        const q = query(matchesCol, orderBy('startTime', 'asc'), limit(50));
         const matchSnapshot = await getDocs(q);
         const now = new Date();
 
@@ -129,6 +129,7 @@ export async function getMatches(): Promise<Match[]> {
             const startTime = (data.startTime as Timestamp).toDate();
             
             let currentStatus: Match['status'] = data.status;
+            // Auto-update status from Upcoming to Live if start time has passed
             if (currentStatus === 'Upcoming' && startTime <= now) {
                 currentStatus = 'Live';
             }
