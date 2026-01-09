@@ -1,4 +1,5 @@
 
+
 import { z } from "zod";
 import { sports, type Sport } from "@/lib/types";
 
@@ -19,6 +20,8 @@ const playerSchema = z.object({
 // Schema for the client-side form for adding/editing a match
 export const matchSchema = z.object({
   sport: z.enum(sports, { required_error: "Please select a sport." }),
+  league: z.string().optional(),
+  location: z.string().optional(),
   teamA: z.string().optional(),
   teamB: z.string().optional(),
   teamACountry: z.string().optional(),
@@ -52,14 +55,14 @@ export const matchSchema = z.object({
     if (!data.teamA && !data.teamACountry) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            path: ["teamACountry"],
+            path: ["teamA"],
             message: "Either Team A name or country is required.",
         });
     }
     if (!data.teamB && !data.teamBCountry) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            path: ["teamBCountry"],
+            path: ["teamB"],
             message: "Either Team B name or country is required.",
         });
     }

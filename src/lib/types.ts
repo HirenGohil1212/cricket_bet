@@ -55,6 +55,8 @@ export type Team = {
 export type Match = {
   id: string;
   sport: Sport;
+  league?: string;
+  location?: string;
   teamA: Team;
   teamB: Team;
   status: MatchStatus;

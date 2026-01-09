@@ -73,6 +73,8 @@ export function AddMatchForm() {
     resolver: zodResolver(matchSchema),
     defaultValues: {
         sport: "Cricket",
+        league: "",
+        location: "",
         teamA: "",
         teamB: "",
         teamAPlayers: [],
@@ -207,20 +209,22 @@ export function AddMatchForm() {
 
         const payload = {
             sport: data.sport,
+            league: data.league,
+            location: data.location,
             startTime: data.startTime,
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
             questions: data.questions,
             dummyWinners: data.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})),
             teamA: {
-                name: data.teamA || countryA!.name,
+                name: data.teamA || (countryA ? countryA.name : ''),
                 logoUrl: teamALogoUrl,
                 logoPath: teamALogoPath,
                 countryCode: data.teamACountry || '',
                 players: teamAPlayers
             },
             teamB: {
-                name: data.teamB || countryB!.name,
+                name: data.teamB || (countryB ? countryB.name : ''),
                 logoUrl: teamBLogoUrl,
                 logoPath: teamBLogoPath,
                 countryCode: data.teamBCountry || '',
@@ -606,6 +610,32 @@ export function AddMatchForm() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="league"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>League Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Premier League" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location / Stadium</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Wembley Stadium" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         </div>
         
         <Card>
@@ -667,7 +697,7 @@ export function AddMatchForm() {
                       name="teamA"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Team A Name (Optional)</FormLabel>
+                          <FormLabel>Team A Name</FormLabel>
                           <FormControl>
                             <Input placeholder="Defaults to country name" {...field} />
                           </FormControl>
@@ -727,7 +757,7 @@ export function AddMatchForm() {
                       name="teamB"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Team B Name (Optional)</FormLabel>
+                          <FormLabel>Team B Name</FormLabel>
                           <FormControl>
                             <Input placeholder="Defaults to country name" {...field} />
                           </FormControl>
