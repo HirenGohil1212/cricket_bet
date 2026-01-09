@@ -116,6 +116,8 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             const questions = await getQuestionsForMatch(match.id);
             form.reset({
                 sport: match.sport,
+                league: match.league || "",
+                location: match.location || "",
                 teamA: match.teamA.name,
                 teamB: match.teamB.name,
                 teamACountry: match.teamA.countryCode,
@@ -250,20 +252,22 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
 
         const payload = {
             sport: data.sport,
+            league: data.league,
+            location: data.location,
             startTime: data.startTime,
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
             questions: data.questions,
             dummyWinners: data.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})),
             teamA: {
-                name: data.teamA || countryA!.name,
+                name: data.teamA || (countryA ? countryA.name : ''),
                 logoUrl: teamALogoUrl,
                 logoPath: teamALogoPath,
                 countryCode: data.teamACountry || '',
                 players: teamAPlayers
             },
             teamB: {
-                name: data.teamB || countryB!.name,
+                name: data.teamB || (countryB ? countryB.name : ''),
                 logoUrl: teamBLogoUrl,
                 logoPath: teamBLogoPath,
                 countryCode: data.teamBCountry || '',
@@ -661,6 +665,32 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                        </div>
                     </PopoverContent>
                   </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="league"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>League Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Premier League" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location / Stadium</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Wembley Stadium" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
