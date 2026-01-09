@@ -154,7 +154,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                     <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
                     <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
                 </div>
-                 {league && <p className="text-xs text-white/70 font-semibold tracking-wider mt-1">{league}</p>}
+                 {league && <p className="font-headline font-bold text-lg text-primary text-center tracking-wide mt-1">{league}</p>}
             </div>
         </CardHeader>
         
