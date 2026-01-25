@@ -135,7 +135,6 @@ export type DepositRequest = {
   userId: string;
   userName:string;
   amount: number;
-  utrNumber: string;
   screenshotUrl: string;
   screenshotPath?: string;
   status: 'Processing' | 'Approved' | 'Rejected';

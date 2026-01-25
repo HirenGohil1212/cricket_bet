@@ -114,7 +114,6 @@ const ACCEPTED_SCREENSHOT_TYPES = ["image/jpeg", "image/jpg", "image/png", "imag
 
 export const depositRequestSchema = z.object({
   amount: z.coerce.number().min(100, "Minimum deposit amount is INR 100."),
-  utrNumber: z.string().min(12, "UTR must be 12 digits.").max(12, "UTR must be 12 digits."),
   screenshotFile: z.any()
     .refine((file) => file instanceof File, "Payment screenshot is required.")
     .refine((file) => !(file instanceof File) || file.size <= MAX_SCREENSHOT_SIZE, `Max file size is 5MB.`)

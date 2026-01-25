@@ -52,7 +52,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
     resolver: zodResolver(depositRequestSchema),
     defaultValues: {
       amount: 100,
-      utrNumber: "",
       selectedAccountId: bankAccounts.length > 0 ? bankAccounts[0].id : "",
     },
   });
@@ -110,7 +109,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
             userId: user.uid,
             userName: userProfile.name,
             amount: data.amount,
-            utrNumber: data.utrNumber,
             screenshotUrl: downloadUrl,
             screenshotPath: storagePath,
         });
@@ -119,7 +117,7 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
             toast({ variant: "destructive", title: "Submission Failed", description: result.error });
         } else {
             toast({ title: "Request Submitted", description: result.success });
-            form.reset({ amount: 100, utrNumber: "" });
+            form.reset({ amount: 100 });
             clearScreenshot();
             router.refresh();
         }
@@ -187,19 +185,6 @@ export function AddFundsCard({ bankAccounts }: AddFundsCardProps) {
                   </FormItem>
                 )}
               />
-               <FormField
-                  control={form.control}
-                  name="utrNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>UTR / UPI Transaction ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter the 12-digit transaction ID" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               <FormField
                 control={form.control}
                 name="screenshotFile"
