@@ -3,7 +3,7 @@
 import { MatchTabs } from "@/components/matches/match-tabs";
 import { HomePageClient } from "@/app/home-page-client";
 import { getContent } from "@/app/actions/content.actions";
-import type { AppSettings, ContentSettings, Sport, Winner, BetOption } from "@/lib/types";
+import type { AppSettings, ContentSettings, Sport, Winner, BetOption, Question } from "@/lib/types";
 import { sports } from "@/lib/data";
 import { TabsContent } from "@/components/ui/tabs";
 import { Suspense } from "react";
@@ -11,7 +11,7 @@ import { SportMatchListLoader } from "@/components/matches/sport-match-list-load
 import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
 import { getAppSettings } from "@/app/actions/settings.actions";
-import { getWinnersForMatch } from "./actions/qna.actions";
+import { getWinnersForMatch, getQuestionsForMatch } from "./actions/qna.actions";
 import { subDays, startOfDay } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -32,9 +32,14 @@ async function MatchData({ sport }: { sport?: Sport }) {
     }
   ).reverse(); // Reverse to show most recent first
   
-  // Fetch winners for all finished matches in parallel
+  // Fetch winners and questions for all finished matches in parallel
   const winnersPromises = finished.map(match => getWinnersForMatch(match.id));
-  const winnersResults = await Promise.all(winnersPromises);
+  const questionsPromises = finished.map(match => getQuestionsForMatch(match.id));
+  
+  const [winnersResults, questionsResults] = await Promise.all([
+      Promise.all(winnersPromises),
+      Promise.all(questionsPromises)
+  ]);
   
   const winnersMap = new Map<string, Winner[]>();
   winnersResults.forEach((winners, index) => {
@@ -43,9 +48,17 @@ async function MatchData({ sport }: { sport?: Sport }) {
     }
   });
 
+  const questionsMap = new Map<string, Question[]>();
+  questionsResults.forEach((questions, index) => {
+    if (questions.length > 0) {
+      questionsMap.set(finished[index].id, questions);
+    }
+  });
+
   const augmentedFinishedMatches = finished.map(match => ({
     ...match,
     winners: winnersMap.get(match.id) || [],
+    questions: questionsMap.get(match.id) || [],
   }));
 
 

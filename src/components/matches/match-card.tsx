@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info, Calendar, Swords, MapPin } from 'lucide-react';
+import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info, Calendar, Swords, MapPin, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -114,7 +114,7 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
 
 
 export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onToggleFavorite }: MatchCardProps) {
-  const { teamA, teamB, status, score, winner, sport, startTime, winners, isSpecialMatch, isFavorite, league } = match;
+  const { teamA, teamB, status, score, winner, sport, startTime, winners, questions, isSpecialMatch, isFavorite, league } = match;
   const { user } = useAuth();
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
@@ -275,6 +275,33 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                   )}
                 </AccordionContent>
               </AccordionItem>
+              {questions && questions.length > 0 && (
+                <AccordionItem value="results" className="border-b-0">
+                  <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
+                    <div className="flex items-center gap-2 mx-auto">
+                      <ClipboardList className="h-4 w-4 text-primary" />
+                      <span>See Results</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-0 pb-2">
+                    <ScrollArea className="h-32">
+                      <div className="space-y-2 pr-4">
+                        {questions.map((q) => (
+                          <div key={q.id} className="text-xs p-2 rounded-md bg-background">
+                            <p className="font-medium text-muted-foreground text-center mb-1">{q.question}</p>
+                            {q.result && (
+                                <div className="grid grid-cols-2 text-center text-primary font-semibold">
+                                    <span>{teamA.name}: {q.result?.teamA || 'N/A'}</span>
+                                    <span>{teamB.name}: {q.result?.teamB || 'N/A'}</span>
+                                </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
             </Accordion>
             <div className="flex gap-2 w-full">
                 <Button

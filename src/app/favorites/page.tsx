@@ -1,13 +1,13 @@
 
 import { HomePageClient } from "@/app/home-page-client";
 import { getContent } from "@/app/actions/content.actions";
-import type { AppSettings, ContentSettings, Winner, Sport } from "@/lib/types";
+import type { AppSettings, ContentSettings, Winner, Sport, Question } from "@/lib/types";
 import { Suspense } from "react";
 import { SportMatchListLoader } from "@/components/matches/sport-match-list-loader";
 import { SportMatchList } from "@/components/matches/sport-match-list";
 import { getMatches } from "@/app/actions/match.actions";
 import { getAppSettings } from "@/app/actions/settings.actions";
-import { getWinnersForMatch } from "../actions/qna.actions";
+import { getWinnersForMatch, getQuestionsForMatch } from "../actions/qna.actions";
 import { subDays, startOfDay } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,12 @@ async function FavoritesMatchData() {
   ).reverse(); // Reverse to show most recent first
   
   const winnersPromises = finished.map(match => getWinnersForMatch(match.id));
-  const winnersResults = await Promise.all(winnersPromises);
+  const questionsPromises = finished.map(match => getQuestionsForMatch(match.id));
+
+  const [winnersResults, questionsResults] = await Promise.all([
+    Promise.all(winnersPromises),
+    Promise.all(questionsPromises)
+  ]);
   
   const winnersMap = new Map<string, Winner[]>();
   winnersResults.forEach((winners, index) => {
@@ -38,9 +43,17 @@ async function FavoritesMatchData() {
     }
   });
 
+  const questionsMap = new Map<string, Question[]>();
+  questionsResults.forEach((questions, index) => {
+    if (questions.length > 0) {
+      questionsMap.set(finished[index].id, questions);
+    }
+  });
+
   const augmentedFinishedMatches = finished.map(match => ({
     ...match,
     winners: winnersMap.get(match.id) || [],
+    questions: questionsMap.get(match.id) || [],
   }));
 
   return (

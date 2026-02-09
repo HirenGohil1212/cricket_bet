@@ -64,6 +64,7 @@ export type Match = {
   score?: string;
   winner?: string;
   winners?: Winner[];
+  questions?: Question[];
   isSpecialMatch?: boolean;
   allowOneSidedBets?: boolean;
   teamABettingEnabled?: boolean;
