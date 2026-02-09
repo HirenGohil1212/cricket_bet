@@ -1,4 +1,3 @@
-
 "use client"
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -82,6 +81,8 @@ export function Header() {
                 <Link href="/wallet">
                     <Wallet className="h-5 w-5" />
                     <span className="inline-block">{userProfile.walletBalance.toFixed(2)}</span>
+                    <span className="mx-2 text-primary/50">|</span>
+                    <span className="inline-block">-{userProfile.totalWagered.toFixed(2)}</span>
                 </Link>
             </Button>
         )}
