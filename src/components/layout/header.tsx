@@ -1,3 +1,4 @@
+
 "use client"
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -31,7 +32,7 @@ const getTitle = (pathname: string) => {
 }
 
 export function Header() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, pendingWagered } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
@@ -82,7 +83,7 @@ export function Header() {
                     <Wallet className="h-5 w-5" />
                     <span className="inline-block">{userProfile.walletBalance.toFixed(2)}</span>
                     <span className="mx-2 text-primary/50">|</span>
-                    <span className="inline-block">-{userProfile.totalWagered.toFixed(2)}</span>
+                    <span className="inline-block">-{pendingWagered.toFixed(2)}</span>
                 </Link>
             </Button>
         )}
