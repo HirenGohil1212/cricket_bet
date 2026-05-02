@@ -86,8 +86,8 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
         <div className="grid grid-cols-2 gap-4 sm:gap-8 items-start">
             <div className="space-y-4 text-center">
                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 p-1 bg-white/5">
-                        <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={64} height={64} className="object-cover w-full h-full" />
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/30 p-1 bg-white/5">
+                        <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={56} height={56} className="object-cover w-full h-full" />
                     </div>
                     <h3 className="text-lg font-black font-headline text-white uppercase tracking-tight leading-tight">{match.teamA.name}</h3>
                 </div>
@@ -99,8 +99,8 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
             
             <div className="space-y-4 text-center">
                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 p-1 bg-white/5">
-                        <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={64} height={64} className="object-cover w-full h-full" />
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/30 p-1 bg-white/5">
+                        <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={56} height={56} className="object-cover w-full h-full" />
                     </div>
                     <h3 className="text-lg font-black font-headline text-white uppercase tracking-tight leading-tight">{match.teamB.name}</h3>
                 </div>
@@ -160,8 +160,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
         <CardContent className="p-4 flex-grow">
            <div className="flex justify-between items-center">
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/5 shadow-2xl bg-white/5 p-1">
-                    <Image src={teamA.logoUrl} alt={teamA.name} width={64} height={64} className="object-cover w-full h-full" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/5 shadow-2xl bg-white/5 p-1">
+                    <Image src={teamA.logoUrl} alt={teamA.name} width={56} height={56} className="object-cover w-full h-full" />
                   </div>
                   {status === 'Finished' && winner === teamA.name && (
                     <div className="flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded-full border border-primary/30">
@@ -179,8 +179,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
               </div>
 
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/5 shadow-2xl bg-white/5 p-1">
-                    <Image src={teamB.logoUrl} alt={teamB.name} width={64} height={64} className="object-cover w-full h-full" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/5 shadow-2xl bg-white/5 p-1">
+                    <Image src={teamB.logoUrl} alt={teamB.name} width={56} height={56} className="object-cover w-full h-full" />
                   </div>
                    {status === 'Finished' && winner === teamB.name && (
                     <div className="flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded-full border border-primary/30">
