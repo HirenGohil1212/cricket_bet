@@ -74,25 +74,25 @@ export function Header() {
       <div className="hidden md:block">
         <h1 className="font-headline text-2xl font-bold text-primary">{title}</h1>
       </div>
-      <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-4">
+      <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
         {user && userProfile && (
-            <Button asChild variant="outline" className="h-9 px-2 sm:px-4 border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary">
-                <Link href="/wallet" className="flex items-center gap-1">
-                    <Wallet className="h-4 w-4 shrink-0" />
-                    <span className="text-xs sm:text-sm font-bold tabular-nums">{userProfile.walletBalance.toFixed(0)}</span>
-                    <span className="text-primary/30 font-light">|</span>
-                    <span className="text-xs sm:text-sm font-bold tabular-nums text-primary/70">-{pendingWagered.toFixed(0)}</span>
+            <Button asChild variant="outline" className="h-10 px-3 sm:px-4 border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary rounded-xl transition-all">
+                <Link href="/wallet" className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 shrink-0 opacity-80" />
+                    <span className="text-sm sm:text-base font-black tabular-nums tracking-tight">{userProfile.walletBalance.toFixed(0)}</span>
+                    <span className="text-primary/20 font-light mx-0.5">|</span>
+                    <span className="text-sm sm:text-base font-black tabular-nums text-primary/60 tracking-tight">-{pendingWagered.toFixed(0)}</span>
                 </Link>
             </Button>
         )}
         {user && userProfile && (
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+              <Button variant="ghost" className="relative h-10 w-10 p-0 rounded-full border-2 border-primary/30 hover:border-primary/60 hover:bg-primary/5 transition-all group">
                 <Avatar className="h-full w-full">
                   <AvatarImage src={user?.photoURL || undefined} alt={userProfile.name} className="object-cover" />
-                  <AvatarFallback className="bg-secondary text-primary">
-                    <UserIcon className="h-4 w-4" />
+                  <AvatarFallback className="bg-transparent text-primary">
+                    <UserIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
                   </AvatarFallback>
                 </Avatar>
               </Button>
