@@ -43,7 +43,8 @@ export const matchSchema = z.object({
   allowOneSidedBets: z.boolean().default(false),
 
   questions: z.array(z.object({
-    question: z.string().min(1, "Question cannot be empty.")
+    question: z.string().min(1, "Question cannot be empty."),
+    type: z.enum(['qna', 'player']).default('qna')
   })).min(1, "At least one question is required."),
 
   dummyWinners: z.array(z.object({
@@ -137,6 +138,7 @@ export type WithdrawalRequestFormValues = z.infer<typeof withdrawalRequestSchema
 // Schema for Q&A Template (Admin Form)
 export const qnaItemSchema = z.object({
   question: z.string().min(1, "Question cannot be empty."),
+  type: z.enum(['qna', 'player']).default('qna')
 });
 
 export const qnaFormSchema = z.object({

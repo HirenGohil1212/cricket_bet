@@ -1,8 +1,7 @@
 
-
 'use server';
 
-import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, Timestamp, query, orderBy, getDoc, writeBatch, updateDoc, limit, runTransaction, where, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import type { Match, Player } from '@/lib/types';
@@ -22,7 +21,7 @@ interface MatchServerPayload {
     startTime: Date;
     isSpecialMatch: boolean;
     allowOneSidedBets: boolean;
-    questions: { question: string }[];
+    questions: { question: string; type: 'qna' | 'player' }[];
     dummyWinners?: { userId: string; amount: number }[];
 }
 
@@ -72,6 +71,7 @@ export async function createMatch(payload: MatchServerPayload) {
                 const questionRef = doc(questionsCollectionRef);
                 batch.set(questionRef, {
                     question: q.question,
+                    type: q.type || 'qna',
                     order: index,
                     createdAt: Timestamp.now(),
                     status: 'active',
@@ -280,7 +280,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
                 const questionRef = doc(questionsCollectionRef);
                 batch.set(questionRef, {
                     question: q.question,
-                    order: index,
+                    type: q.type || 'qna',
+                    order: index, // Add order field
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,6 +49,7 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { ScrollArea } from "../ui/scroll-area";
 import { getDummyUsersBySport } from "@/app/actions/dummy-user.actions";
+import { Badge } from "../ui/badge";
 
 
 export function AddMatchForm() {
@@ -214,7 +214,7 @@ export function AddMatchForm() {
             startTime: data.startTime,
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
-            questions: data.questions,
+            questions: data.questions.map(q => ({ question: q.question, type: q.type })),
             dummyWinners: data.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})),
             teamA: {
                 name: data.teamA || (countryA ? countryA.name : ''),
@@ -439,19 +439,20 @@ export function AddMatchForm() {
     const sportSpecificQuestions = questionBank.filter(q => q.sport === selectedSport);
     const [open, setOpen] = React.useState(false);
     const [manualQuestionText, setManualQuestionText] = React.useState("");
+    const [manualQuestionType, setManualQuestionType] = React.useState<'qna' | 'player'>('qna');
   
-    const handleSelect = (questionText: string) => {
-        const isSelected = currentQuestions.some(cq => cq.question === questionText);
+    const handleSelect = (q: Question) => {
+        const isSelected = currentQuestions.some(cq => cq.question === q.question);
         if (isSelected) {
-            removeQuestion(currentQuestions.findIndex(cq => cq.question === questionText));
+            removeQuestion(currentQuestions.findIndex(cq => cq.question === q.question));
         } else {
-            appendQuestion({ question: questionText });
+            appendQuestion({ question: q.question, type: q.type });
         }
     };
 
     const handleAddManual = () => {
         if (manualQuestionText.trim()) {
-            appendQuestion({ question: manualQuestionText.trim() });
+            appendQuestion({ question: manualQuestionText.trim(), type: manualQuestionType });
             setManualQuestionText("");
         }
     };
@@ -460,6 +461,9 @@ export function AddMatchForm() {
       <div className="space-y-4">
         {questionFields.map((field, index) => (
           <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+            <Badge variant={field.type === 'player' ? 'secondary' : 'outline'} className="text-[10px] uppercase font-black px-1.5 shrink-0">
+                {field.type === 'player' ? 'Player' : 'QnA'}
+            </Badge>
             <span className="flex-1 text-sm">{field.question}</span>
             <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeQuestion(index)}>
               <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -487,8 +491,11 @@ export function AddMatchForm() {
                     >
                       <Checkbox
                         checked={currentQuestions.some(cq => cq.question === q.question)}
-                        onCheckedChange={() => handleSelect(q.question)}
+                        onCheckedChange={() => handleSelect(q)}
                       />
+                      <Badge variant={q.type === 'player' ? 'secondary' : 'outline'} className="text-[10px] uppercase shrink-0">
+                        {q.type === 'player' ? 'P' : 'T'}
+                      </Badge>
                       <span className="text-sm flex-1">{q.question}</span>
                     </Label>
                   ))
@@ -500,15 +507,32 @@ export function AddMatchForm() {
           </PopoverContent>
         </Popover>
 
-        <div className="p-3 border rounded-md relative border-dashed space-y-2">
-            <Label htmlFor="manual-question" className="text-xs">New Question Text</Label>
-            <Textarea 
-                id="manual-question"
-                placeholder="Enter new question" 
-                value={manualQuestionText}
-                onChange={(e) => setManualQuestionText(e.target.value)}
-            />
-            <Button type="button" size="sm" onClick={handleAddManual}>
+        <div className="p-3 border rounded-md relative border-dashed space-y-3">
+            <div className="flex items-center gap-2">
+                <div className="flex-1 space-y-1">
+                    <Label htmlFor="manual-question" className="text-xs">New Question Text</Label>
+                    <Textarea 
+                        id="manual-question"
+                        placeholder="Enter new question" 
+                        value={manualQuestionText}
+                        onChange={(e) => setManualQuestionText(e.target.value)}
+                        className="min-h-[60px]"
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-xs">Type</Label>
+                    <Select value={manualQuestionType} onValueChange={(v: any) => setManualQuestionType(v)}>
+                        <SelectTrigger className="w-[100px] h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="qna">QnA</SelectItem>
+                            <SelectItem value="player">Player</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <Button type="button" size="sm" onClick={handleAddManual} className="w-full">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Question
             </Button>

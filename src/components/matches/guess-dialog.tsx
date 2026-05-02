@@ -229,6 +229,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   if (!match) return null;
 
+  const teamQuestions = questions.filter(q => q.type === 'qna' || !q.type);
+  const playerQuestions = questions.filter(q => q.type === 'player');
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
       <DialogContent className="sm:max-w-lg bg-[#0a140f] border-none text-foreground p-0 overflow-hidden">
@@ -257,7 +260,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                         ) : (
                             <>
                                 <div className="space-y-6">
-                                    {questions.map((q) => {
+                                    {teamQuestions.map((q) => {
                                         const isRowSuspended = !match.teamABettingEnabled && !match.teamBBettingEnabled;
                                         return (
                                             <div key={q.id} className="space-y-3">
@@ -316,7 +319,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                     })}
                                 </div>
 
-                                {match.isSpecialMatch && (
+                                {(match.isSpecialMatch && playerQuestions.length > 0) && (
                                     <div className="space-y-6 pt-4">
                                         <h4 className="text-center text-[10px] font-black text-primary tracking-[0.3em] uppercase opacity-50">Player Performance</h4>
                                         {playersWithTeamInfo.map((player) => (
@@ -337,7 +340,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-4">
-                                                    {questions.map(q => (
+                                                    {playerQuestions.map(q => (
                                                         <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
                                                             <div className="flex-1 text-lg font-black text-primary uppercase tracking-wider leading-tight">{q.question}</div>
                                                             <div className="flex flex-col gap-0.5 items-center">

@@ -8,7 +8,7 @@ import { QandADashboard } from "@/components/admin/q-and-a-dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Question, Sport } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Users, UserCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { createQuestionInBank, getQuestionsFromBank, deleteQuestionFromBank } from '@/app/actions/qna.actions';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { sports } from '@/lib/types';
 import { SportIcon } from '@/components/icons';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 function QandAPageSkeleton() {
     return (
@@ -63,6 +65,7 @@ function QuestionBankManager() {
     const [newQuestions, setNewQuestions] = React.useState<Record<Sport, string>>({
         Cricket: '', Football: '', Tennis: '', 'Table Tennis': '', Badminton: ''
     });
+    const [newQuestionType, setNewQuestionType] = React.useState<'qna' | 'player'>('qna');
     const [isLoading, setIsLoading] = React.useState(true);
     const [isSubmitting, setIsSubmitting] = React.useState<Sport | null>(null);
 
@@ -83,7 +86,7 @@ function QuestionBankManager() {
             return;
         }
         setIsSubmitting(sport);
-        const result = await createQuestionInBank(questionText, sport);
+        const result = await createQuestionInBank(questionText, sport, newQuestionType);
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
         } else {
@@ -118,7 +121,17 @@ function QuestionBankManager() {
                         value={newQuestions[sport]}
                         onChange={(e) => handleNewQuestionChange(sport, e.target.value)}
                         disabled={isSubmitting === sport}
+                        className="flex-1"
                     />
+                    <Select value={newQuestionType} onValueChange={(v: any) => setNewQuestionType(v)}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="qna">Team (QnA)</SelectItem>
+                            <SelectItem value="player">Player</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <Button type="submit" disabled={isSubmitting === sport}>
                         <PlusCircle className="h-4 w-4 mr-2" /> Add
                     </Button>
@@ -129,8 +142,14 @@ function QuestionBankManager() {
                         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
                     ) : sportQuestions.length > 0 ? (
                         sportQuestions.map(q => (
-                            <div key={q.id} className="flex items-center justify-between p-2 border rounded-md">
-                                <span className="text-sm">{q.question}</span>
+                            <div key={q.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
+                                <div className="flex items-center gap-3">
+                                    <Badge variant={q.type === 'player' ? 'secondary' : 'outline'} className="text-[10px] uppercase font-black tracking-widest px-2">
+                                        {q.type === 'player' ? <UserCircle className="h-3 w-3 mr-1"/> : <Users className="h-3 w-3 mr-1"/>}
+                                        {q.type === 'player' ? 'Player' : 'QnA'}
+                                    </Badge>
+                                    <span className="text-sm font-bold">{q.question}</span>
+                                </div>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>

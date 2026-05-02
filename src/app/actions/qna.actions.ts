@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -27,7 +28,7 @@ import type { Question, Sport, QnaFormValues, Winner, DummyUser } from '@/lib/ty
 
 // --- Question Bank Actions ---
 
-export async function createQuestionInBank(questionText: string, sport: Sport) {
+export async function createQuestionInBank(questionText: string, sport: Sport, type: 'qna' | 'player' = 'qna') {
     if (!questionText || !questionText.trim()) {
         return { error: 'Question text cannot be empty.' };
     }
@@ -35,6 +36,7 @@ export async function createQuestionInBank(questionText: string, sport: Sport) {
         const docRef = await addDoc(collection(db, 'questionBank'), {
             question: questionText.trim(),
             sport: sport,
+            type: type,
             createdAt: Timestamp.now(),
         });
 
@@ -42,6 +44,7 @@ export async function createQuestionInBank(questionText: string, sport: Sport) {
             id: docRef.id,
             question: questionText.trim(),
             sport: sport,
+            type: type,
             createdAt: new Date().toISOString(),
             order: 0, 
             status: 'active',
@@ -59,11 +62,15 @@ export async function getQuestionsFromBank(): Promise<Question[]> {
     try {
         const q = query(collection(db, 'questionBank'), orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: (doc.data().createdAt as Timestamp).toDate().toISOString()
-        } as Question));
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                type: data.type || 'qna',
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString()
+            } as Question;
+        });
     } catch (error) {
         console.error("Error fetching questions from bank: ", error);
         return [];
@@ -101,6 +108,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
             return {
                 id: doc.id,
                 question: data.question,
+                type: data.type || 'qna',
                 order: data.order,
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 status: data.status,
@@ -115,7 +123,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
 }
 
 // Overwrites the questions for a specific match.
-export async function saveQuestionsForMatch(matchId: string, questions: { question: string; }[]) {
+export async function saveQuestionsForMatch(matchId: string, questions: { question: string; type?: 'qna' | 'player' }[]) {
      if (!matchId) {
         return { error: 'A match ID must be provided.' };
     }
@@ -133,6 +141,7 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
             const questionRef = doc(questionsCollectionRef);
             batch.set(questionRef, {
                 question: q.question,
+                type: q.type || 'qna',
                 order: index, // Add order field
                 createdAt: Timestamp.now(),
                 status: 'active',
@@ -155,7 +164,7 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
 export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValues['questions']) {
     const validatedQuestions = qnaFormSchema.safeParse({ questions });
     if (!validatedQuestions.success) {
-        return { error: 'Invalid question data provided.' };
+      return { error: 'Invalid question data provided.' };
     }
 
     const templateRef = doc(db, 'questionTemplates', sport);
@@ -184,6 +193,7 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
                 const questionRef = doc(questionsCollectionRef);
                 batch.set(questionRef, {
                     question: q.question,
+                    type: q.type || 'qna',
                     order: index, // Add order field
                     createdAt: Timestamp.now(),
                     status: 'active',
@@ -282,7 +292,7 @@ export async function settleMatchAndPayouts(matchId: string) {
                 return { error: `Question "${q.question}" is missing a valid team result. Please save all results before settling.` };
              }
 
-             if (isSpecialMatch) {
+             if (isSpecialMatch && q.type === 'player') {
                 if (!q.playerResult || typeof q.playerResult !== 'object' || Object.keys(q.playerResult).length === 0) {
                     return { error: `Player results for question "${q.question}" are missing or invalid. Please save all player results before settling.` };
                 }

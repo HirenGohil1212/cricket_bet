@@ -157,6 +157,7 @@ export type WithdrawalRequest = {
 // Represents a question item in the template creation form
 export type QnaFormItem = {
   question: string;
+  type: 'qna' | 'player';
 };
 
 // Represents the full schema for the template creation form
@@ -168,6 +169,7 @@ export type Question = {
   id: string;
   question: string;
   sport?: Sport;
+  type: 'qna' | 'player';
   order: number;
   createdAt: string;
   status: 'active' | 'closed' | 'settled';

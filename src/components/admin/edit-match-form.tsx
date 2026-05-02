@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,6 +49,7 @@ import { Label } from "../ui/label";
 import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "../ui/skeleton";
 import { getDummyUsersBySport } from "@/app/actions/dummy-user.actions";
+import { Badge } from "../ui/badge";
 
 interface EditMatchFormProps {
     match: Match;
@@ -127,7 +127,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 allowOneSidedBets: match.allowOneSidedBets || false,
                 teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath, bettingEnabled: p.bettingEnabled ?? true })) || [],
                 teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath, bettingEnabled: p.bettingEnabled ?? true })) || [],
-                questions: questions.length > 0 ? questions.map(q => ({ question: q.question })) : [],
+                questions: questions.length > 0 ? questions.map(q => ({ question: q.question, type: q.type })) : [],
                 dummyWinners: match.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})) || [],
             });
             setIsFormReady(true);
@@ -257,7 +257,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             startTime: data.startTime,
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
-            questions: data.questions,
+            questions: data.questions.map(q => ({ question: q.question, type: q.type })),
             dummyWinners: data.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})),
             teamA: {
                 name: data.teamA || (countryA ? countryA.name : ''),
@@ -498,19 +498,20 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     const sportSpecificQuestions = questionBank.filter(q => q.sport === selectedSport);
     const [open, setOpen] = React.useState(false);
     const [manualQuestionText, setManualQuestionText] = React.useState("");
+    const [manualQuestionType, setManualQuestionType] = React.useState<'qna' | 'player'>('qna');
   
-    const handleSelect = (questionText: string) => {
-      const isSelected = currentQuestions.some(cq => cq.question === questionText);
+    const handleSelect = (q: Question) => {
+      const isSelected = currentQuestions.some(cq => cq.question === q.question);
       if (isSelected) {
-        removeQuestion(currentQuestions.findIndex(cq => cq.question === questionText));
+        removeQuestion(currentQuestions.findIndex(cq => cq.question === q.question));
       } else {
-        appendQuestion({ question: questionText });
+        appendQuestion({ question: q.question, type: q.type });
       }
     };
 
     const handleAddManual = () => {
         if (manualQuestionText.trim()) {
-            appendQuestion({ question: manualQuestionText.trim() });
+            appendQuestion({ question: manualQuestionText.trim(), type: manualQuestionType });
             setManualQuestionText("");
         }
     };
@@ -519,6 +520,9 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
       <div className="space-y-4">
         {questionFields.map((field, index) => (
           <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+             <Badge variant={field.type === 'player' ? 'secondary' : 'outline'} className="text-[10px] uppercase font-black px-1.5 shrink-0">
+                {field.type === 'player' ? 'Player' : 'QnA'}
+            </Badge>
             <span className="flex-1 text-sm">{field.question}</span>
             <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeQuestion(index)}>
               <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -546,8 +550,11 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                     >
                       <Checkbox
                         checked={currentQuestions.some(cq => cq.question === q.question)}
-                        onCheckedChange={() => handleSelect(q.question)}
+                        onCheckedChange={() => handleSelect(q)}
                       />
+                      <Badge variant={q.type === 'player' ? 'secondary' : 'outline'} className="text-[10px] uppercase shrink-0">
+                        {q.type === 'player' ? 'P' : 'T'}
+                      </Badge>
                       <span className="text-sm flex-1">{q.question}</span>
                     </Label>
                   ))
@@ -559,15 +566,32 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
           </PopoverContent>
         </Popover>
 
-        <div className="p-3 border rounded-md relative border-dashed space-y-2">
-            <Label htmlFor="manual-question" className="text-xs">New Question Text</Label>
-            <Textarea 
-                id="manual-question"
-                placeholder="Enter new question" 
-                value={manualQuestionText}
-                onChange={(e) => setManualQuestionText(e.target.value)}
-            />
-            <Button type="button" size="sm" onClick={handleAddManual}>
+        <div className="p-3 border rounded-md relative border-dashed space-y-3">
+             <div className="flex items-center gap-2">
+                <div className="flex-1 space-y-1">
+                    <Label htmlFor="manual-question" className="text-xs">New Question Text</Label>
+                    <Textarea 
+                        id="manual-question"
+                        placeholder="Enter new question" 
+                        value={manualQuestionText}
+                        onChange={(e) => setManualQuestionText(e.target.value)}
+                        className="min-h-[60px]"
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-xs">Type</Label>
+                    <Select value={manualQuestionType} onValueChange={(v: any) => setManualQuestionType(v)}>
+                        <SelectTrigger className="w-[100px] h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="qna">QnA</SelectItem>
+                            <SelectItem value="player">Player</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <Button type="button" size="sm" onClick={handleAddManual} className="w-full">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add Question
             </Button>
