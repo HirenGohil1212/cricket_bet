@@ -11,21 +11,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Match, Question, Prediction, Player } from "@/lib/types";
+import type { Match, Question, Prediction } from "@/lib/types";
 import { createBet } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, X } from "lucide-react";
 
 interface GuessDialogProps {
   match: Match | null;
@@ -33,77 +31,33 @@ interface GuessDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = 'predictions' | 'amount';
+type Step = 'list' | 'amount';
 
 export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
   
-  const [step, setStep] = useState<Step>('predictions');
+  const [step, setStep] = useState<Step>('list');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Selection state for the current bet being placed
+  const [currentPrediction, setCurrentPrediction] = useState<Prediction | null>(null);
+  const [currentBetType, setCurrentBetType] = useState<'qna' | 'player'>('qna');
   const [amount, setAmount] = useState<number>(0);
   
-  // Predictions state
-  const [qnaPredictions, setQnaPredictions] = useState<Record<string, { teamA: string, teamB: string }>>({});
-  const [playerPredictions, setPlayerPredictions] = useState<Record<string, Record<string, string>>>({});
-
-  // Derivations for bet type logic
-  const isPlayerBet = Object.values(playerPredictions).some(p => Object.values(p).some(v => v.trim() !== ''));
-  
-  const betOnSide = React.useMemo(() => {
-    let hasA = false;
-    let hasB = false;
-    
-    // Check QnA
-    Object.values(qnaPredictions).forEach(p => {
-        if (p.teamA.trim()) hasA = true;
-        if (p.teamB.trim()) hasB = true;
-    });
-    
-    // Check Player
-    if (match) {
-        Object.entries(playerPredictions).forEach(([name, preds]) => {
-            const isTeamA = match.teamA.players?.some(p => p.name === name);
-            const isTeamB = match.teamB.players?.some(p => p.name === name);
-            if (Object.values(preds).some(v => v.trim() !== '')) {
-                if (isTeamA) hasA = true;
-                if (isTeamB) hasB = true;
-            }
-        });
-    }
-
-    if (hasA && hasB) return 'both';
-    if (hasA) return 'teamA';
-    if (hasB) return 'teamB';
-    return 'both';
-  }, [qnaPredictions, playerPredictions, match]);
-
-  const betOptions = React.useMemo(() => {
-    if (!match?.bettingSettings) return [];
-    const settings = match.bettingSettings;
-    
-    if (match.sport === 'Cricket') {
-        if (isPlayerBet) return settings.betOptions.Cricket.player;
-        if (match.allowOneSidedBets && betOnSide !== 'both') return settings.betOptions.Cricket.oneSided;
-        return settings.betOptions.Cricket.general;
-    }
-    return settings.betOptions[match.sport];
-  }, [match, betOnSide, isPlayerBet]);
-
-  useEffect(() => {
-    if (betOptions.length > 0 && amount === 0) {
-      setAmount(betOptions[0].amount);
-    }
-  }, [betOptions, amount]);
+  // Temporary input state for the list view
+  const [qnaInputs, setQnaInputs] = useState<Record<string, { teamA: string, teamB: string }>>({});
+  const [playerInputs, setPlayerInputs] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     async function fetchDialogData() {
       if (match && open) {
         setIsLoading(true);
-        setStep('predictions');
+        setStep('list');
+        setCurrentPrediction(null);
         
         const fetchedQuestions = await getQuestionsForMatch(match.id);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
@@ -113,8 +67,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
           acc[q.id] = { teamA: '', teamB: '' };
           return acc;
         }, {} as Record<string, { teamA: string, teamB: string }>);
-        setQnaPredictions(initialQna);
-        setPlayerPredictions({});
+        setQnaInputs(initialQna);
+        setPlayerInputs({});
         
         setIsLoading(false);
       }
@@ -125,87 +79,100 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   if (!match) return null;
 
   const handleQnaInputChange = (qId: string, team: 'teamA' | 'teamB', value: string) => {
-    setQnaPredictions(prev => ({
+    setQnaInputs(prev => ({
         ...prev,
         [qId]: { ...prev[qId], [team]: value }
     }));
   };
 
   const handlePlayerInputChange = (playerName: string, qId: string, value: string) => {
-    setPlayerPredictions(prev => ({
+    setPlayerInputs(prev => ({
       ...prev,
       [playerName]: { ...prev[playerName], [qId]: value }
     }));
   };
 
-  const validatePredictions = () => {
-    let finalPredictions: Prediction[] = [];
+  const betOptions = React.useMemo(() => {
+    if (!match?.bettingSettings) return [];
+    const settings = match.bettingSettings;
     
-    // Process QnA
-    for (const q of questions) {
-        const pred = qnaPredictions[q.id];
-        const teamAAnswer = pred?.teamA?.trim() ?? '';
-        const teamBAnswer = pred?.teamB?.trim() ?? '';
-
-        if (!teamAAnswer && !teamBAnswer) continue;
-
-        finalPredictions.push({
-            questionId: q.id,
-            questionText: q.question,
-            predictedAnswer: { teamA: teamAAnswer, teamB: teamBAnswer }
-        });
-    }
-
-    // Process Player
-    Object.entries(playerPredictions).forEach(([playerName, preds]) => {
-        const player = [...(match.teamA.players || []), ...(match.teamB.players || [])].find(p => p.name === playerName);
-        const teamSide = match.teamA.players?.some(p => p.name === playerName) ? 'teamA' : 'teamB';
+    if (match.sport === 'Cricket') {
+        if (currentBetType === 'player') return settings.betOptions.Cricket.player;
         
-        Object.entries(preds).forEach(([qId, value]) => {
-            if (value.trim()) {
-                const question = questions.find(q => q.id === qId);
-                finalPredictions.push({
-                    questionId: `${playerName}:${qId}`,
-                    questionText: `(${playerName}) ${question?.question || 'Performance'}`,
-                    predictedAnswer: { [teamSide]: value.trim() } as any,
-                });
-            }
-        });
-    });
+        // Determine if one-sided
+        const isOneSided = currentPrediction?.predictedAnswer && 
+            (!currentPrediction.predictedAnswer.teamA || !currentPrediction.predictedAnswer.teamB);
+            
+        if (match.allowOneSidedBets && isOneSided) return settings.betOptions.Cricket.oneSided;
+        return settings.betOptions.Cricket.general;
+    }
+    return settings.betOptions[match.sport];
+  }, [match, currentPrediction, currentBetType]);
 
-    return finalPredictions;
-  };
+  useEffect(() => {
+    if (betOptions.length > 0) {
+      setAmount(betOptions[0].amount);
+    }
+  }, [betOptions]);
 
-  const handleGoToAmount = () => {
-    const preds = validatePredictions();
-    if (preds.length === 0) {
-        toast({ variant: "destructive", title: "Wait!", description: "Please fill in at least one prediction to continue." });
+  const handleInitiateQnaBet = (qId: string) => {
+    const inputs = qnaInputs[qId];
+    const question = questions.find(q => q.id === qId);
+    
+    if (!inputs.teamA.trim() && !inputs.teamB.trim()) {
+        toast({ variant: "destructive", title: "Missing Prediction", description: "Please enter a value for at least one team." });
         return;
     }
+
+    setCurrentPrediction({
+        questionId: qId,
+        questionText: question?.question || "Match Prediction",
+        predictedAnswer: { teamA: inputs.teamA.trim(), teamB: inputs.teamB.trim() }
+    });
+    setCurrentBetType('qna');
+    setStep('amount');
+  };
+
+  const handleInitiatePlayerBet = (playerName: string, qId: string) => {
+    const value = playerInputs[playerName]?.[qId] || '';
+    const question = questions.find(q => q.id === qId);
+    const teamSide = match.teamA.players?.some(p => p.name === playerName) ? 'teamA' : 'teamB';
+
+    if (!value.trim()) {
+        toast({ variant: "destructive", title: "Missing Prediction", description: "Please enter your prediction for this player." });
+        return;
+    }
+
+    setCurrentPrediction({
+        questionId: `${playerName}:${qId}`,
+        questionText: `(${playerName}) ${question?.question || 'Performance'}`,
+        predictedAnswer: { [teamSide]: value.trim() } as any,
+    });
+    setCurrentBetType('player');
     setStep('amount');
   };
 
   async function handleSubmit() {
-    if (!user || !match) return;
+    if (!user || !match || !currentPrediction) return;
 
-    const finalPredictions = validatePredictions();
-    
     setIsSubmitting(true);
     const result = await createBet({
       userId: user.uid,
       matchId: match.id,
-      predictions: finalPredictions,
+      predictions: [currentPrediction], // Single prediction bet
       amount,
-      betType: isPlayerBet ? 'player' : 'qna',
-      isOneSidedBet: !isPlayerBet && betOnSide !== 'both',
+      betType: currentBetType,
+      isOneSidedBet: currentBetType === 'qna' && (!currentPrediction.predictedAnswer?.teamA || !currentPrediction.predictedAnswer?.teamB),
     });
 
     if (result.error) {
       toast({ variant: "destructive", title: "Bet Failed", description: result.error });
     } else {
-      toast({ title: "Bet Placed!", description: `Your bet has been placed successfully.` });
+      toast({ title: "Bet Placed!", description: `Success! Your bet has been recorded.` });
       router.refresh();
-      onOpenChange(false);
+      // Stay on list step if they want to place more bets
+      setStep('list');
+      setCurrentPrediction(null);
     }
     setIsSubmitting(false);
   }
@@ -216,10 +183,10 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
       <DialogContent className="sm:max-w-lg bg-[#0a140f] border-none text-foreground p-0 overflow-hidden">
         
-        {step === 'predictions' ? (
+        {step === 'list' ? (
             <div className="p-6 space-y-6">
                 <DialogHeader className="flex flex-col items-center">
-                    <DialogTitle className="font-headline text-3xl text-white mb-2">Play Your Game</DialogTitle>
+                    <DialogTitle className="font-headline text-4xl text-white mb-2">Play Your Game</DialogTitle>
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                         <div className="flex items-center gap-2">
                             <Image src={match.teamA.logoUrl} alt="" width={16} height={16} className="rounded-full" />
@@ -233,35 +200,42 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     </div>
                 </DialogHeader>
 
-                <ScrollArea className="h-[60vh] pr-4">
-                    <div className="space-y-6 pb-4">
+                <ScrollArea className="h-[65vh] pr-4">
+                    <div className="space-y-8 pb-8">
                         {isLoading ? (
-                            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full bg-[#1a2b24]" />)
+                            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full bg-[#1a2b24] rounded-2xl" />)
                         ) : (
                             <>
-                                {/* Unified Match Questions */}
-                                <div className="space-y-4">
+                                {/* Match Questions */}
+                                <div className="space-y-6">
                                     {questions.map((q) => (
-                                        <div key={q.id} className="space-y-2">
+                                        <div key={q.id} className="space-y-3 group">
                                             <div className="text-center">
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">
+                                                <span className="text-[11px] font-black text-muted-foreground/80 uppercase tracking-tighter">
                                                     {q.question}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Input
                                                     placeholder={match.teamA.name}
-                                                    className="flex-1 bg-transparent border-primary/30 focus-visible:ring-primary rounded-full text-center h-10 text-xs placeholder:text-muted-foreground/20"
-                                                    value={qnaPredictions[q.id]?.teamA ?? ''}
+                                                    className="flex-1 bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20"
+                                                    value={qnaInputs[q.id]?.teamA ?? ''}
                                                     onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
                                                 />
-                                                <div className="text-primary font-bold text-xs">VS</div>
+                                                <div className="text-primary font-bold text-xs px-1">VS</div>
                                                 <Input
                                                     placeholder={match.teamB.name}
-                                                    className="flex-1 bg-transparent border-primary/30 focus-visible:ring-primary rounded-full text-center h-10 text-xs placeholder:text-muted-foreground/20"
-                                                    value={qnaPredictions[q.id]?.teamB ?? ''}
+                                                    className="flex-1 bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20"
+                                                    value={qnaInputs[q.id]?.teamB ?? ''}
                                                     onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
                                                 />
+                                                <Button 
+                                                    size="sm"
+                                                    onClick={() => handleInitiateQnaBet(q.id)}
+                                                    className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[10px] h-12 px-4 rounded-full uppercase shadow-lg transition-all active:scale-95"
+                                                >
+                                                    Play Now
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
@@ -269,28 +243,37 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
                                 {/* Player Performance Section */}
                                 {match.isSpecialMatch && (
-                                    <div className="space-y-6 pt-6 border-t border-white/5">
-                                        <h4 className="text-center text-xs font-black text-primary tracking-[0.2em] uppercase">Player Performance</h4>
+                                    <div className="space-y-6 pt-4">
+                                        <h4 className="text-center text-xs font-black text-primary tracking-[0.25em] uppercase">Player Performance</h4>
                                         {[...(match.teamA.players || []), ...(match.teamB.players || [])].filter(p => p.bettingEnabled).map((player) => (
-                                            <div key={player.name} className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/5">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <Avatar className="h-8 w-8 border border-primary/20">
-                                                        <AvatarImage src={player.imageUrl} />
-                                                        <AvatarFallback className="bg-primary/10 text-primary">{player.name[0]}</AvatarFallback>
+                                            <div key={player.name} className="space-y-4 p-5 bg-white/5 rounded-3xl border border-white/5">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 border-2 border-primary/20">
+                                                        <AvatarImage src={player.imageUrl} className="object-cover" />
+                                                        <AvatarFallback className="bg-primary/10 text-primary font-bold">{player.name[0]}</AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-sm font-black text-white font-headline tracking-wide">{player.name}</span>
+                                                    <span className="text-base font-black text-white font-headline tracking-wide">{player.name}</span>
                                                 </div>
-                                                {questions.map(q => (
-                                                    <div key={`${player.name}-${q.id}`} className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                                                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{q.question}</div>
-                                                        <Input
-                                                            placeholder="Your prediction..."
-                                                            className="bg-[#0a140f] border-primary/30 focus-visible:ring-primary rounded-lg h-9 text-xs text-center"
-                                                            value={playerPredictions[player.name]?.[q.id] || ''}
-                                                            onChange={(e) => handlePlayerInputChange(player.name, q.id, e.target.value)}
-                                                        />
-                                                    </div>
-                                                ))}
+                                                <div className="space-y-3">
+                                                    {questions.map(q => (
+                                                        <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
+                                                            <div className="flex-1 text-[11px] text-muted-foreground font-black uppercase tracking-tight">{q.question}</div>
+                                                            <Input
+                                                                placeholder="Your prediction..."
+                                                                className="w-32 bg-[#0a140f] border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-xl h-10 text-xs text-center"
+                                                                value={playerInputs[player.name]?.[q.id] || ''}
+                                                                onChange={(e) => handlePlayerInputChange(player.name, q.id, e.target.value)}
+                                                            />
+                                                            <Button 
+                                                                size="sm"
+                                                                onClick={() => handleInitiatePlayerBet(player.name, q.id)}
+                                                                className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[9px] h-10 px-3 rounded-xl uppercase shadow-md"
+                                                            >
+                                                                Play
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -300,67 +283,66 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     </div>
                 </ScrollArea>
 
-                <div className="flex items-center gap-4 pt-2">
+                <div className="pt-2">
                     <DialogClose asChild>
-                        <button type="button" className="text-sm font-bold text-muted-foreground hover:text-white transition-colors px-4">Cancel</button>
+                        <Button variant="ghost" className="w-full text-muted-foreground hover:text-white font-bold h-12 rounded-2xl">
+                            Close Game
+                        </Button>
                     </DialogClose>
-                    <Button 
-                        onClick={handleGoToAmount} 
-                        disabled={isLoading || questions.length === 0}
-                        className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-black text-lg h-14 rounded-xl shadow-[0_4px_20px_rgba(250,204,82,0.2)] group"
-                    >
-                        Play Now
-                        <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </Button>
                 </div>
             </div>
         ) : (
             <div className="p-6 space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                 <DialogHeader>
                     <div className="flex items-center gap-4 mb-4">
-                        <Button variant="ghost" size="icon" onClick={() => setStep('predictions')} className="text-muted-foreground hover:text-white">
+                        <Button variant="ghost" size="icon" onClick={() => setStep('list')} className="text-muted-foreground hover:text-white">
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
-                        <DialogTitle className="font-headline text-3xl text-white">Select Bet Amount</DialogTitle>
+                        <div>
+                            <DialogTitle className="font-headline text-3xl text-white">Select Bet Amount</DialogTitle>
+                            <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
+                                Betting on: {currentPrediction?.questionText}
+                            </p>
+                        </div>
                     </div>
                 </DialogHeader>
 
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                        {betOptions.map((opt) => (
-                        <Button
-                            key={opt.amount}
-                            type="button"
-                            variant={amount === opt.amount ? "default" : "secondary"}
-                            onClick={() => setAmount(opt.amount)}
-                            className={cn(
-                                "h-16 font-headline font-black text-2xl rounded-2xl border-none transition-all",
-                                amount === opt.amount ? "bg-primary text-primary-foreground shadow-[0_0_25px_rgba(250,204,82,0.4)] scale-105" : "bg-[#1a2b24] text-muted-foreground hover:bg-[#253d33]"
-                            )}
-                        >
-                            INR {opt.amount}
-                        </Button>
-                        ))}
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                    {betOptions.map((opt) => (
+                    <Button
+                        key={opt.amount}
+                        type="button"
+                        variant={amount === opt.amount ? "default" : "secondary"}
+                        onClick={() => setAmount(opt.amount)}
+                        className={cn(
+                            "h-20 font-headline font-black text-3xl rounded-3xl border-none transition-all",
+                            amount === opt.amount 
+                                ? "bg-primary text-primary-foreground shadow-[0_0_30px_rgba(250,204,82,0.4)] scale-105" 
+                                : "bg-[#1a2b24] text-muted-foreground hover:bg-[#253d33]"
+                        )}
+                    >
+                        INR {opt.amount}
+                    </Button>
+                    ))}
                 </div>
 
-                <div className="bg-[#14221b] border border-primary/20 rounded-3xl p-8 text-center shadow-inner">
-                    <p className="text-xs uppercase font-black text-primary/60 tracking-[0.3em] mb-3">Potential Winnings</p>
-                    <p className="text-6xl font-headline font-black text-primary drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">
+                <div className="bg-[#14221b] border border-primary/20 rounded-[2.5rem] p-10 text-center shadow-inner">
+                    <p className="text-xs uppercase font-black text-primary/60 tracking-[0.4em] mb-4">You Can Win</p>
+                    <p className="text-6xl font-headline font-black text-primary drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
                         INR {potentialWin.toFixed(2)}
                     </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <Button 
                         onClick={handleSubmit} 
                         disabled={isSubmitting}
-                        className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-black text-xl h-16 rounded-2xl shadow-[0_8px_30px_rgba(250,204,82,0.3)]"
+                        className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-black text-xl h-16 rounded-2xl shadow-[0_12px_40px_rgba(250,204,82,0.35)]"
                     >
-                        {isSubmitting ? "Processing Bet..." : "Confirm & Place Bet"}
+                        {isSubmitting ? "Placing Bet..." : "Confirm & Place Bet"}
                     </Button>
-                    <p className="text-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                        Good Luck! Your winnings will be credited instantly.
+                    <p className="text-center text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">
+                        Your balance will be updated instantly!
                     </p>
                 </div>
             </div>
