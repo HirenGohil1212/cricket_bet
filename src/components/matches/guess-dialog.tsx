@@ -23,7 +23,7 @@ import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 
 interface GuessDialogProps {
   match: Match | null;
@@ -76,22 +76,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     fetchDialogData();
   }, [match, open]);
 
-  if (!match) return null;
-
-  const handleQnaInputChange = (qId: string, team: 'teamA' | 'teamB', value: string) => {
-    setQnaInputs(prev => ({
-        ...prev,
-        [qId]: { ...prev[qId], [team]: value }
-    }));
-  };
-
-  const handlePlayerInputChange = (playerName: string, qId: string, value: string) => {
-    setPlayerInputs(prev => ({
-      ...prev,
-      [playerName]: { ...prev[playerName], [qId]: value }
-    }));
-  };
-
   const betOptions = React.useMemo(() => {
     if (!match?.bettingSettings) return [];
     const settings = match.bettingSettings;
@@ -114,6 +98,23 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
       setAmount(betOptions[0].amount);
     }
   }, [betOptions]);
+
+  // Hook declarations must come before any early returns
+  if (!match) return null;
+
+  const handleQnaInputChange = (qId: string, team: 'teamA' | 'teamB', value: string) => {
+    setQnaInputs(prev => ({
+        ...prev,
+        [qId]: { ...prev[qId], [team]: value }
+    }));
+  };
+
+  const handlePlayerInputChange = (playerName: string, qId: string, value: string) => {
+    setPlayerInputs(prev => ({
+      ...prev,
+      [playerName]: { ...prev[playerName], [qId]: value }
+    }));
+  };
 
   const handleInitiateQnaBet = (qId: string) => {
     const inputs = qnaInputs[qId];
