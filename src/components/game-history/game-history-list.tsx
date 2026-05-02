@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge";
-import type { Bet, Match, Prediction } from "@/lib/types";
+import type { Bet, Prediction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -19,17 +18,15 @@ import { getUserBets } from "@/app/actions/bet.actions";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
-const PlayerPredictionDisplay = ({ prediction, teamAName, teamBName }: { prediction: Prediction, teamAName: string, teamBName: string }) => {
+const PlayerPredictionDisplay = ({ prediction }: { prediction: Prediction }) => {
     const isTeamA = prediction.predictedAnswer && typeof prediction.predictedAnswer.teamA !== 'undefined';
     const isTeamB = prediction.predictedAnswer && typeof prediction.predictedAnswer.teamB !== 'undefined';
     const answer = isTeamA ? prediction.predictedAnswer.teamA : (isTeamB ? prediction.predictedAnswer.teamB : '');
-    const [playerName] = prediction.questionId.split(':');
 
-    // The question text now includes the player name, so we show it simply.
     return (
-        <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 text-xs">
-            <div className="text-muted-foreground text-left truncate">{prediction.questionText}</div>
-            <div className="text-primary font-semibold text-right">{answer}</div>
+        <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 text-[10px]">
+            <div className="text-muted-foreground text-left truncate uppercase font-bold tracking-tight">{prediction.questionText}</div>
+            <div className="text-primary font-black text-right">{answer}</div>
         </div>
     );
 };
@@ -53,14 +50,11 @@ export function GameHistoryList() {
 
   const getStatusClass = (status: Bet["status"]) => {
     switch (status) {
-      case "Won":
-        return "bg-green-500 text-white";
-      case "Lost":
-        return "bg-red-500 text-white";
-      case "Pending":
-        return "bg-yellow-500 text-black";
-      default:
-        return "bg-gray-500 text-white";
+      case "Won": return "bg-green-500 text-white";
+      case "Lost": return "bg-red-500 text-white";
+      case "Pending": return "bg-yellow-500 text-black";
+      case "Refunded": return "bg-blue-500 text-white";
+      default: return "bg-gray-500 text-white";
     }
   };
   
@@ -69,10 +63,10 @@ export function GameHistoryList() {
         return (
              Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i}>
-                    <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
                 </TableRow>
              ))
         );
@@ -81,8 +75,8 @@ export function GameHistoryList() {
     if (bets.length === 0) {
         return (
             <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-12">
-                     You haven't placed any bets yet. Go to the matches page to make your first prediction!
+                <TableCell colSpan={4} className="text-center text-muted-foreground py-12 text-sm">
+                     No bets placed yet.
                 </TableCell>
             </TableRow>
         );
@@ -91,64 +85,40 @@ export function GameHistoryList() {
     return bets.map((bet) => {
         const [teamAName, teamBName] = bet.matchDescription.split(' vs ');
         return (
-        <TableRow key={bet.id}>
-            <TableCell>
-            <div className="font-semibold">{bet.matchDescription}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-                {new Date(bet.timestamp).toLocaleString()}
-            </div>
+        <TableRow key={bet.id} className="text-[11px] sm:text-sm">
+            <TableCell className="max-w-[100px] sm:max-w-none">
+                <div className="font-bold uppercase tracking-tighter leading-tight">{bet.matchDescription}</div>
+                <div className="text-[9px] text-muted-foreground mt-0.5">
+                    {new Date(bet.timestamp as any).toLocaleDateString()}
+                </div>
             </TableCell>
             <TableCell>
-                {(bet.betType === 'player' && bet.predictions.length > 0) ? (
+                {bet.predictions.length > 0 ? (
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="item-1" className="border-b-0">
-                    <AccordionTrigger className="text-xs py-1 hover:no-underline">
-                        View {bet.predictions.length} player prediction(s)
+                    <AccordionTrigger className="text-[10px] py-1 hover:no-underline font-bold uppercase tracking-widest text-primary">
+                        {bet.predictions.length} {bet.betType === 'player' ? 'Player' : 'Outcome'}
                     </AccordionTrigger>
                     <AccordionContent>
-                        <ul className="space-y-2 pt-2">
+                        <div className="space-y-2 pt-1 border-t border-white/5">
                             {bet.predictions.map((p, index) => (
-                                <li key={index} className="text-xs border-l-2 pl-2 border-muted space-y-1">
-                                <PlayerPredictionDisplay prediction={p} teamAName={teamAName} teamBName={teamBName} />
-                                </li>
-                            ))}
-                        </ul>
-                    </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-                ) : bet.predictions.length > 0 ? (
-                <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="item-1" className="border-b-0">
-                    <AccordionTrigger className="text-xs py-1 hover:no-underline">
-                        View {bet.predictions.length} predictions
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-2 pt-2 text-xs">
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 text-center font-semibold">
-                            <div>{teamAName}</div>
-                            <div></div>
-                            <div>{teamBName}</div>
-                            </div>
-                            {bet.predictions.map((p, index) => (
-                            <div key={index} className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 p-2 rounded-md bg-muted/50">
-                                <div className="text-primary font-semibold text-center">{p.predictedAnswer?.teamA || 'N/A'}</div>
-                                <div className="text-muted-foreground text-center truncate">{p.questionText}</div>
-                                <div className="text-primary font-semibold text-center">{p.predictedAnswer?.teamB || 'N/A'}</div>
-                            </div>
+                                <PlayerPredictionDisplay key={index} prediction={p} />
                             ))}
                         </div>
                     </AccordionContent>
                     </AccordionItem>
                 </Accordion>
                 ) : (
-                <span className="text-xs text-muted-foreground">No predictions</span>
+                <span className="text-[9px] uppercase font-bold text-muted-foreground">None</span>
                 )}
             </TableCell>
-            <TableCell className="text-right">INR {bet.amount.toFixed(2)}</TableCell>
+            <TableCell className="text-right font-black tabular-nums">
+                ₹{bet.amount.toFixed(0)}
+            </TableCell>
             <TableCell className="text-right">
-            <Badge className={cn("text-xs", getStatusClass(bet.status))}>
-                {bet.status}
-            </Badge>
+                <Badge className={cn("text-[9px] font-black uppercase px-1.5 py-0.5", getStatusClass(bet.status))}>
+                    {bet.status}
+                </Badge>
             </TableCell>
         </TableRow>
         )
@@ -156,27 +126,27 @@ export function GameHistoryList() {
   }
 
   return (
-    <Card>
-        <CardHeader>
-            <CardTitle>Game History</CardTitle>
-            <CardDescription>
-                A complete record of all your bets.
-            </CardDescription>
+    <Card className="border-white/5 bg-secondary/20">
+        <CardHeader className="pb-4">
+            <CardTitle className="font-headline text-2xl uppercase italic">Game History</CardTitle>
+            <CardDescription className="text-xs">Your betting history and results.</CardDescription>
         </CardHeader>
-        <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>Match & Date</TableHead>
-                    <TableHead>Predictions</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {renderContent()}
-                </TableBody>
-            </Table>
+        <CardContent className="px-1 sm:px-6">
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="hover:bg-transparent border-white/5">
+                        <TableHead className="text-[10px] uppercase font-black tracking-widest">Match</TableHead>
+                        <TableHead className="text-[10px] uppercase font-black tracking-widest">Type</TableHead>
+                        <TableHead className="text-right text-[10px] uppercase font-black tracking-widest">Bet</TableHead>
+                        <TableHead className="text-right text-[10px] uppercase font-black tracking-widest">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {renderContent()}
+                    </TableBody>
+                </Table>
+            </div>
         </CardContent>
     </Card>
   );

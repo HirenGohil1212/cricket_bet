@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -29,7 +28,7 @@ const QUIET_LOGIN_SESSION_KEY = 'quietLogin';
 
 function PageLoader() {
   return (
-    <div className="flex flex-1 items-center justify-center">
+    <div className="flex flex-1 items-center justify-center min-h-[40vh]">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
@@ -61,16 +60,14 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
       if (user) {
         try {
           const isQuietLogin = sessionStorage.getItem(QUIET_LOGIN_SESSION_KEY) === 'true';
-          sessionStorage.removeItem(QUIET_LOGIN_SESSION_KEY); // Clean up the flag
+          sessionStorage.removeItem(QUIET_LOGIN_SESSION_KEY);
 
           const hasBeenShown = sessionStorage.getItem(PROMO_VIDEO_SESSION_KEY) === 'true';
           
           if (isQuietLogin && promoVideoUrl && !hasBeenShown) {
-             // If it's a quiet login and there's a video to show, open it
              setIsPromoOpen(true);
              sessionStorage.setItem(PROMO_VIDEO_SESSION_KEY, 'true');
           } else if (isQuietLogin) {
-             // It was a quiet login but no video, so show a welcome toast
              toast({
                 title: `Welcome, ${userProfile?.name || 'friend'}!`,
                 description: "You've successfully signed in."
@@ -88,40 +85,23 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
   if (loading || !user) {
     return (
       <div className="flex flex-col min-h-screen">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-8">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-8 bg-background">
              <Skeleton className="h-8 w-8 rounded-full md:hidden" />
              <Skeleton className="h-8 w-48 hidden md:block" />
              <div className="flex flex-1 items-center justify-end gap-4">
-                <Skeleton className="h-8 w-32 rounded-full" />
+                <Skeleton className="h-8 w-24 rounded-full" />
                 <Skeleton className="h-8 w-8 rounded-full" />
              </div>
           </header>
-          <div className="flex flex-1">
-             <aside className="hidden md:flex w-64 border-r">
-                 <div className="flex flex-col h-full w-full p-4 gap-4">
-                     <Skeleton className="h-10 w-full" />
-                     <div className="p-2 space-y-2">
-                        <Skeleton className="h-16 w-full" />
-                     </div>
-                     <Skeleton className="h-8 w-full" />
-                     <Skeleton className="h-8 w-full" />
-                     <div className="p-2 mt-6">
-                        <Skeleton className="h-32 w-full" />
-                     </div>
-                 </div>
-             </aside>
+          <div className="flex flex-1 overflow-hidden">
              <main className="flex-1 p-4 sm:p-6 md:p-8">
-                 <Skeleton className="h-10 w-full md:w-1/2 mb-6" />
-                 <div className="space-y-8">
-                     <div>
-                        <Skeleton className="h-8 w-48 mb-4" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            <Skeleton className="h-64 w-full" />
-                            <Skeleton className="h-64 w-full" />
-                            <Skeleton className="h-64 w-full" />
-                            <Skeleton className="h-64 w-full" />
-                        </div>
-                     </div>
+                 <Skeleton className="h-10 w-3/4 md:w-1/2 mb-6" />
+                 <div className="space-y-6">
+                    <Skeleton className="h-40 w-full rounded-2xl" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <Skeleton className="h-64 w-full rounded-2xl" />
+                        <Skeleton className="h-64 w-full rounded-2xl" />
+                    </div>
                  </div>
              </main>
           </div>
@@ -132,23 +112,25 @@ export function HomePageClient({ children, content, appSettings }: HomePageClien
   return (
     <SidebarProvider>
       <AppSidebar onNavigate={() => setIsNavigating(true)} />
-      <SidebarInset className="flex flex-col min-h-screen">
+      <SidebarInset className="flex flex-col min-h-screen bg-background overflow-x-hidden">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col mb-28">
-          <div className="mb-4 flex gap-2">
-              <Button asChild className="w-1/2 bg-green-500 hover:bg-green-600 text-white font-headline">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 flex flex-col mb-20 max-w-full">
+          <div className="mb-6 flex gap-3">
+              <Button asChild className="flex-1 bg-green-500 hover:bg-green-600 text-white font-black uppercase text-xs sm:text-sm h-11 sm:h-12 rounded-xl shadow-lg shadow-green-500/20 active:scale-95 transition-transform">
                 <Link href="/wallet?action=deposit">
                   <ArrowUpCircle className="mr-2 h-4 w-4" /> Deposit
                 </Link>
               </Button>
-              <Button asChild variant="destructive" className="w-1/2 font-headline">
+              <Button asChild variant="destructive" className="flex-1 font-black uppercase text-xs sm:text-sm h-11 sm:h-12 rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-transform">
                 <Link href="/wallet?action=withdraw">
                   <ArrowDownCircle className="mr-2 h-4 w-4" /> Withdraw
                 </Link>
               </Button>
           </div>
           <PromotionalCarousel banners={content?.banners} />
-          {isNavigating ? <PageLoader /> : children}
+          <div className="w-full">
+            {isNavigating ? <PageLoader /> : children}
+          </div>
         </main>
         <Footer />
         <WhatsAppSupportButton appSettings={appSettings} />

@@ -1,9 +1,8 @@
-
 "use client"
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Wallet, User as UserIcon, LogOut, History, Award } from "lucide-react";
+import { Wallet, User as UserIcon, LogOut } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -20,14 +19,13 @@ import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import Image from "next/image";
 
 
 const getTitle = (pathname: string) => {
     if (pathname.startsWith('/profile')) return 'My Profile';
     if (pathname.startsWith('/wallet')) return 'My Wallet';
     if (pathname.startsWith('/game-history')) return 'Game History';
-    if (pathname.startsWith('/history')) return 'Transaction History';
+    if (pathname.startsWith('/history')) return 'History';
     return 'Matches';
 }
 
@@ -61,40 +59,40 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b px-4 md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-8">
       <div className="flex items-center gap-2">
         <div className="md:hidden">
-            <SidebarTrigger />
+            <SidebarTrigger className="h-9 w-9" />
         </div>
-        <div className="md:hidden flex items-center gap-2 font-headline text-lg font-bold">
-            <h1 className="font-headline text-2xl font-bold text-primary flex items-baseline">
+        <div className="md:hidden flex items-center gap-1 font-headline">
+            <h1 className="text-xl font-bold text-primary flex items-baseline">
                 <span>UPI</span>
-                <span className="text-[1.3em] leading-none ml-1">11</span>
+                <span className="text-[1.2em] leading-none ml-0.5">11</span>
             </h1>
         </div>
       </div>
       <div className="hidden md:block">
         <h1 className="font-headline text-2xl font-bold text-primary">{title}</h1>
       </div>
-      <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
+      <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-4">
         {user && userProfile && (
-            <Button asChild variant="outline" className="border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary">
-                <Link href="/wallet">
-                    <Wallet className="h-5 w-5" />
-                    <span className="inline-block">{userProfile.walletBalance.toFixed(2)}</span>
-                    <span className="mx-2 text-primary/50">|</span>
-                    <span className="inline-block">-{pendingWagered.toFixed(2)}</span>
+            <Button asChild variant="outline" className="h-9 px-2 sm:px-4 border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary">
+                <Link href="/wallet" className="flex items-center gap-1">
+                    <Wallet className="h-4 w-4 shrink-0" />
+                    <span className="text-xs sm:text-sm font-bold tabular-nums">{userProfile.walletBalance.toFixed(0)}</span>
+                    <span className="text-primary/30 font-light">|</span>
+                    <span className="text-xs sm:text-sm font-bold tabular-nums text-primary/70">-{pendingWagered.toFixed(0)}</span>
                 </Link>
             </Button>
         )}
         {user && userProfile && (
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-9 w-9 border-2 border-primary/50">
-                  <AvatarImage src={user?.photoURL || undefined} alt={userProfile.name} />
-                  <AvatarFallback>
-                    <UserIcon />
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                <Avatar className="h-full w-full">
+                  <AvatarImage src={user?.photoURL || undefined} alt={userProfile.name} className="object-cover" />
+                  <AvatarFallback className="bg-secondary text-primary">
+                    <UserIcon className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -116,7 +114,7 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-accent focus:text-accent">
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

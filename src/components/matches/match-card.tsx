@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, CheckCircle, Clock, Trophy, Star, Users, Heart, Info, Calendar, Swords, MapPin, ClipboardList } from 'lucide-react';
+import { Flame, Clock, Trophy, Star, Heart, Info, Calendar, MapPin, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -30,8 +29,8 @@ const StatusIndicator = ({ status }: { status: Match['status'] }) => {
   const isLive = status === 'Live';
   return (
     <div className={cn(
-        "flex items-center gap-2 text-xs font-semibold px-2 py-1 rounded-full",
-        isLive ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"
+        "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full",
+        isLive ? "bg-red-500 text-white" : "bg-secondary text-secondary-foreground"
     )}>
       {isLive ? <Flame className="h-3 w-3 animate-pulse" /> : <Clock className="h-3 w-3" />}
       <span>{status}</span>
@@ -48,9 +47,9 @@ const PlayerList = ({ team }: { team: Team }) => {
         <div className="space-y-3">
             {team.players.map((player, index) => (
                 <div key={index} className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border">
-                        <AvatarImage src={player.imageUrl} alt={player.name} />
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                    <Avatar className="h-9 w-9 border border-primary/20">
+                        <AvatarImage src={player.imageUrl} alt={player.name} className="object-cover" />
+                        <AvatarFallback className="bg-secondary text-primary">{player.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium truncate">{player.name}</span>
                 </div>
@@ -60,14 +59,14 @@ const PlayerList = ({ team }: { team: Team }) => {
 };
 
 const MatchInfoDialogContent = ({ match }: { match: Match }) => (
-    <DialogContent className="sm:max-w-3xl">
+    <DialogContent className="sm:max-w-3xl bg-[#0a140f] border-none text-foreground">
         <DialogHeader>
-            <DialogTitle className="font-headline text-3xl text-center text-primary">Match Information</DialogTitle>
+            <DialogTitle className="font-headline text-3xl text-center text-primary uppercase italic">Match Info</DialogTitle>
              <DialogDescription asChild>
                 <div className="text-center pt-2">
-                    <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                        {match.league && <span className="font-semibold">{match.league}</span>}
-                        {match.league && match.location && <span>|</span>}
+                    <div className="flex items-center justify-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        {match.league && <span className="text-white">{match.league}</span>}
+                        {match.league && match.location && <span className="opacity-30">•</span>}
                         {match.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3"/>{match.location}</span>}
                     </div>
                 </div>
@@ -75,36 +74,38 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
         </DialogHeader>
         <div className="my-6">
             <div className="relative flex justify-center items-center">
-                <Separator />
-                <div className="absolute bg-background px-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4"/>
+                <Separator className="bg-white/10" />
+                <div className="absolute bg-[#0a140f] px-4">
+                    <div className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-tighter">
+                        <Calendar className="h-3.5 w-3.5"/>
                         <span>{new Date(match.startTime).toLocaleString()}</span>
                     </div>
                 </div>
             </div>
         </div>
-        <div className="grid grid-cols-2 gap-8 items-start">
-            {/* Team A */}
+        <div className="grid grid-cols-2 gap-4 sm:gap-8 items-start">
             <div className="space-y-4 text-center">
                  <div className="flex flex-col items-center gap-3">
-                    <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={64} height={64} className="h-16 w-16 object-contain rounded-full border-2 p-1 bg-white/10" data-ai-hint="logo" />
-                    <h3 className="text-xl font-bold font-headline">{match.teamA.name}</h3>
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 p-1 bg-white/5">
+                        <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={64} height={64} className="object-cover w-full h-full" />
+                    </div>
+                    <h3 className="text-lg font-black font-headline text-white uppercase tracking-tight leading-tight">{match.teamA.name}</h3>
                 </div>
-                <Separator />
-                <ScrollArea className="h-48 pr-4">
+                <Separator className="bg-white/5" />
+                <ScrollArea className="h-48 pr-2">
                     <PlayerList team={match.teamA} />
                 </ScrollArea>
             </div>
             
-            {/* Team B */}
             <div className="space-y-4 text-center">
                  <div className="flex flex-col items-center gap-3">
-                    <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={64} height={64} className="h-16 w-16 object-contain rounded-full border-2 p-1 bg-white/10" data-ai-hint="logo" />
-                    <h3 className="text-xl font-bold font-headline">{match.teamB.name}</h3>
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 p-1 bg-white/5">
+                        <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={64} height={64} className="object-cover w-full h-full" />
+                    </div>
+                    <h3 className="text-lg font-black font-headline text-white uppercase tracking-tight leading-tight">{match.teamB.name}</h3>
                 </div>
-                <Separator />
-                 <ScrollArea className="h-48 pr-4">
+                <Separator className="bg-white/5" />
+                 <ScrollArea className="h-48 pr-2">
                     <PlayerList team={match.teamB} />
                 </ScrollArea>
             </div>
@@ -114,7 +115,7 @@ const MatchInfoDialogContent = ({ match }: { match: Match }) => (
 
 
 export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onToggleFavorite }: MatchCardProps) {
-  const { teamA, teamB, status, score, winner, sport, startTime, winners, questions, isSpecialMatch, isFavorite, league } = match;
+  const { teamA, teamB, status, score, winner, sport, startTime, winners, questions, isFavorite, league } = match;
   const { user } = useAuth();
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
@@ -122,75 +123,69 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
 
   return (
     <Card className={cn(
-        "overflow-hidden transition-all duration-300 ease-in-out flex flex-col group hover:shadow-2xl hover:border-primary/50",
-        currentUserWon && "border-primary ring-2 ring-primary",
-        status === 'Finished' ? "bg-secondary/70" : "bg-secondary"
+        "overflow-hidden transition-all duration-300 flex flex-col group border-white/5 bg-secondary/40 backdrop-blur-sm",
+        currentUserWon && "border-primary shadow-[0_0_20px_rgba(250,204,82,0.2)]",
       )}>
-        <CardHeader className="p-0 relative flex flex-col justify-between min-h-[7rem] overflow-hidden bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 border-b-2 border-primary/50">
-            <div className="absolute top-0 left-0 w-full h-full bg-no-repeat bg-center"/>
-            <div className="relative flex justify-between items-start p-3 w-full">
-                <Badge variant="secondary" className="bg-primary text-primary-foreground font-semibold">
+        <CardHeader className="p-0 relative bg-gradient-to-tr from-black/80 via-white/5 to-black/80 border-b border-white/5">
+            <div className="flex justify-between items-start p-3 w-full absolute top-0 z-10">
+                <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
                     {sport}
                 </Badge>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     {status === 'Upcoming' && <StatusIndicator status={status} />}
                     <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                        className="h-8 w-8 text-white/50 hover:text-white hover:bg-white/5 rounded-full"
                         onClick={(e) => {
                             e.stopPropagation();
                             onToggleFavorite(match.id);
                         }}
                     >
-                        <Heart className={cn("h-5 w-5 transition-all", isFavorite && "fill-red-500 text-red-500")} />
+                        <Heart className={cn("h-4 w-4 transition-all", isFavorite && "fill-red-500 text-red-500")} />
                     </Button>
                 </div>
             </div>
 
-            <div className="relative flex flex-col items-center justify-around w-full px-4 pb-4 gap-2">
-                <div className="flex items-center justify-around w-full gap-2">
-                    <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamA.name}</p>
-                    <div className="text-4xl font-black text-white/50 font-headline [text-shadow:_1px_1px_4px_rgb(0_0_0_/_50%)]">vs</div>
-                    <p className="flex-1 font-headline font-black text-xl text-white text-center tracking-wide" style={{ overflowWrap: 'anywhere' }}>{teamB.name}</p>
+            <div className="pt-10 pb-6 px-4 flex flex-col items-center gap-3">
+                <div className="flex items-center justify-between w-full gap-2">
+                    <p className="flex-1 font-headline font-black text-sm text-white text-center uppercase tracking-tight leading-tight line-clamp-2">{teamA.name}</p>
+                    <div className="text-2xl font-black text-primary/40 font-headline italic">VS</div>
+                    <p className="flex-1 font-headline font-black text-sm text-white text-center uppercase tracking-tight leading-tight line-clamp-2">{teamB.name}</p>
                 </div>
-                 {league && <p className="font-headline font-bold text-lg text-primary text-center tracking-wide mt-1">{league}</p>}
+                 {league && <p className="text-[10px] font-black text-primary/60 text-center uppercase tracking-[0.2em]">{league}</p>}
             </div>
         </CardHeader>
         
-        <CardContent className="p-4 space-y-4 flex-grow">
-           <div className="flex justify-between items-center text-center">
-              {/* Team A Display */}
+        <CardContent className="p-4 flex-grow">
+           <div className="flex justify-between items-center">
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-4 border-card shadow-lg bg-background group-hover:scale-110 transition-transform duration-300">
-                    <Image src={teamA.logoUrl} alt={teamA.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/5 shadow-2xl bg-white/5 p-1">
+                    <Image src={teamA.logoUrl} alt={teamA.name} width={64} height={64} className="object-cover w-full h-full" />
                   </div>
                   {status === 'Finished' && winner === teamA.name && (
-                    <div className="flex items-center gap-1.5 mt-1">
-                        <Trophy className="h-4 w-4 text-primary" />
-                        <p className="font-bold text-sm text-primary">Winner</p>
+                    <div className="flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded-full border border-primary/30">
+                        <Trophy className="h-3 w-3 text-primary" />
+                        <span className="font-black text-[8px] text-primary uppercase">Winner</span>
                     </div>
                   )}
               </div>
               
-              <div className="flex flex-col items-center px-2">
-                {status === 'Live' && <Badge variant="destructive" className="animate-pulse mb-1">LIVE</Badge>}
-                {status !== 'Live' && (
-                    <p className="text-3xl font-bold text-foreground font-headline">
-                      {score ? score : <span className="text-muted-foreground">vs</span>}
-                    </p>
-                )}
+              <div className="flex flex-col items-center px-4">
+                {status === 'Live' && <Badge variant="destructive" className="animate-pulse text-[9px] font-black px-3 py-0.5 rounded-full">LIVE</Badge>}
+                <p className="text-2xl sm:text-3xl font-black text-white font-headline tracking-tighter italic">
+                  {score ? score : "•"}
+                </p>
               </div>
 
-              {/* Team B Display */}
               <div className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center border-4 border-card shadow-lg bg-background group-hover:scale-110 transition-transform duration-300">
-                    <Image src={teamB.logoUrl} alt={teamB.name} width={64} height={64} className="object-cover" data-ai-hint="logo" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-white/5 shadow-2xl bg-white/5 p-1">
+                    <Image src={teamB.logoUrl} alt={teamB.name} width={64} height={64} className="object-cover w-full h-full" />
                   </div>
                    {status === 'Finished' && winner === teamB.name && (
-                    <div className="flex items-center gap-1.5 mt-1">
-                        <Trophy className="h-4 w-4 text-primary" />
-                        <p className="font-bold text-sm text-primary">Winner</p>
+                    <div className="flex items-center gap-1 bg-primary/20 px-2 py-0.5 rounded-full border border-primary/30">
+                        <Trophy className="h-3 w-3 text-primary" />
+                        <span className="font-black text-[8px] text-primary uppercase">Winner</span>
                     </div>
                   )}
               </div>
@@ -198,36 +193,35 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
         </CardContent>
 
         {(status === 'Upcoming' || status === 'Live') && (
-          <CardFooter className="p-3 pt-0 flex-col items-stretch gap-2">
+          <CardFooter className="p-4 pt-0 flex-col gap-3">
             {status === 'Upcoming' && (
-              <div className="text-center bg-accent/10 text-accent p-2 rounded-md w-full">
-                  <p className="text-xs font-semibold">Game will starts in:</p>
-                  <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
+              <div className="text-center bg-primary/5 border border-primary/10 p-2 rounded-xl w-full">
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Starts In</p>
+                  <div className="text-primary font-bold text-sm">
+                    <Countdown targetDate={new Date(startTime)} onEnd={() => onCountdownEnd(match.id)} />
+                  </div>
               </div>
             )}
             <Button
-              className="w-full font-bold bg-primary hover:bg-primary/80 transform-gpu group-hover:scale-105 transition-transform duration-300 shadow-lg"
+              className="w-full font-black bg-primary hover:bg-primary/80 text-primary-foreground text-xs uppercase tracking-tight h-11 rounded-xl shadow-lg shadow-primary/10 active:scale-95 transition-transform"
               onClick={() => onBetNow(match)}
-              size="lg"
             >
               Play Your Game
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full">
                 <Button
-                    className="w-full font-bold"
+                    className="flex-1 font-bold text-[10px] uppercase border-white/10 hover:bg-white/5 h-9 rounded-lg"
                     onClick={() => onViewMyBets(match)}
                     variant="outline"
-                    size="sm"
                 >
-                    View My Bets
+                    My Bets
                 </Button>
                  <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
                     <DialogTrigger asChild>
                         <Button
                             variant="outline"
                             size="icon"
-                            className="shrink-0"
-                            aria-label="View Match Info"
+                            className="shrink-0 h-9 w-9 border-white/10 hover:bg-white/5 rounded-lg"
                         >
                             <Info className="h-4 w-4" />
                         </Button>
@@ -239,58 +233,36 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
         )}
 
         {status === 'Finished' && (
-          <CardFooter className="p-2 border-t bg-black/10 flex-col gap-2">
+          <CardFooter className="p-4 pt-0 flex-col gap-3">
             <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="winners" className="border-b-0">
-                <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
+              <AccordionItem value="results" className="border-none">
+                <AccordionTrigger className="py-2 px-3 text-[10px] font-black uppercase tracking-widest text-primary hover:no-underline bg-primary/5 rounded-lg border border-primary/10">
                   <div className="flex items-center gap-2 mx-auto">
-                    <Trophy className="h-4 w-4 text-primary" />
-                    <span>
-                      {winners && winners.length > 0 ? `${winners.length} Winner(s)` : "No Winners"}
-                    </span>
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    <span>View Match Results</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="pt-0 pb-2">
-                  {winners && winners.length > 0 ? (
+                <AccordionContent className="pt-3 pb-0 space-y-2">
                     <ScrollArea className="h-32">
-                      <div className="space-y-2 pr-4">
-                        {winners.map((win, index) => (
-                          <div key={index} className={cn(
-                            "flex justify-between items-center text-xs p-2 rounded-md",
-                            win.userId === user?.uid ? "bg-primary/20" : "bg-background"
-                          )}>
-                            <span className="font-medium truncate">{win.name}</span>
-                            <div className="flex items-center gap-2">
-                              {win.userId === user?.uid && <Star className="h-4 w-4 text-primary fill-primary" />}
-                              <span className="font-semibold text-primary shrink-0">
-                                INR {win.payoutAmount.toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  ) : (
-                    <p className="text-center text-sm text-muted-foreground py-4">There were no winners for this match.</p>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-              {questions && questions.length > 0 && (
-                <AccordionItem value="results" className="border-b-0">
-                  <AccordionTrigger className="py-2 px-3 text-sm font-medium hover:no-underline [&[data-state=open]]:bg-transparent">
-                    <div className="flex items-center gap-2 mx-auto">
-                      <ClipboardList className="h-4 w-4 text-primary" />
-                      <span>See Results</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-0 pb-2">
-                    <ScrollArea className="h-32">
-                      <div className="space-y-2 pr-4">
-                        {questions.map((q) => (
-                          <div key={q.id} className="text-xs p-2 rounded-md bg-background">
-                            <p className="font-medium text-muted-foreground text-center mb-1">{q.question}</p>
+                      <div className="space-y-2">
+                        {winners && winners.length > 0 && (
+                             <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
+                                <p className="text-[8px] font-black text-primary/50 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Trophy className="h-2.5 w-2.5"/> Winners</p>
+                                <div className="space-y-1.5">
+                                    {winners.map((win, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-[10px]">
+                                            <span className={cn("font-bold", win.userId === user?.uid ? "text-primary" : "text-white/70")}>{win.name}</span>
+                                            <span className="font-black tabular-nums">₹{win.payoutAmount.toFixed(0)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                             </div>
+                        )}
+                        {questions && questions.map((q) => (
+                          <div key={q.id} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight mb-1">{q.question}</p>
                             {q.result && (
-                                <div className="grid grid-cols-2 text-center text-primary font-semibold">
+                                <div className="flex justify-around text-[10px] font-black text-primary">
                                     <span>{teamA.name}: {q.result?.teamA || 'N/A'}</span>
                                     <span>{teamB.name}: {q.result?.teamB || 'N/A'}</span>
                                 </div>
@@ -299,26 +271,23 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                         ))}
                       </div>
                     </ScrollArea>
-                  </AccordionContent>
-                </AccordionItem>
-              )}
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
             <div className="flex gap-2 w-full">
                 <Button
-                    className="w-full font-bold"
+                    className="flex-1 font-bold text-[10px] uppercase border-white/10 hover:bg-white/5 h-9 rounded-lg"
                     onClick={() => onViewMyBets(match)}
                     variant="outline"
-                    size="sm"
                 >
-                    View My Bets
+                    My Bets
                 </Button>
                  <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
                     <DialogTrigger asChild>
                         <Button
                             variant="outline"
                             size="icon"
-                            className="shrink-0"
-                            aria-label="View Match Info"
+                            className="shrink-0 h-9 w-9 border-white/10 hover:bg-white/5 rounded-lg"
                         >
                             <Info className="h-4 w-4" />
                         </Button>
