@@ -26,82 +26,13 @@ import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronsUpDown } from "lucide-react";
-
 
 interface GuessDialogProps {
   match: Match | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const PlayerSelector = ({ team, onPlayerSelect, selectedPlayer }: { team: 'teamA' | 'teamB', onPlayerSelect: (player: Player & {team: 'teamA' | 'teamB'}) => void, selectedPlayer: (Player & {team: 'teamA' | 'teamB'}) | null }) => {
-    const { match } = useGuessDialogContext();
-    const players = (team === 'teamA' ? match.teamA.players : match.teamB.players)?.filter(p => p.bettingEnabled);
-    const teamName = team === 'teamA' ? match.teamA.name : match.teamB.name;
-    const [popoverOpen, setPopoverOpen] = React.useState(false);
-    
-    if (!players || players.length === 0) return <p className="text-xs text-muted-foreground p-2 text-center">No players available for betting in {teamName}</p>;
-    
-    return (
-        <div className="space-y-2">
-            <h3 className="font-semibold text-sm">{teamName}</h3>
-             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                        {selectedPlayer?.team === team ? selectedPlayer.name : `Select Player`}
-                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <ScrollArea className="h-48">
-                        <div className="p-1 space-y-1">
-                            {players.map(player => (
-                                <Button
-                                    key={player.name}
-                                    variant="ghost"
-                                    className={cn(
-                                        "w-full justify-start font-normal h-auto py-2",
-                                        selectedPlayer?.name === player.name && "bg-primary text-primary-foreground"
-                                    )}
-                                    onClick={() => {
-                                        onPlayerSelect({ ...player, team });
-                                        setPopoverOpen(false);
-                                    }}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={player.imageUrl} alt={player.name} />
-                                            <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <span>{player.name}</span>
-                                    </div>
-                                </Button>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </PopoverContent>
-            </Popover>
-        </div>
-    )
-}
-
-const GuessDialogContext = React.createContext<{
-    match: Match;
-    playerPredictions: Record<string, Record<string, string>>;
-    handlePlayerInputChange: (playerName: string, qId: string, value: string) => void;
-    questions: Question[];
-}>({
-    match: {} as Match,
-    playerPredictions: {},
-    handlePlayerInputChange: () => {},
-    questions: [],
-});
-
-const useGuessDialogContext = () => React.useContext(GuessDialogContext);
 
 export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const { toast } = useToast();
@@ -111,130 +42,77 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [betOnSide, setBetOnSide] = React.useState<'teamA' | 'teamB' | 'both'>('both');
-  const [bettingMode, setBettingMode] = useState<'qna' | 'player'>('qna');
   const [amount, setAmount] = useState<number>(0);
   
   // Predictions state
   const [qnaPredictions, setQnaPredictions] = useState<Record<string, { teamA: string, teamB: string }>>({});
   const [playerPredictions, setPlayerPredictions] = useState<Record<string, Record<string, string>>>({});
   
-  // State for Player Bet UI
+  // State for Player selection within the unified list
   const [selectedPlayer, setSelectedPlayer] = React.useState<(Player & {team: 'teamA' | 'teamB'}) | null>(null);
 
   const betOptions = React.useMemo(() => {
     if (!match?.bettingSettings) return [];
-    
     const settings = match.bettingSettings;
+    
     if (match.sport === 'Cricket') {
-        const isOneSided = match.allowOneSidedBets && betOnSide !== 'both';
-        if (bettingMode === 'player') return settings.betOptions.Cricket.player;
-        if (isOneSided) return settings.betOptions.Cricket.oneSided;
+        // If we are predicting for a player, use player options. Otherwise, check one-sided.
+        if (selectedPlayer) return settings.betOptions.Cricket.player;
+        if (match.allowOneSidedBets && betOnSide !== 'both') return settings.betOptions.Cricket.oneSided;
         return settings.betOptions.Cricket.general;
     }
-    
     return settings.betOptions[match.sport];
-  }, [match, bettingMode, betOnSide]);
+  }, [match, betOnSide, selectedPlayer]);
 
   useEffect(() => {
-    // When bet options change, set the default amount to the first option
     if (betOptions.length > 0) {
       setAmount(betOptions[0].amount);
-    } else {
-      setAmount(0);
     }
   }, [betOptions]);
 
-  // Effect to clear predictions when switching sides in QnA mode
-  useEffect(() => {
-    if (match?.allowOneSidedBets && open && bettingMode === 'qna') {
-      setQnaPredictions((prev) => {
-        const newPredictions = { ...prev };
-        let hasChanges = false;
-        for (const qId in newPredictions) {
-          const current = newPredictions[qId];
-          if (betOnSide === 'teamA' && current.teamB !== '') {
-            newPredictions[qId] = { ...current, teamB: '' };
-            hasChanges = true;
-          } else if (betOnSide === 'teamB' && current.teamA !== '') {
-            newPredictions[qId] = { ...current, teamA: '' };
-            hasChanges = true;
-          }
-        }
-        return hasChanges ? newPredictions : prev;
-      });
-    }
-  }, [betOnSide, open, bettingMode, match?.allowOneSidedBets]);
-
-
   useEffect(() => {
     async function fetchDialogData() {
-      if (match) {
+      if (match && open) {
         setIsLoading(true);
-        // Reset state on open
-        setBettingMode('qna');
         setBetOnSide('both');
         setSelectedPlayer(null);
-        setQuestions([]);
-        setQnaPredictions({});
-        setPlayerPredictions({});
         
         const fetchedQuestions = await getQuestionsForMatch(match.id);
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
         setQuestions(validQuestions);
 
-        // Set initial state for QnA predictions
-        const initialQnaPredictions = validQuestions.reduce((acc, q) => {
+        const initialQna = validQuestions.reduce((acc, q) => {
           acc[q.id] = { teamA: '', teamB: '' };
           return acc;
         }, {} as Record<string, { teamA: string, teamB: string }>);
-        setQnaPredictions(initialQnaPredictions);
-
-        // Determine initial bet options to set a default amount
-        let initialBetOptions = [];
-        if (match.bettingSettings) {
-             if (match.sport === 'Cricket') {
-                initialBetOptions = match.bettingSettings.betOptions.Cricket.general;
-            } else {
-                initialBetOptions = match.bettingSettings.betOptions[match.sport];
-            }
-        }
-        setAmount(initialBetOptions[0]?.amount || 0);
+        setQnaPredictions(initialQna);
         
         setIsLoading(false);
       }
     }
-
-    if (open) {
-      fetchDialogData();
-    }
+    fetchDialogData();
   }, [match, open]);
+
+  if (!match) return null;
 
   const handleQnaInputChange = (qId: string, team: 'teamA' | 'teamB', value: string) => {
     setQnaPredictions(prev => ({
         ...prev,
-        [qId]: {
-            ...prev[qId],
-            [team]: value,
-        }
+        [qId]: { ...prev[qId], [team]: value }
     }));
   };
 
- const handlePlayerInputChange = (playerName: string, qId: string, value: string) => {
+  const handlePlayerInputChange = (playerName: string, qId: string, value: string) => {
+    // When a player input is used, we treat this as a player bet
+    const player = (match.teamA.players?.find(p => p.name === playerName)) 
+      ? { ...match.teamA.players.find(p => p.name === playerName)!, team: 'teamA' as const }
+      : { ...match.teamB.players?.find(p => p.name === playerName)!, team: 'teamB' as const };
+    
+    setSelectedPlayer(player);
     setPlayerPredictions(prev => ({
       ...prev,
-      [playerName]: {
-        ...prev[playerName],
-        [qId]: value
-      }
+      [playerName]: { ...prev[playerName], [qId]: value }
     }));
-  };
-
-  const handlePlayerSelect = (player: (Player & {team: 'teamA' | 'teamB'}) | null) => {
-    if (selectedPlayer?.name === player?.name) {
-      setSelectedPlayer(null);
-    } else {
-      setSelectedPlayer(player);
-    }
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -242,62 +120,44 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     if (!user || !match) return;
 
     let finalPredictions: Prediction[] = [];
+    const isPlayerBet = !!selectedPlayer;
     
-    if (bettingMode === 'player') {
-        if (selectedPlayer) {
-            const predsForPlayer = playerPredictions[selectedPlayer.name] || {};
-            for (const q of questions) {
-                const answer = predsForPlayer[q.id];
-                if (answer && answer.trim()) {
-                    finalPredictions.push({
-                        questionId: `${selectedPlayer.name}:${q.id}`,
-                        questionText: `(${selectedPlayer.name}) ${q.question}`,
-                        predictedAnswer: {
-                          [selectedPlayer.team]: answer
-                        },
-                    });
-                }
+    if (isPlayerBet && selectedPlayer) {
+        const predsForPlayer = playerPredictions[selectedPlayer.name] || {};
+        for (const q of questions) {
+            const answer = predsForPlayer[q.id];
+            if (answer && answer.trim()) {
+                finalPredictions.push({
+                    questionId: `${selectedPlayer.name}:${q.id}`,
+                    questionText: `(${selectedPlayer.name}) ${q.question}`,
+                    predictedAnswer: { [selectedPlayer.team]: answer },
+                });
             }
         }
-        if (finalPredictions.length === 0 && selectedPlayer) {
-            toast({ variant: "destructive", title: "Validation Failed", description: "Please enter a prediction for the selected player." });
-            return;
-        }
-      
-    } else { // QnA mode
+    } else {
       for (const q of questions) {
         const pred = qnaPredictions[q.id];
-        let isValid = false;
-
         const teamAAnswer = pred?.teamA?.trim() ?? '';
         const teamBAnswer = pred?.teamB?.trim() ?? '';
 
         if (match.allowOneSidedBets) {
-            if (betOnSide === 'teamA' && teamAAnswer) isValid = true;
-            else if (betOnSide === 'teamB' && teamBAnswer) isValid = true;
-            else if (betOnSide === 'both' && teamAAnswer && teamBAnswer) isValid = true;
-        } else {
-            if (teamAAnswer && teamBAnswer) isValid = true;
-        }
-
-        if(!isValid){
-             toast({ variant: "destructive", title: "Validation Failed", description: `Please provide a valid answer for the question: "${q.question}"` });
-             return;
+            if (betOnSide === 'teamA' && !teamAAnswer) continue;
+            if (betOnSide === 'teamB' && !teamBAnswer) continue;
+            if (betOnSide === 'both' && (!teamAAnswer || !teamBAnswer)) continue;
+        } else if (!teamAAnswer || !teamBAnswer) {
+            continue;
         }
 
         finalPredictions.push({
           questionId: q.id,
           questionText: q.question,
-          predictedAnswer: {
-            teamA: teamAAnswer,
-            teamB: teamBAnswer,
-          }
+          predictedAnswer: { teamA: teamAAnswer, teamB: teamBAnswer }
         });
       }
     }
 
     if (finalPredictions.length === 0) {
-        toast({ variant: "destructive", title: "Bet Failed", description: "No valid predictions to place." });
+        toast({ variant: "destructive", title: "Validation Failed", description: "Please enter your predictions before playing." });
         return;
     }
 
@@ -307,8 +167,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
       matchId: match.id,
       predictions: finalPredictions,
       amount,
-      betType: bettingMode,
-      isOneSidedBet: match.sport === 'Cricket' && betOnSide !== 'both',
+      betType: isPlayerBet ? 'player' : 'qna',
+      isOneSidedBet: !isPlayerBet && betOnSide !== 'both',
     });
 
     if (result.error) {
@@ -322,228 +182,159 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }
 
   const potentialWin = betOptions?.find(opt => opt.amount === amount)?.payout || 0;
-  if (!match) return null;
-
-
-  const renderPlayerBetUI = () => (
-    <div className="space-y-4">
-        {match.allowOneSidedBets && (
-            <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
-                <Label className="text-sm font-semibold text-center block">Bet on</Label>
-                <RadioGroup
-                    value={betOnSide}
-                    onValueChange={(value: 'teamA' | 'teamB') => {
-                        setBetOnSide(value);
-                        setSelectedPlayer(null); // Reset player selection when team changes
-                    }}
-                    className="grid grid-cols-2 gap-4"
-                >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="teamA" id="pr-teamA" />
-                        <Label htmlFor="pr-teamA" className="text-xs truncate">{match.teamA.name}</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="teamB" id="pr-teamB" />
-                        <Label htmlFor="pr-teamB" className="text-xs truncate">{match.teamB.name}</Label>
-                    </div>
-                </RadioGroup>
-            </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && <PlayerSelector team="teamA" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
-            {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && <PlayerSelector team="teamB" onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />}
-        </div>
-        
-        {selectedPlayer && (
-            <div className="p-3 border rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={selectedPlayer.imageUrl} alt={selectedPlayer.name} />
-                        <AvatarFallback>{selectedPlayer.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <h4 className="font-semibold">{selectedPlayer.name}</h4>
-                </div>
-                <div className="space-y-2">
-                    {questions.map(q => (
-                       <div key={q.id}>
-                           <Label htmlFor={`${selectedPlayer.name}-${q.id}`} className="text-base font-semibold">{q.question}</Label>
-                           <Input
-                                id={`${selectedPlayer.name}-${q.id}`}
-                                type="text"
-                                placeholder="Prediction"
-                                className="border-accent focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
-                                value={playerPredictions[selectedPlayer.name]?.[q.id] || ''}
-                                onChange={(e) => handlePlayerInputChange(selectedPlayer.name, q.id, e.target.value)}
-                            />
-                       </div>
-                    ))}
-                </div>
-            </div>
-        )}
-    </div>
-  )
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Play Your Game</DialogTitle>
-          <DialogDescription asChild>
-            <div className="flex items-center justify-center gap-4 mt-2">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
-                      <Image src={match.teamA.logoUrl} alt={match.teamA.name} width={24} height={24} className="object-cover" data-ai-hint="logo" />
-                    </div>
-                    <span className="font-semibold">{match.teamA.name}</span>
-                </div>
-                <span className="text-muted-foreground">vs</span>
-                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
-                      <Image src={match.teamB.logoUrl} alt={match.teamB.name} width={24} height={24} className="object-cover" data-ai-hint="logo" />
-                    </div>
-                    <span className="font-semibold">{match.teamB.name}</span>
-                </div>
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-3">
-              <Label className="font-headline text-lg">Select Amount</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {(betOptions || []).map((opt) => (
-                  <Button
-                    key={opt.amount}
-                    type="button"
-                    variant={amount === opt.amount ? "default" : "secondary"}
-                    onClick={() => setAmount(opt.amount)}
-                    className="font-bold h-12"
-                  >
-                    INR {opt.amount}
-                  </Button>
-                ))}
+      <DialogContent className="sm:max-w-lg bg-[#0a140f] border-none text-foreground p-0 overflow-hidden">
+        <div className="p-6 space-y-6">
+            <DialogHeader className="flex flex-col items-center">
+              <DialogTitle className="font-headline text-3xl text-white mb-2">Play Your Game</DialogTitle>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground uppercase tracking-widest">
+                  <div className="flex items-center gap-2">
+                    <Image src={match.teamA.logoUrl} alt="" width={20} height={20} className="rounded-full" />
+                    <span>{match.teamA.name}</span>
+                  </div>
+                  <span className="text-primary font-bold">vs</span>
+                  <div className="flex items-center gap-2">
+                    <Image src={match.teamB.logoUrl} alt="" width={20} height={20} className="rounded-full" />
+                    <span>{match.teamB.name}</span>
+                  </div>
               </div>
-            </div>
-                
-            <ScrollArea className="h-52 pr-4">
-              <GuessDialogContext.Provider value={{match, playerPredictions, handlePlayerInputChange, questions }}>
-                <div className="space-y-4">
-                  {isLoading ? (
-                    Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
-                  ) : questions.length > 0 ? (
-                     <div className="space-y-4">
-                      {match.isSpecialMatch && (
-                        <div className="flex items-center justify-center space-x-2 rounded-lg border p-3">
-                          <Label htmlFor="betting-mode" className={cn('text-xs sm:text-sm', bettingMode === 'qna' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
-                            Predict Q&A
-                          </Label>
-                          <Switch
-                            id="betting-mode"
-                            checked={bettingMode === 'player'}
-                            onCheckedChange={(checked) => {
-                              const newMode = checked ? 'player' : 'qna';
-                              setBettingMode(newMode);
-                              if (newMode === 'player' && match.allowOneSidedBets) {
-                                  setBetOnSide('teamA');
-                              } else {
-                                  setBetOnSide('both');
-                              }
-                            }}
-                            aria-label="Toggle between Q&A and Player prediction"
-                          />
-                          <Label htmlFor="betting-mode" className={cn('text-xs sm:text-sm', bettingMode === 'player' ? 'text-primary font-semibold' : 'text-muted-foreground')}>
-                            Predict Players
-                          </Label>
-                        </div>
-                      )}
+            </DialogHeader>
 
-                      {bettingMode === 'player' ? renderPlayerBetUI() : (
-                         <>
-                              {match.allowOneSidedBets && (
-                                  <div className="p-3 border rounded-lg space-y-2 bg-muted/50">
-                                      <Label className="text-sm font-semibold text-center block">Bet on</Label>
-                                      <RadioGroup
-                                          value={betOnSide}
-                                          onValueChange={(value: 'teamA' | 'teamB' | 'both') => setBetOnSide(value)}
-                                          className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-x-6 justify-items-center"
-                                      >
-                                          <div className="flex items-center space-x-2">
-                                              <RadioGroupItem value="teamA" id="r-teamA" />
-                                              <Label htmlFor="r-teamA" className="text-xs truncate">{match.teamA.name}</Label>
-                                          </div>
-                                          <div className="flex items-center space-x-2">
-                                              <RadioGroupItem value="teamB" id="r-teamB" />
-                                              <Label htmlFor="r-teamB" className="text-xs truncate">{match.teamB.name}</Label>
-                                          </div>
-                                          <div className="flex items-center space-x-2 col-span-2 sm:col-span-1 justify-center">
-                                              <RadioGroupItem value="both" id="r-both" />
-                                              <Label htmlFor="r-both" className="text-xs">Both</Label>
-                                          </div>
-                                      </RadioGroup>
-                                  </div>
-                              )}
-                              <div className="space-y-3">
-                                  {questions.map((q) => (
-                                      <div key={q.id} className="space-y-2">
-                                          <div className="flex items-center gap-2 p-1">
-                                              <div className="flex-1">
-                                                {(betOnSide === 'teamA' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                                      <Input
-                                                          type="text"
-                                                          placeholder={`${match.teamA.name}`}
-                                                          value={qnaPredictions[q.id]?.teamA ?? ''}
-                                                          className="text-center h-9 text-sm border-primary focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
-                                                          onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
-                                                      />
-                                                )}
-                                              </div>
-                                              
-                                              <div className="text-sm font-semibold text-center text-muted-foreground px-1 truncate shrink">
-                                                {q.question}
-                                              </div>
-                                              
-                                              <div className="flex-1">
-                                                {(betOnSide === 'teamB' || betOnSide === 'both' || !match.allowOneSidedBets) && (
-                                                      <Input
-                                                          type="text"
-                                                          placeholder={`${match.teamB.name}`}
-                                                          className="text-center h-9 text-sm border-primary focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 w-full"
-                                                          value={qnaPredictions[q.id]?.teamB ?? ''}
-                                                          onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
-                                                      />
-                                                )}
-                                              </div>
-                                          </div>
-                                      </div>
-                                  ))}
-                              </div>
-                          </>
-                      )}
-                     </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-12">
-                      <p>Betting for this match will be available soon.</p>
-                    </div>
-                  )}
+            <div className="space-y-4">
+                <Label className="font-headline text-xl text-white">Select Amount</Label>
+                <div className="grid grid-cols-3 gap-2">
+                    {betOptions.map((opt) => (
+                    <Button
+                        key={opt.amount}
+                        type="button"
+                        variant={amount === opt.amount ? "default" : "secondary"}
+                        onClick={() => setAmount(opt.amount)}
+                        className={cn(
+                            "h-12 font-bold text-lg rounded-md border-none",
+                            amount === opt.amount ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(250,204,82,0.3)]" : "bg-[#1a2b24] text-muted-foreground hover:bg-[#253d33]"
+                        )}
+                    >
+                        INR {opt.amount}
+                    </Button>
+                    ))}
                 </div>
-              </GuessDialogContext.Provider>
-            </ScrollArea>
-                
-            <div className="p-3 bg-primary/10 rounded-lg text-center mt-4">
-              <p className="text-sm text-muted-foreground">Potential Win</p>
-              <p className="text-2xl font-bold font-headline text-primary">INR {potentialWin.toFixed(2)}</p>
             </div>
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="ghost">Cancel</Button>
-              </DialogClose>
-              <Button type="submit" className="flex-1 font-bold" disabled={isSubmitting || isLoading || questions.length === 0}>
-                {isSubmitting ? "Playing Game..." : "Play Game"}
-              </Button>
-            </DialogFooter>
-        </form>
+            <div className="bg-[#14221b] rounded-lg p-1">
+                <RadioGroup
+                    value={betOnSide}
+                    onValueChange={(value: any) => {
+                        setBetOnSide(value);
+                        setSelectedPlayer(null);
+                    }}
+                    className="grid grid-cols-3 gap-0"
+                >
+                    {['teamA', 'teamB', 'both'].map((side) => {
+                        const isSelected = betOnSide === side;
+                        const label = side === 'both' ? 'Both' : (side === 'teamA' ? match.teamA.name : match.teamB.name);
+                        return (
+                            <label key={side} className={cn(
+                                "flex items-center justify-center gap-2 py-2 px-1 rounded-md cursor-pointer transition-all text-[10px] sm:text-xs font-semibold uppercase truncate",
+                                isSelected ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-white"
+                            )}>
+                                <RadioGroupItem value={side} className="sr-only" />
+                                <div className={cn("w-3 h-3 rounded-full border-2 flex items-center justify-center", isSelected ? "border-primary" : "border-muted-foreground")}>
+                                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                </div>
+                                {label}
+                            </label>
+                        )
+                    })}
+                </RadioGroup>
+            </div>
+
+            <ScrollArea className="h-64 pr-4">
+                <div className="space-y-4 pb-4">
+                    {isLoading ? (
+                        Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full bg-[#1a2b24]" />)
+                    ) : (
+                        <>
+                            {/* Team Questions */}
+                            <div className="space-y-3">
+                                {questions.map((q) => (
+                                    <div key={q.id} className="flex items-center gap-2">
+                                        <Input
+                                            placeholder={match.teamA.name}
+                                            disabled={betOnSide === 'teamB'}
+                                            className="flex-1 bg-transparent border-primary/40 focus-visible:ring-primary rounded-full text-center h-9 text-xs placeholder:text-muted-foreground/30"
+                                            value={qnaPredictions[q.id]?.teamA ?? ''}
+                                            onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
+                                        />
+                                        <div className="w-20 text-center text-[10px] font-black text-muted-foreground leading-tight uppercase shrink-0">
+                                            {q.question}
+                                        </div>
+                                        <Input
+                                            placeholder={match.teamB.name}
+                                            disabled={betOnSide === 'teamA'}
+                                            className="flex-1 bg-transparent border-primary/40 focus-visible:ring-primary rounded-full text-center h-9 text-xs placeholder:text-muted-foreground/30"
+                                            value={qnaPredictions[q.id]?.teamB ?? ''}
+                                            onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Player Section if Special Match */}
+                            {match.isSpecialMatch && (
+                                <div className="space-y-4 pt-4 border-t border-white/5">
+                                    <h4 className="text-center text-xs font-bold text-primary tracking-widest uppercase">Player Performance</h4>
+                                    {[... (match.teamA.players || []), ... (match.teamB.players || [])].filter(p => p.bettingEnabled).map((player) => (
+                                        <div key={player.name} className="space-y-2 p-3 bg-white/5 rounded-lg">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={player.imageUrl} />
+                                                    <AvatarFallback>{player.name[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-xs font-bold text-white">{player.name}</span>
+                                            </div>
+                                            {questions.map(q => (
+                                                <div key={`${player.name}-${q.id}`} className="flex items-center gap-2">
+                                                     <div className="flex-1 text-[10px] text-muted-foreground uppercase">{q.question}</div>
+                                                     <Input
+                                                        placeholder="Your prediction..."
+                                                        className="flex-1 bg-[#0a140f] border-primary/40 focus-visible:ring-primary rounded-md h-8 text-xs text-center"
+                                                        value={playerPredictions[player.name]?.[q.id] || ''}
+                                                        onChange={(e) => handlePlayerInputChange(player.name, q.id, e.target.value)}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </ScrollArea>
+
+            <div className="bg-[#14221b] border border-white/5 rounded-xl p-4 text-center">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Potential Win</p>
+                <p className="text-4xl font-headline font-black text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                    INR {potentialWin.toFixed(2)}
+                </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+                 <DialogClose asChild>
+                    <button type="button" className="text-sm font-bold text-muted-foreground hover:text-white transition-colors">Cancel</button>
+                </DialogClose>
+                <Button 
+                    onClick={handleSubmit} 
+                    disabled={isSubmitting || isLoading || questions.length === 0}
+                    className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground font-black text-lg h-14 rounded-xl shadow-[0_4px_20px_rgba(250,204,82,0.2)]"
+                >
+                    {isSubmitting ? "Placing Bet..." : "Play Game"}
+                </Button>
+            </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-
