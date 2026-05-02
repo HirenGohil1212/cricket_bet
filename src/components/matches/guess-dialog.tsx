@@ -205,34 +205,34 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         {step === 'list' ? (
             <div className="p-6 space-y-6">
                 <DialogHeader className="flex flex-col items-center">
-                    <DialogTitle className="font-headline text-4xl text-white mb-2">Play Your Game</DialogTitle>
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                        <div className="flex items-center gap-2">
-                            <Image src={match.teamA.logoUrl} alt="" width={16} height={16} className="rounded-full" />
+                    <DialogTitle className="font-headline text-2xl text-white mb-1">Play Your Game</DialogTitle>
+                    <div className="flex items-center gap-2 text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
+                        <div className="flex items-center gap-1.5">
+                            <Image src={match.teamA.logoUrl} alt="" width={14} height={14} className="rounded-full" />
                             <span>{match.teamA.name}</span>
                         </div>
-                        <span className="text-primary">vs</span>
-                        <div className="flex items-center gap-2">
-                            <Image src={match.teamB.logoUrl} alt="" width={16} height={16} className="rounded-full" />
+                        <span className="text-primary">•</span>
+                        <div className="flex items-center gap-1.5">
+                            <Image src={match.teamB.logoUrl} alt="" width={14} height={14} className="rounded-full" />
                             <span>{match.teamB.name}</span>
                         </div>
                     </div>
                 </DialogHeader>
 
-                <ScrollArea className="h-[65vh] pr-4">
-                    <div className="space-y-8 pb-8">
+                <ScrollArea className="h-[60vh] pr-2">
+                    <div className="space-y-6 pb-4">
                         {isLoading ? (
-                            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full bg-[#1a2b24] rounded-2xl" />)
+                            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full bg-[#1a2b24] rounded-xl" />)
                         ) : (
                             <>
                                 {/* Match Questions */}
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     {questions.map((q) => {
                                         const isRowSuspended = !match.teamABettingEnabled && !match.teamBBettingEnabled;
                                         return (
-                                            <div key={q.id} className="space-y-3 group">
+                                            <div key={q.id} className="space-y-2.5">
                                                 <div className="text-center">
-                                                    <span className="text-[11px] font-black text-muted-foreground/80 uppercase tracking-tighter">
+                                                    <span className="text-[10px] font-black text-muted-foreground/80 uppercase tracking-tight">
                                                         {q.question}
                                                     </span>
                                                 </div>
@@ -240,41 +240,41 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                     <div className="flex-1 flex flex-col gap-1">
                                                         <Input
                                                             placeholder={isRowSuspended || !match.teamABettingEnabled ? "---" : match.teamA.name}
-                                                            className="bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
+                                                            className="bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-10 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
                                                             value={qnaInputs[q.id]?.teamA ?? ''}
                                                             onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
                                                             disabled={isRowSuspended || !match.teamABettingEnabled}
                                                         />
                                                         {(isRowSuspended || !match.teamABettingEnabled) && (
-                                                            <span className="text-[8px] text-destructive font-black uppercase text-center leading-none">Suspended</span>
+                                                            <span className="text-[7px] text-destructive font-black uppercase text-center leading-none">Suspended</span>
                                                         )}
                                                     </div>
                                                     
-                                                    <div className="text-primary font-bold text-xs pt-4 px-1">VS</div>
+                                                    <div className="text-primary font-bold text-[10px] pt-3 px-0.5">VS</div>
                                                     
                                                     <div className="flex-1 flex flex-col gap-1">
                                                         <Input
                                                             placeholder={isRowSuspended || !match.teamBBettingEnabled ? "---" : match.teamB.name}
-                                                            className="bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
+                                                            className="bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-10 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
                                                             value={qnaInputs[q.id]?.teamB ?? ''}
                                                             onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
                                                             disabled={isRowSuspended || !match.teamBBettingEnabled}
                                                         />
                                                         {(isRowSuspended || !match.teamBBettingEnabled) && (
-                                                            <span className="text-[8px] text-destructive font-black uppercase text-center leading-none">Suspended</span>
+                                                            <span className="text-[7px] text-destructive font-black uppercase text-center leading-none">Suspended</span>
                                                         )}
                                                     </div>
 
                                                     <div className="pt-0">
                                                         {isRowSuspended ? (
-                                                            <div className="flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-full h-12 px-4 min-w-[80px]">
-                                                                <span className="text-destructive font-black text-[10px] uppercase tracking-widest">Suspended</span>
+                                                            <div className="flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-full h-10 px-3 min-w-[70px]">
+                                                                <span className="text-destructive font-black text-[9px] uppercase tracking-tighter">Suspended</span>
                                                             </div>
                                                         ) : (
                                                             <Button 
                                                                 size="sm"
                                                                 onClick={() => handleInitiateQnaBet(q.id)}
-                                                                className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[10px] h-12 px-4 rounded-full uppercase shadow-lg transition-all active:scale-95 min-w-[80px]"
+                                                                className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[9px] h-10 px-3 rounded-full uppercase shadow-md transition-all active:scale-95 min-w-[70px]"
                                                             >
                                                                 Play Now
                                                             </Button>
@@ -288,42 +288,42 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
                                 {/* Player Performance Section */}
                                 {match.isSpecialMatch && (
-                                    <div className="space-y-6 pt-4">
-                                        <h4 className="text-center text-xs font-black text-primary tracking-[0.25em] uppercase">Player Performance</h4>
+                                    <div className="space-y-5 pt-2">
+                                        <h4 className="text-center text-[10px] font-black text-primary tracking-[0.2em] uppercase">Player Performance</h4>
                                         {[...(match.teamA.players || []), ...(match.teamB.players || [])].map((player) => (
-                                            <div key={player.name} className="space-y-4 p-5 bg-white/5 rounded-3xl border border-white/5">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-10 w-10 border-2 border-primary/20">
+                                            <div key={player.name} className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-8 w-8 border border-primary/20">
                                                         <AvatarImage src={player.imageUrl} className="object-cover" />
-                                                        <AvatarFallback className="bg-primary/10 text-primary font-bold">{player.name[0]}</AvatarFallback>
+                                                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{player.name[0]}</AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-base font-black text-white font-headline tracking-wide">{player.name}</span>
+                                                    <span className="text-sm font-black text-white font-headline tracking-wide">{player.name}</span>
                                                 </div>
-                                                <div className="space-y-3">
+                                                <div className="space-y-2.5">
                                                     {questions.map(q => (
-                                                        <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
-                                                            <div className="flex-1 text-[11px] text-muted-foreground font-black uppercase tracking-tight">{q.question}</div>
-                                                            <div className="flex flex-col gap-1 items-center">
+                                                        <div key={`${player.name}-${q.id}`} className="flex items-center gap-2">
+                                                            <div className="flex-1 text-[10px] text-muted-foreground font-black uppercase tracking-tight leading-tight">{q.question}</div>
+                                                            <div className="flex flex-col gap-0.5 items-center">
                                                                 <Input
-                                                                    placeholder={!player.bettingEnabled ? "---" : "Your prediction..."}
-                                                                    className="w-32 bg-[#0a140f] border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-xl h-10 text-xs text-center disabled:opacity-30"
+                                                                    placeholder={!player.bettingEnabled ? "---" : "Predict..."}
+                                                                    className="w-24 bg-[#0a140f] border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-lg h-9 text-[10px] text-center disabled:opacity-30"
                                                                     value={playerInputs[player.name]?.[q.id] || ''}
                                                                     onChange={(e) => handlePlayerInputChange(player.name, q.id, e.target.value)}
                                                                     disabled={!player.bettingEnabled}
                                                                 />
                                                                 {!player.bettingEnabled && (
-                                                                    <span className="text-[8px] text-destructive font-black uppercase leading-none">Suspended</span>
+                                                                    <span className="text-[7px] text-destructive font-black uppercase leading-none">Suspended</span>
                                                                 )}
                                                             </div>
                                                             {!player.bettingEnabled ? (
-                                                                <div className="w-20 flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-xl h-10">
-                                                                    <span className="text-destructive font-black text-[8px] uppercase tracking-widest">Suspended</span>
+                                                                <div className="w-16 flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-lg h-9">
+                                                                    <span className="text-destructive font-black text-[7px] uppercase tracking-tighter">Suspended</span>
                                                                 </div>
                                                             ) : (
                                                                 <Button 
                                                                     size="sm"
                                                                     onClick={() => handleInitiatePlayerBet(player.name, q.id)}
-                                                                    className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[9px] h-10 px-3 rounded-xl uppercase shadow-md"
+                                                                    className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[8px] h-9 px-2 rounded-lg uppercase shadow-sm"
                                                                 >
                                                                     Play
                                                                 </Button>
@@ -342,29 +342,29 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
                 <div className="pt-2">
                     <DialogClose asChild>
-                        <Button variant="ghost" className="w-full text-muted-foreground hover:text-white font-bold h-12 rounded-2xl">
+                        <Button variant="ghost" className="w-full text-muted-foreground hover:text-white font-bold h-10 rounded-xl text-sm">
                             Close Game
                         </Button>
                     </DialogClose>
                 </div>
             </div>
         ) : (
-            <div className="p-6 space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="p-6 space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                 <DialogHeader>
-                    <div className="flex items-center gap-4 mb-4">
-                        <Button variant="ghost" size="icon" onClick={() => setStep('list')} className="text-muted-foreground hover:text-white">
-                            <ArrowLeft className="h-5 w-5" />
+                    <div className="flex items-center gap-3 mb-2">
+                        <Button variant="ghost" size="icon" onClick={() => setStep('list')} className="text-muted-foreground hover:text-white h-8 w-8">
+                            <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <div>
-                            <DialogTitle className="font-headline text-3xl text-white">Select Bet Amount</DialogTitle>
-                            <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1">
-                                Betting on: {currentPrediction?.questionText}
+                            <DialogTitle className="font-headline text-xl text-white">Select Bet Amount</DialogTitle>
+                            <p className="text-[9px] text-primary font-black uppercase tracking-widest mt-0.5">
+                                {currentPrediction?.questionText}
                             </p>
                         </div>
                     </div>
                 </DialogHeader>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                     {betOptions.map((opt) => (
                     <Button
                         key={opt.amount}
@@ -372,9 +372,9 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                         variant={amount === opt.amount ? "default" : "secondary"}
                         onClick={() => setAmount(opt.amount)}
                         className={cn(
-                            "h-20 font-headline font-black text-3xl rounded-3xl border-none transition-all",
+                            "h-14 font-headline font-black text-xl rounded-2xl border-none transition-all",
                             amount === opt.amount 
-                                ? "bg-primary text-primary-foreground shadow-[0_0_30px_rgba(250,204,82,0.4)] scale-105" 
+                                ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(250,204,82,0.3)] scale-105" 
                                 : "bg-[#1a2b24] text-muted-foreground hover:bg-[#253d33]"
                         )}
                     >
@@ -383,22 +383,22 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     ))}
                 </div>
 
-                <div className="bg-[#14221b] border border-primary/20 rounded-[2.5rem] p-10 text-center shadow-inner">
-                    <p className="text-xs uppercase font-black text-primary/60 tracking-[0.4em] mb-4">You Can Win</p>
-                    <p className="text-6xl font-headline font-black text-primary drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+                <div className="bg-[#14221b] border border-primary/20 rounded-[1.5rem] p-6 text-center shadow-inner">
+                    <p className="text-[9px] uppercase font-black text-primary/60 tracking-[0.3em] mb-2">You Can Win</p>
+                    <p className="text-4xl font-headline font-black text-primary">
                         INR {potentialWin.toFixed(2)}
                     </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <Button 
                         onClick={handleSubmit} 
                         disabled={isSubmitting}
-                        className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-black text-xl h-16 rounded-2xl shadow-[0_12px_40px_rgba(250,204,82,0.35)]"
+                        className="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-black text-lg h-14 rounded-xl shadow-lg"
                     >
                         {isSubmitting ? "Placing Bet..." : "Confirm & Place Bet"}
                     </Button>
-                    <p className="text-center text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">
+                    <p className="text-center text-[8px] text-muted-foreground uppercase font-bold tracking-[0.15em]">
                         Your balance will be updated instantly!
                     </p>
                 </div>
