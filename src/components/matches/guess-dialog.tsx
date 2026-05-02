@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -232,7 +231,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                         return (
                                             <div key={q.id} className="space-y-2.5">
                                                 <div className="text-center">
-                                                    <span className="text-[10px] font-black text-muted-foreground/80 uppercase tracking-tight">
+                                                    <span className="text-sm font-bold text-primary uppercase tracking-wider">
                                                         {q.question}
                                                     </span>
                                                 </div>
@@ -302,7 +301,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                 <div className="space-y-2.5">
                                                     {questions.map(q => (
                                                         <div key={`${player.name}-${q.id}`} className="flex items-center gap-2">
-                                                            <div className="flex-1 text-[10px] text-muted-foreground font-black uppercase tracking-tight leading-tight">{q.question}</div>
+                                                            <div className="flex-1 text-sm font-bold text-primary uppercase tracking-wider leading-tight">{q.question}</div>
                                                             <div className="flex flex-col gap-0.5 items-center">
                                                                 <Input
                                                                     placeholder={!player.bettingEnabled ? "---" : "Predict..."}
