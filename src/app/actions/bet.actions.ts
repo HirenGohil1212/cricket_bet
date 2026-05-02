@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { 
@@ -36,102 +35,94 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
     if (!predictions || predictions.length === 0) {
         return { error: 'At least one prediction is required.' };
     }
+    if (amount <= 0) {
+        return { error: 'Bet amount must be greater than zero.' };
+    }
 
     try {
         const userRef = doc(db, 'users', userId);
-        
         const match = await getMatchById(matchId);
         
         if (!match) {
-             return { error: 'Match not found. Please try again.' };
+             return { error: 'Match not found.' };
         }
 
-        // --- NEW VALIDATION LOGIC ---
+        // --- VALIDATION LOGIC ---
         if (betType === 'player') {
             if (!match.isSpecialMatch) {
-                return { error: 'Player betting is currently disabled for this match.' };
+                return { error: 'Player betting is disabled for this match.' };
             }
             const playerName = predictions[0].questionId.split(':')[0];
             const playerInTeamA = match.teamA.players?.find(p => p.name === playerName);
             const playerInTeamB = match.teamB.players?.find(p => p.name === playerName);
             
-            if (playerInTeamA && !playerInTeamA.bettingEnabled) {
-                return { error: `Betting for player ${playerName} is currently disabled.` };
-            }
-             if (playerInTeamB && !playerInTeamB.bettingEnabled) {
-                return { error: `Betting for player ${playerName} is currently disabled.` };
+            if ((playerInTeamA && !playerInTeamA.bettingEnabled) || (playerInTeamB && !playerInTeamB.bettingEnabled)) {
+                return { error: `Betting for ${playerName} is suspended.` };
             }
 
-        } else { // qna bet type
+        } else {
             const teamAPrediction = predictions.some(p => p.predictedAnswer?.teamA);
             const teamBPrediction = predictions.some(p => p.predictedAnswer?.teamB);
 
-            if (teamAPrediction && !match.teamABettingEnabled) {
-                 return { error: `Betting for ${match.teamA.name} is currently disabled.` };
-            }
-             if (teamBPrediction && !match.teamBBettingEnabled) {
-                 return { error: `Betting for ${match.teamB.name} is currently disabled.` };
+            if ((teamAPrediction && !match.teamABettingEnabled) || (teamBPrediction && !match.teamBBettingEnabled)) {
+                 return { error: `Betting is suspended for one of the selected teams.` };
             }
         }
-        // --- END NEW VALIDATION LOGIC ---
         
         const bettingSettings = match.bettingSettings;
         if (!bettingSettings) {
-            return { error: 'Betting is not configured for this match. Please contact support.' };
+            return { error: 'Betting is not configured for this match.' };
         }
 
-        let sportBetOptions;
-        if (match.sport === 'Cricket') {
-            if (betType === 'player') {
-                sportBetOptions = bettingSettings.betOptions.Cricket.player;
-            } else if (isOneSidedBet) {
-                sportBetOptions = bettingSettings.betOptions.Cricket.oneSided;
-            } else {
-                sportBetOptions = bettingSettings.betOptions.Cricket.general;
-            }
+        let potentialWin = 0;
+        const sportSettings = (bettingSettings.betOptions as any)[match.sport];
+        const isDynamicMode = sportSettings.mode === 'dynamic';
+
+        if (isDynamicMode) {
+            const multiplier = betType === 'player' 
+                ? sportSettings.multipliers.player 
+                : sportSettings.multipliers.qna;
+            potentialWin = amount * multiplier;
         } else {
-             // For non-cricket sports, player bets use the general options
-             sportBetOptions = bettingSettings.betOptions[match.sport];
-        }
+            // Fixed mode
+            let sportBetOptions;
+            if (match.sport === 'Cricket') {
+                if (betType === 'player') {
+                    sportBetOptions = sportSettings.player;
+                } else if (isOneSidedBet) {
+                    sportBetOptions = sportSettings.oneSided;
+                } else {
+                    sportBetOptions = sportSettings.general;
+                }
+            } else {
+                 sportBetOptions = sportSettings.options;
+            }
 
-        const selectedOption = sportBetOptions.find(opt => opt.amount === amount);
-
-        if (!selectedOption) {
-            return { error: 'The selected bet amount is not valid for this type of bet. Please refresh and try again.' };
+            const selectedOption = sportBetOptions.find((opt: any) => opt.amount === amount);
+            if (!selectedOption) {
+                return { error: 'Invalid bet amount for this match.' };
+            }
+            potentialWin = selectedOption.payout;
         }
-        
-        const potentialWin = selectedOption.payout;
         
         const result = await runTransaction(db, async (transaction) => {
             const userDoc = await transaction.get(userRef);
-
-            if (!userDoc.exists()) {
-                throw new Error("User document not found.");
-            }
+            if (!userDoc.exists()) throw new Error("User not found.");
             
             const userData = userDoc.data();
-            
             const wasFirstBet = userData.isFirstBetPlaced === false;
 
-            const currentBalance = userData.walletBalance;
-            if (currentBalance < amount) {
-                throw new Error("Insufficient wallet balance.");
+            if (userData.walletBalance < amount) {
+                throw new Error("Insufficient balance.");
             }
 
-            const newBalance = currentBalance - amount;
-            
-            const userUpdateData: { walletBalance: number; isFirstBetPlaced?: boolean, totalWagered: any } = {
-                walletBalance: newBalance,
+            transaction.update(userRef, {
+                walletBalance: increment(-amount),
                 totalWagered: increment(amount),
-            };
-
-            if (wasFirstBet) {
-                userUpdateData.isFirstBetPlaced = true;
-            }
-            transaction.update(userRef, userUpdateData);
+                ...(wasFirstBet && { isFirstBetPlaced: true })
+            });
             
             const matchDescription = `${match.teamA.name} vs ${match.teamB.name}`;
-
             const newBetRef = doc(collection(db, "bets"));
             transaction.set(newBetRef, {
                 userId,

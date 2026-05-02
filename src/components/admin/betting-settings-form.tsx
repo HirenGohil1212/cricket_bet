@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, FormProvider, useFormContext } from "react-hook-form";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Zap, Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import type { BettingSettings, Sport } from "@/lib/types";
 import { sports } from "@/lib/data";
@@ -27,6 +27,8 @@ import { updateBettingSettings } from "@/app/actions/settings.actions";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { SportIcon } from "../icons";
 import { Separator } from "../ui/separator";
+import { Label } from "../ui/label";
+import { cn } from "@/lib/utils";
 
 interface BettingSettingsFormProps {
     initialData: BettingSettings;
@@ -44,7 +46,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
     return (
         <div className="space-y-4">
             {fields.map((field, index) => (
-                <div key={field.id} className="relative p-4 border rounded-md">
+                <div key={field.id} className="relative p-4 border rounded-md bg-background/50">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                             control={control}
@@ -53,7 +55,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                                 <FormItem>
                                     <FormLabel>Bet Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="text" pattern="[0-9]*" placeholder="e.g. 9" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value.replace(/\D/g, '')))}/>
+                                        <Input type="number" placeholder="e.g. 9" {...field} onChange={e => field.onChange(Number(e.target.value))}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -66,7 +68,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
                                 <FormItem>
                                     <FormLabel>Payout Amount (INR)</FormLabel>
                                     <FormControl>
-                                        <Input type="text" pattern="[0-9]*" placeholder="e.g. 20" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : Number(e.target.value.replace(/\D/g, '')))}/>
+                                        <Input type="number" placeholder="e.g. 20" {...field} onChange={e => field.onChange(Number(e.target.value))}/>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -105,6 +107,7 @@ function BetOptionFields({ namePrefix }: { namePrefix: string }) {
 function SportBettingForm({ sport, onSave }: { sport: Sport, onSave: (data: BettingSettingsFormValues) => Promise<any> }) {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const form = useFormContext<BettingSettingsFormValues>();
+    const mode = form.watch(`betOptions.${sport}.mode` as any);
 
     async function onSubmit(data: BettingSettingsFormValues) {
         setIsSubmitting(true);
@@ -114,50 +117,129 @@ function SportBettingForm({ sport, onSave }: { sport: Sport, onSave: (data: Bett
     
     return (
         <form onSubmit={form.handleSubmit(onSubmit)}>
-            <Card>
+            <Card className="border-primary/20">
                 <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <SportIcon sport={sport} className="w-5 h-5" />
-                            {sport} Settings
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <SportIcon sport={sport} className="w-6 h-6" />
+                            <CardTitle className="text-xl">{sport} Settings</CardTitle>
                         </div>
-                    </CardTitle>
+                        <FormField
+                            control={form.control}
+                            name={`betOptions.${sport}.mode` as any}
+                            render={({ field }) => (
+                                <FormItem className="space-y-0">
+                                    <FormControl>
+                                        <RadioGroup
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                            className="flex items-center bg-muted p-1 rounded-lg"
+                                        >
+                                            <div className="flex items-center">
+                                                <RadioGroupItem value="fixed" id={`${sport}-fixed`} className="sr-only" />
+                                                <Label
+                                                    htmlFor={`${sport}-fixed`}
+                                                    className={cn(
+                                                        "px-4 py-1.5 rounded-md cursor-pointer text-xs font-bold transition-all flex items-center gap-2",
+                                                        field.value === 'fixed' ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                                    )}
+                                                >
+                                                    <Settings2 className="h-3 w-3" /> FIXED
+                                                </Label>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <RadioGroupItem value="dynamic" id={`${sport}-dynamic`} className="sr-only" />
+                                                <Label
+                                                    htmlFor={`${sport}-dynamic`}
+                                                    className={cn(
+                                                        "px-4 py-1.5 rounded-md cursor-pointer text-xs font-bold transition-all flex items-center gap-2",
+                                                        field.value === 'dynamic' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                                    )}
+                                                >
+                                                    <Zap className="h-3 w-3" /> DYNAMIC
+                                                </Label>
+                                            </div>
+                                        </RadioGroup>
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    {sport === 'Cricket' ? (
+                    {mode === 'fixed' ? (
                         <div className="space-y-6">
-                            <div>
-                                <h3 className="font-semibold text-lg">General Bet</h3>
-                                <p className="text-sm text-muted-foreground">For standard bets where both team predictions are made.</p>
-                                <div className="mt-4">
-                                <BetOptionFields namePrefix="betOptions.Cricket.general" />
-                                </div>
-                            </div>
-                            <Separator />
-                            <div>
-                                <h3 className="font-semibold text-lg">One Side Bet</h3>
-                                <p className="text-sm text-muted-foreground">For bets where the user only predicts for one team (if enabled on the match).</p>
-                                    <div className="mt-4">
-                                    <BetOptionFields namePrefix="betOptions.Cricket.oneSided" />
+                            {sport === 'Cricket' ? (
+                                <>
+                                    <div>
+                                        <h3 className="font-bold text-primary uppercase text-xs tracking-wider mb-4">General Bet Options</h3>
+                                        <BetOptionFields namePrefix="betOptions.Cricket.general" />
                                     </div>
-                            </div>
-                                <Separator />
-                            <div>
-                                <h3 className="font-semibold text-lg">Player Bet</h3>
-                                <p className="text-sm text-muted-foreground">For bets on individual player performance (if enabled on the match).</p>
-                                    <div className="mt-4">
-                                    <BetOptionFields namePrefix="betOptions.Cricket.player" />
-                                </div>
-                            </div>
-                            </div>
+                                    <Separator />
+                                    <div>
+                                        <h3 className="font-bold text-primary uppercase text-xs tracking-wider mb-4">One Side Bet Options</h3>
+                                        <BetOptionFields namePrefix="betOptions.Cricket.oneSided" />
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                        <h3 className="font-bold text-primary uppercase text-xs tracking-wider mb-4">Player Bet Options</h3>
+                                        <BetOptionFields namePrefix="betOptions.Cricket.player" />
+                                    </div>
+                                </>
+                            ) : (
+                                <BetOptionFields namePrefix={`betOptions.${sport}.options`} />
+                            )}
+                        </div>
                     ) : (
-                        <BetOptionFields namePrefix={`betOptions.${sport}`} />
+                        <div className="space-y-6 bg-muted/30 p-6 rounded-xl border border-dashed border-primary/20">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <FormField
+                                    control={form.control}
+                                    name={`betOptions.${sport}.multipliers.qna` as any}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-primary font-bold">QnA Bet Multiplier</FormLabel>
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <Input type="number" step="0.1" placeholder="e.g. 2" className="pl-12 h-12 text-lg font-bold" {...field} onChange={e => field.onChange(Number(e.target.value))}/>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-muted-foreground/50">X</span>
+                                                </div>
+                                            </FormControl>
+                                            <FormDescription>Reward multiplier for standard team questions.</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`betOptions.${sport}.multipliers.player` as any}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-primary font-bold">Player Bet Multiplier</FormLabel>
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <Input type="number" step="0.1" placeholder="e.g. 10" className="pl-12 h-12 text-lg font-bold" {...field} onChange={e => field.onChange(Number(e.target.value))}/>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-muted-foreground/50">X</span>
+                                                </div>
+                                            </FormControl>
+                                            <FormDescription>Reward multiplier for individual player performance.</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                                <p className="text-sm text-center text-muted-foreground italic">
+                                    "In Dynamic Mode, users can enter any amount. Potential Win = Bet Amount × Multiplier"
+                                </p>
+                            </div>
+                        </div>
                     )}
                 </CardContent>
-                <CardFooter className="flex justify-end">
-                    <Button type="submit" disabled={isSubmitting}>
+                <CardFooter className="flex justify-end border-t pt-4">
+                    <Button type="submit" disabled={isSubmitting} size="lg" className="px-10">
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {isSubmitting ? 'Saving...' : 'Save Changes'}
+                        Save {sport} Settings
                     </Button>
                 </CardFooter>
             </Card>
@@ -181,7 +263,6 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
     } else {
         toast({ title: "Success", description: result.success });
         router.refresh();
-        // After successful save, reset the form with the saved data to mark fields as no longer "dirty"
         formMethods.reset(data);
     }
   };
@@ -190,10 +271,10 @@ export function BettingSettingsForm({ initialData }: BettingSettingsFormProps) {
     <FormProvider {...formMethods}>
         <div className="space-y-8">
             <FormDescription>
-                Define the fixed bet amounts available to users and their corresponding payout for each sport. Changes will only apply to new matches created after saving.
+                Choose between fixed amounts or dynamic betting with multipliers. Changes apply to future matches.
             </FormDescription>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
                 {sports.map((sport) => (
                     <SportBettingForm key={sport} sport={sport} onSave={handleSave}/>
                 ))}

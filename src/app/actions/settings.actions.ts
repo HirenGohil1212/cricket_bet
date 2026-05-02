@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -144,22 +143,32 @@ export async function deleteBankAccount(accountId: string) {
 // Function to get betting settings
 export async function getBettingSettings(): Promise<BettingSettings> {
     const defaultBetOptions: BetOption[] = [
-        { amount: 9, payout: 18 },
-        { amount: 19, payout: 40 },
-        { amount: 29, payout: 60 },
+        { amount: 10, payout: 20 },
+        { amount: 50, payout: 100 },
+        { amount: 100, payout: 200 },
     ];
     
+    const defaultMultipliers = { qna: 2, player: 2 };
+
+    const createDefaultSportSettings = () => ({
+        mode: 'fixed' as const,
+        options: [...defaultBetOptions],
+        multipliers: { ...defaultMultipliers },
+    });
+
     const defaultSettings: BettingSettings = {
         betOptions: {
             Cricket: {
+                mode: 'fixed',
                 general: [...defaultBetOptions],
                 oneSided: [...defaultBetOptions],
                 player: [...defaultBetOptions],
+                multipliers: { ...defaultMultipliers },
             },
             ...sports.filter(s => s !== 'Cricket').reduce((acc, sport) => {
-                acc[sport] = [...defaultBetOptions];
+                acc[sport] = createDefaultSportSettings();
                 return acc;
-            }, {} as Record<Exclude<Sport, 'Cricket'>, BetOption[]>)
+            }, {} as any)
         }
     };
 
@@ -168,31 +177,23 @@ export async function getBettingSettings(): Promise<BettingSettings> {
         const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists() || !docSnap.data()?.betOptions) {
-            // Document doesn't exist or is empty, create it with defaults
             await setDoc(docRef, defaultSettings);
             return defaultSettings;
         }
 
-        const dbData = docSnap.data() as { betOptions: Partial<BettingSettings['betOptions']> };
+        const dbData = docSnap.data();
         const dbOptions = dbData.betOptions;
 
-        // Start with the correct default structure
         const finalSettings = JSON.parse(JSON.stringify(defaultSettings));
         
-        // Loop through all sports and apply saved settings if they exist and are valid
         sports.forEach(sport => {
-            if (sport === 'Cricket') {
-               // Check if the saved Cricket data has the correct nested structure
-               const cricketData = dbOptions.Cricket as CricketBetOptions;
-               if (cricketData && cricketData.general && cricketData.oneSided && cricketData.player) {
-                   finalSettings.betOptions.Cricket = cricketData;
-               }
-            } else {
-               // For other sports, check if the saved data is a valid array
-               const sportData = dbOptions[sport] as BetOption[];
-               if (Array.isArray(sportData) && sportData.length > 0) {
-                   finalSettings.betOptions[sport] = sportData;
-               }
+            if (dbOptions[sport]) {
+                finalSettings.betOptions[sport] = {
+                    ...finalSettings.betOptions[sport],
+                    ...dbOptions[sport],
+                    // Ensure multipliers exist even if settings were saved before this update
+                    multipliers: dbOptions[sport].multipliers || { ...defaultMultipliers }
+                };
             }
         });
         
@@ -209,19 +210,16 @@ export async function getBettingSettings(): Promise<BettingSettings> {
 export async function updateBettingSettings(data: BettingSettingsFormValues) {
     const validatedFields = bettingSettingsSchema.safeParse(data);
     if (!validatedFields.success) {
-      // Create a detailed error message from Zod issues
       const errorDetails = validatedFields.error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ');
       return { error: `Invalid data provided: ${errorDetails}` };
     }
 
     try {
         const docRef = doc(db, 'adminSettings', 'betting');
-        // The data is already in the correct format { betOptions: { ... } }
         await setDoc(docRef, validatedFields.data, { merge: true });
         
-        // Revalidate paths where these settings are used
         revalidatePath('/admin/betting-settings');
-        revalidatePath('/'); // Home page uses betting settings
+        revalidatePath('/');
         
         return { success: 'Betting settings updated successfully!' };
 

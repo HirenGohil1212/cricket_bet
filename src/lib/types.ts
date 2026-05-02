@@ -1,5 +1,4 @@
 
-
 export const sports = ["Cricket", "Football", "Tennis", "Table Tennis", "Badminton"] as const;
 export type Sport = typeof sports[number];
 
@@ -241,20 +240,33 @@ export type BetOption = {
     payout: number;
 };
 
-// Specific structure for Cricket bet options
-export type CricketBetOptions = {
+export type BettingMode = 'fixed' | 'dynamic';
+
+export type DynamicMultipliers = {
+    qna: number;
+    player: number;
+};
+
+export type SportBettingSettings = {
+    mode: BettingMode;
+    options: BetOption[];
+    multipliers: DynamicMultipliers;
+};
+
+export type CricketBettingSettings = {
+    mode: BettingMode;
     general: BetOption[];
     oneSided: BetOption[];
     player: BetOption[];
+    multipliers: DynamicMultipliers;
 };
 
-// Overloaded settings type
 export type BettingSettings = {
     betOptions: {
-        Cricket: CricketBetOptions;
-        Football: BetOption[];
-        Tennis: BetOption[];
-        "Table Tennis": BetOption[];
-        Badminton: BetOption[];
+        Cricket: CricketBettingSettings;
+        Football: SportBettingSettings;
+        Tennis: SportBettingSettings;
+        "Table Tennis": SportBettingSettings;
+        Badminton: SportBettingSettings;
     }
 };

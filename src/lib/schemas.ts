@@ -1,5 +1,4 @@
 
-
 import { z } from "zod";
 import { sports, type Sport } from "@/lib/types";
 
@@ -180,14 +179,23 @@ export const betOptionSchema = z.object({
   payout: z.coerce.number().min(1, "Payout amount must be at least 1 INR."),
 });
 
-const sportBetOptionsSchema = z.array(betOptionSchema)
-  .min(1, "At least one bet option is required.")
-  .max(5, "You can add a maximum of 5 bet options.");
+const multipliersSchema = z.object({
+    qna: z.coerce.number().min(1, "Multiplier must be at least 1x."),
+    player: z.coerce.number().min(1, "Multiplier must be at least 1x."),
+});
+
+const sportBetOptionsSchema = z.object({
+    mode: z.enum(['fixed', 'dynamic']),
+    options: z.array(betOptionSchema).max(5, "Max 5 options."),
+    multipliers: multipliersSchema,
+});
 
 const cricketBetOptionsSchema = z.object({
-    general: sportBetOptionsSchema,
-    oneSided: sportBetOptionsSchema,
-    player: sportBetOptionsSchema,
+    mode: z.enum(['fixed', 'dynamic']),
+    general: z.array(betOptionSchema).max(5),
+    oneSided: z.array(betOptionSchema).max(5),
+    player: z.array(betOptionSchema).max(5),
+    multipliers: multipliersSchema,
 });
 
 export const bettingSettingsSchema = z.object({
