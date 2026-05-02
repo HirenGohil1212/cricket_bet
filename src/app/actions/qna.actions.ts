@@ -306,7 +306,7 @@ export async function settleMatchAndPayouts(matchId: string) {
                 const betType = betData.betType || 'qna';
 
                 // AGGRESSIVE VALIDATION
-                if (!betData.userId || !Array.isArray(betData.predictions) || typeof betData.potentialWin !== 'number') {
+                if (!betData.userId || !Array.isArray(betData.predictions) || typeof betData.potentialWin !== 'number' || betData.predictions.length === 0) {
                     betUpdates.push({ ref: betRef, data: { status: 'Lost', reason: 'Invalid bet data.' }});
                     continue;
                 }
@@ -336,42 +336,38 @@ export async function settleMatchAndPayouts(matchId: string) {
                             break;
                         }
                         
-                        const correctAnswer = (question.playerResult as any)?.[teamSide]?.[playerName];
-                        const predictedAnswer = prediction.predictedAnswer?.[teamSide];
+                        const correctAnswer = String((question.playerResult as any)?.[teamSide]?.[playerName] || '').trim().toLowerCase();
+                        const predictedAnswer = String(prediction.predictedAnswer?.[teamSide] || '').trim().toLowerCase();
                         
-                        if (String(correctAnswer || '').trim() !== String(predictedAnswer || '').trim()) {
+                        if (correctAnswer !== predictedAnswer) {
                             isWinner = false;
                             break;
                         }
                     }
                 } else { // QnA mode
-                    if (betData.predictions.length !== activeQuestions.length) {
-                        isWinner = false;
-                    } else {
-                        for (const prediction of betData.predictions) {
-                            if (!isWinner) break; // No need to check further if already lost
+                    // Iterate through predictions. For each, find the corresponding active question.
+                    for (const prediction of betData.predictions) {
+                        const question = activeQuestions.find(q => q.id === prediction.questionId);
+                        if (!question) {
+                            isWinner = false;
+                            break;
+                        }
+                        
+                        const predictedA = (prediction.predictedAnswer?.teamA || '').trim().toLowerCase();
+                        const predictedB = (prediction.predictedAnswer?.teamB || '').trim().toLowerCase();
+                        
+                        const correctA = (question.result?.teamA || '').trim().toLowerCase();
+                        const correctB = (question.result?.teamB || '').trim().toLowerCase();
 
-                            const question = activeQuestions.find(q => q.id === prediction.questionId);
-                            if (!question) {
-                                isWinner = false;
-                                continue;
-                            }
-                            
-                            const predictedAnswer = prediction.predictedAnswer;
-                            if (!predictedAnswer || typeof predictedAnswer.teamA !== 'string' || typeof predictedAnswer.teamB !== 'string') {
-                                isWinner = false;
-                                continue;
-                            }
-
-                            const normalizedPredictedA = predictedAnswer.teamA.trim().toLowerCase();
-                            const normalizedPredictedB = predictedAnswer.teamB.trim().toLowerCase();
-                            
-                            const correctA = (question.result?.teamA ?? '').trim().toLowerCase();
-                            const correctB = (question.result?.teamB ?? '').trim().toLowerCase();
-
-                            if (normalizedPredictedA !== correctA || normalizedPredictedB !== correctB) {
-                                isWinner = false;
-                            }
+                        // Match logic: if a user predicted a side (non-empty), it must match the result.
+                        // If they didn't provide a prediction (empty string), we ignore that side (supports one-sided bets).
+                        if (predictedA && predictedA !== correctA) {
+                            isWinner = false;
+                            break;
+                        }
+                        if (predictedB && predictedB !== correctB) {
+                            isWinner = false;
+                            break;
                         }
                     }
                 }
