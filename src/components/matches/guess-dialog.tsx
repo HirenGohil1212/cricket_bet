@@ -198,9 +198,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
   const potentialWin = betOptions?.find(opt => opt.amount === amount)?.payout || 0;
 
-  // Question Row Suspended Logic
-  const isQnaSuspended = !match.teamABettingEnabled && !match.teamBBettingEnabled;
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isSubmitting && onOpenChange(isOpen)}>
       <DialogContent className="sm:max-w-lg bg-[#0a140f] border-none text-foreground p-0 overflow-hidden">
@@ -239,35 +236,50 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                         {q.question}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Input
-                                                        placeholder={isRowSuspended || !match.teamABettingEnabled ? "---" : match.teamA.name}
-                                                        className="flex-1 bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
-                                                        value={qnaInputs[q.id]?.teamA ?? ''}
-                                                        onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
-                                                        disabled={isRowSuspended || !match.teamABettingEnabled}
-                                                    />
-                                                    <div className="text-primary font-bold text-xs px-1">VS</div>
-                                                    <Input
-                                                        placeholder={isRowSuspended || !match.teamBBettingEnabled ? "---" : match.teamB.name}
-                                                        className="flex-1 bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
-                                                        value={qnaInputs[q.id]?.teamB ?? ''}
-                                                        onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
-                                                        disabled={isRowSuspended || !match.teamBBettingEnabled}
-                                                    />
-                                                    {isRowSuspended ? (
-                                                        <div className="flex-1 flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-full h-12 px-4">
-                                                            <span className="text-destructive font-black text-[10px] uppercase tracking-widest">Suspended</span>
-                                                        </div>
-                                                    ) : (
-                                                        <Button 
-                                                            size="sm"
-                                                            onClick={() => handleInitiateQnaBet(q.id)}
-                                                            className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[10px] h-12 px-4 rounded-full uppercase shadow-lg transition-all active:scale-95"
-                                                        >
-                                                            Play Now
-                                                        </Button>
-                                                    )}
+                                                <div className="flex items-start gap-2">
+                                                    <div className="flex-1 flex flex-col gap-1">
+                                                        <Input
+                                                            placeholder={isRowSuspended || !match.teamABettingEnabled ? "---" : match.teamA.name}
+                                                            className="bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
+                                                            value={qnaInputs[q.id]?.teamA ?? ''}
+                                                            onChange={(e) => handleQnaInputChange(q.id, 'teamA', e.target.value)}
+                                                            disabled={isRowSuspended || !match.teamABettingEnabled}
+                                                        />
+                                                        {(isRowSuspended || !match.teamABettingEnabled) && (
+                                                            <span className="text-[8px] text-destructive font-black uppercase text-center leading-none">Suspended</span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="text-primary font-bold text-xs pt-4 px-1">VS</div>
+                                                    
+                                                    <div className="flex-1 flex flex-col gap-1">
+                                                        <Input
+                                                            placeholder={isRowSuspended || !match.teamBBettingEnabled ? "---" : match.teamB.name}
+                                                            className="bg-transparent border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-full text-center h-12 text-xs placeholder:text-muted-foreground/20 disabled:opacity-30"
+                                                            value={qnaInputs[q.id]?.teamB ?? ''}
+                                                            onChange={(e) => handleQnaInputChange(q.id, 'teamB', e.target.value)}
+                                                            disabled={isRowSuspended || !match.teamBBettingEnabled}
+                                                        />
+                                                        {(isRowSuspended || !match.teamBBettingEnabled) && (
+                                                            <span className="text-[8px] text-destructive font-black uppercase text-center leading-none">Suspended</span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="pt-0">
+                                                        {isRowSuspended ? (
+                                                            <div className="flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-full h-12 px-4 min-w-[80px]">
+                                                                <span className="text-destructive font-black text-[10px] uppercase tracking-widest">Suspended</span>
+                                                            </div>
+                                                        ) : (
+                                                            <Button 
+                                                                size="sm"
+                                                                onClick={() => handleInitiateQnaBet(q.id)}
+                                                                className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[10px] h-12 px-4 rounded-full uppercase shadow-lg transition-all active:scale-95 min-w-[80px]"
+                                                            >
+                                                                Play Now
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -291,13 +303,18 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                     {questions.map(q => (
                                                         <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
                                                             <div className="flex-1 text-[11px] text-muted-foreground font-black uppercase tracking-tight">{q.question}</div>
-                                                            <Input
-                                                                placeholder={!player.bettingEnabled ? "---" : "Your prediction..."}
-                                                                className="w-32 bg-[#0a140f] border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-xl h-10 text-xs text-center disabled:opacity-30"
-                                                                value={playerInputs[player.name]?.[q.id] || ''}
-                                                                onChange={(e) => handlePlayerInputChange(player.name, q.id, e.target.value)}
-                                                                disabled={!player.bettingEnabled}
-                                                            />
+                                                            <div className="flex flex-col gap-1 items-center">
+                                                                <Input
+                                                                    placeholder={!player.bettingEnabled ? "---" : "Your prediction..."}
+                                                                    className="w-32 bg-[#0a140f] border-primary/20 focus-visible:border-primary/60 focus-visible:ring-0 rounded-xl h-10 text-xs text-center disabled:opacity-30"
+                                                                    value={playerInputs[player.name]?.[q.id] || ''}
+                                                                    onChange={(e) => handlePlayerInputChange(player.name, q.id, e.target.value)}
+                                                                    disabled={!player.bettingEnabled}
+                                                                />
+                                                                {!player.bettingEnabled && (
+                                                                    <span className="text-[8px] text-destructive font-black uppercase leading-none">Suspended</span>
+                                                                )}
+                                                            </div>
                                                             {!player.bettingEnabled ? (
                                                                 <div className="w-20 flex items-center justify-center border border-destructive/50 bg-destructive/10 rounded-xl h-10">
                                                                     <span className="text-destructive font-black text-[8px] uppercase tracking-widest">Suspended</span>
