@@ -17,9 +17,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { Match, Question, Prediction } from "@/lib/types";
+import type { Match, Question, Prediction, BettingSettings } from "@/lib/types";
 import { createBet } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
+import { getBettingSettings } from "@/app/actions/settings.actions";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -43,6 +44,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentSettings, setCurrentSettings] = useState<BettingSettings | null>(null);
   
   const [currentPrediction, setCurrentPrediction] = useState<Prediction | null>(null);
   const [currentBetType, setCurrentBetType] = useState<'qna' | 'player'>('qna');
@@ -58,9 +60,15 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         setStep('list');
         setCurrentPrediction(null);
         
-        const fetchedQuestions = await getQuestionsForMatch(match.id);
+        // Fetch both questions and the LATEST global settings
+        const [fetchedQuestions, latestSettings] = await Promise.all([
+            getQuestionsForMatch(match.id),
+            getBettingSettings()
+        ]);
+
         const validQuestions = fetchedQuestions.filter(q => q.status === 'active');
         setQuestions(validQuestions);
+        setCurrentSettings(latestSettings);
 
         const initialQna = validQuestions.reduce((acc, q) => {
           acc[q.id] = { teamA: '', teamB: '' };
@@ -76,33 +84,40 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }, [match, open]);
 
   const betOptions = React.useMemo(() => {
-    if (!match?.bettingSettings) return null;
-    const settings = (match.bettingSettings.betOptions as any)[match.sport];
-    
-    if (settings.mode === 'dynamic') return null;
+    // Prefer current settings if available, fallback to match snapshot
+    const settingsSource = currentSettings || match?.bettingSettings;
+    if (!settingsSource || !match) return null;
+
+    const sportSettings = (settingsSource.betOptions as any)[match.sport];
+    if (!sportSettings || sportSettings.mode === 'dynamic') return null;
 
     if (match.sport === 'Cricket') {
-        if (currentBetType === 'player') return settings.player;
+        if (currentBetType === 'player') return sportSettings.player;
         const isOneSided = currentPrediction?.predictedAnswer && 
             (!currentPrediction.predictedAnswer.teamA || !currentPrediction.predictedAnswer.teamB);
-        if (match.allowOneSidedBets && isOneSided) return settings.oneSided;
-        return settings.general;
+        if (match.allowOneSidedBets && isOneSided) return sportSettings.oneSided;
+        return sportSettings.general;
     }
-    return settings.options;
-  }, [match, currentPrediction, currentBetType]);
+    return sportSettings.options;
+  }, [match, currentSettings, currentPrediction, currentBetType]);
 
   const multiplier = React.useMemo(() => {
-    if (!match?.bettingSettings) return 1;
-    const settings = (match.bettingSettings.betOptions as any)[match.sport];
-    if (settings.mode !== 'dynamic') return 1;
-    return currentBetType === 'player' ? settings.multipliers.player : settings.multipliers.qna;
-  }, [match, currentBetType]);
+    const settingsSource = currentSettings || match?.bettingSettings;
+    if (!settingsSource || !match) return 1;
+
+    const sportSettings = (settingsSource.betOptions as any)[match.sport];
+    if (!sportSettings || sportSettings.mode !== 'dynamic') return 1;
+
+    return currentBetType === 'player' 
+        ? (sportSettings.multipliers?.player || 2) 
+        : (sportSettings.multipliers?.qna || 2);
+  }, [match, currentSettings, currentBetType]);
 
   useEffect(() => {
     if (betOptions && betOptions.length > 0) {
       setAmount(betOptions[0].amount);
     } else {
-      setAmount(10); // Default for dynamic
+      setAmount(10); // Default starting amount for dynamic
     }
   }, [betOptions]);
 
@@ -247,7 +262,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                         return (
                                             <div key={q.id} className="space-y-3">
                                                 <div className="text-center">
-                                                    <span className="text-2xl font-black text-primary uppercase tracking-widest leading-none">
+                                                    <span className="text-xl font-black text-primary uppercase tracking-widest leading-none">
                                                         {q.question}
                                                     </span>
                                                 </div>
@@ -324,7 +339,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                 <div className="space-y-4">
                                                     {questions.map(q => (
                                                         <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
-                                                            <div className="flex-1 text-xl font-black text-primary uppercase tracking-wider leading-tight">{q.question}</div>
+                                                            <div className="flex-1 text-lg font-black text-primary uppercase tracking-wider leading-tight">{q.question}</div>
                                                             <div className="flex flex-col gap-0.5 items-center">
                                                                 <Input
                                                                     placeholder={!player.bettingEnabled ? "---" : "..."}
