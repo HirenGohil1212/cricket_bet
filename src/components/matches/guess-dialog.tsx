@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Match, Question, Prediction, BetOption, Player } from "@/lib/types";
+import type { Match, Question, Prediction, Player } from "@/lib/types";
 import { createBet } from "@/app/actions/bet.actions";
 import { getQuestionsForMatch } from "@/app/actions/qna.actions";
 import { useAuth } from "@/context/auth-context";
@@ -29,8 +29,7 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ChevronsUpDown } from "lucide-react";
 
 
 interface GuessDialogProps {
@@ -148,15 +147,23 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   // Effect to clear predictions when switching sides in QnA mode
   useEffect(() => {
     if (match?.allowOneSidedBets && open && bettingMode === 'qna') {
-      const clearedPredictions = { ...qnaPredictions };
-      for (const qId in clearedPredictions) {
-        if (betOnSide === 'teamA') clearedPredictions[qId].teamB = '';
-        if (betOnSide === 'teamB') clearedPredictions[qId].teamA = '';
-      }
-      setQnaPredictions(clearedPredictions);
+      setQnaPredictions((prev) => {
+        const newPredictions = { ...prev };
+        let hasChanges = false;
+        for (const qId in newPredictions) {
+          const current = newPredictions[qId];
+          if (betOnSide === 'teamA' && current.teamB !== '') {
+            newPredictions[qId] = { ...current, teamB: '' };
+            hasChanges = true;
+          } else if (betOnSide === 'teamB' && current.teamA !== '') {
+            newPredictions[qId] = { ...current, teamA: '' };
+            hasChanges = true;
+          }
+        }
+        return hasChanges ? newPredictions : prev;
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betOnSide, open]);
+  }, [betOnSide, open, bettingMode, match?.allowOneSidedBets]);
 
 
   useEffect(() => {
@@ -200,7 +207,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     if (open) {
       fetchDialogData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match, open]);
 
   const handleQnaInputChange = (qId: string, team: 'teamA' | 'teamB', value: string) => {
@@ -541,4 +547,3 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   );
 }
 
-    
