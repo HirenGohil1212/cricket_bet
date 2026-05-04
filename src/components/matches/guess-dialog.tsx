@@ -265,7 +265,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                         return (
                                             <div key={q.id} className="space-y-3">
                                                 <div className="text-center">
-                                                    <span className="text-xl font-black text-primary uppercase tracking-widest leading-none">
+                                                    <span className="text-lg font-black text-primary uppercase tracking-widest leading-none">
                                                         {q.question}
                                                     </span>
                                                 </div>
@@ -342,7 +342,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                 <div className="space-y-4">
                                                     {playerQuestions.map(q => (
                                                         <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
-                                                            <div className="flex-1 text-lg font-black text-primary uppercase tracking-wider leading-tight">{q.question}</div>
+                                                            <div className="flex-1 text-base font-black text-primary uppercase tracking-wider leading-tight">{q.question}</div>
                                                             <div className="flex flex-col gap-0.5 items-center">
                                                                 <Input
                                                                     placeholder={!player.bettingEnabled ? "---" : "..."}
