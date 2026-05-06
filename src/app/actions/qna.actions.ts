@@ -49,6 +49,8 @@ export async function createQuestionInBank(questionText: string, sport: Sport, t
             order: 0, 
             status: 'active',
             result: null,
+            teamABettingEnabled: true,
+            teamBBettingEnabled: true,
         }
         revalidatePath('/admin/q-and-a');
         return { success: 'Question added successfully.', newQuestion };
@@ -114,6 +116,8 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
                 status: data.status,
                 result: data.result || null,
                 playerResult: data.playerResult || null,
+                teamABettingEnabled: data.teamABettingEnabled ?? true,
+                teamBBettingEnabled: data.teamBBettingEnabled ?? true,
             } as Question;
         });
     } catch (error) {
@@ -146,6 +150,8 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
                 createdAt: Timestamp.now(),
                 status: 'active',
                 result: null,
+                teamABettingEnabled: true,
+                teamBBettingEnabled: true,
             });
         });
 
@@ -199,6 +205,8 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
                     status: 'active',
                     result: null,
                     playerResult: null,
+                    teamABettingEnabled: true,
+                    teamBBettingEnabled: true,
                 });
             });
         }

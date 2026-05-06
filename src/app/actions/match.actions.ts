@@ -76,6 +76,8 @@ export async function createMatch(payload: MatchServerPayload) {
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,
+                    teamABettingEnabled: true,
+                    teamBBettingEnabled: true,
                 });
             });
             await batch.commit();
@@ -285,6 +287,8 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
                     createdAt: Timestamp.now(),
                     status: 'active',
                     result: null,
+                    teamABettingEnabled: true,
+                    teamBBettingEnabled: true,
                 });
             });
         }
@@ -368,6 +372,7 @@ export async function updateMatchControls(matchId: string, payload: {
     teamABettingEnabled: boolean;
     teamBBettingEnabled: boolean;
     players: { name: string; bettingEnabled: boolean }[];
+    questions?: { id: string; teamABettingEnabled: boolean; teamBBettingEnabled: boolean }[];
 }) {
     if (!matchId) return { error: 'Match ID is required.' };
 
@@ -385,11 +390,11 @@ export async function updateMatchControls(matchId: string, payload: {
             const updatedTeamB = { ...matchData.teamB };
 
             payload.players.forEach(playerUpdate => {
-                const playerA = updatedTeamA.players.find((p: Player) => p.name === playerUpdate.name);
+                const playerA = updatedTeamA.players.find((p: any) => p.name === playerUpdate.name);
                 if (playerA) {
                     playerA.bettingEnabled = playerUpdate.bettingEnabled;
                 }
-                const playerB = updatedTeamB.players.find((p: Player) => p.name === playerUpdate.name);
+                const playerB = updatedTeamB.players.find((p: any) => p.name === playerUpdate.name);
                 if (playerB) {
                     playerB.bettingEnabled = playerUpdate.bettingEnabled;
                 }
@@ -402,6 +407,16 @@ export async function updateMatchControls(matchId: string, payload: {
                 teamA: updatedTeamA,
                 teamB: updatedTeamB,
             });
+
+            if (payload.questions && payload.questions.length > 0) {
+                payload.questions.forEach(qUpdate => {
+                    const qRef = doc(db, `matches/${matchId}/questions`, qUpdate.id);
+                    transaction.update(qRef, {
+                        teamABettingEnabled: qUpdate.teamABettingEnabled,
+                        teamBBettingEnabled: qUpdate.teamBBettingEnabled,
+                    });
+                });
+            }
         });
 
         revalidatePath('/admin/control-panel');

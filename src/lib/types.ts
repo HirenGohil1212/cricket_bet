@@ -175,6 +175,8 @@ export type Question = {
   status: 'active' | 'closed' | 'settled';
   result: { teamA: string, teamB: string } | null;
   playerResult?: { teamA: string, teamB: string } | null;
+  teamABettingEnabled?: boolean;
+  teamBBettingEnabled?: boolean;
 };
 
 export type Transaction = {

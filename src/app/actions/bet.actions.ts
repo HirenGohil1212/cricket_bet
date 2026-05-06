@@ -10,11 +10,12 @@ import {
     query, 
     where,
     Timestamp,
-    increment
+    increment,
+    getDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
-import type { Bet, Prediction } from '@/lib/types';
+import type { Bet, Prediction, Question } from '@/lib/types';
 import { processReferral } from './referral.actions';
 import { getMatchById } from './match.actions';
 
@@ -52,7 +53,9 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
             if (!match.isSpecialMatch) {
                 return { error: 'Player betting is disabled for this match.' };
             }
-            const playerName = predictions[0].questionId.split(':')[0];
+            const [playerName, questionId] = predictions[0].questionId.split(':');
+            
+            // Check match-wide player suspension
             const playerInTeamA = match.teamA.players?.find(p => p.name === playerName);
             const playerInTeamB = match.teamB.players?.find(p => p.name === playerName);
             
@@ -60,12 +63,38 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 return { error: `Betting for ${playerName} is suspended.` };
             }
 
-        } else {
-            const teamAPrediction = predictions.some(p => p.predictedAnswer?.teamA);
-            const teamBPrediction = predictions.some(p => p.predictedAnswer?.teamB);
+            // Check granular question suspension for player
+            const questionRef = doc(db, `matches/${matchId}/questions`, questionId);
+            const questionSnap = await getDoc(questionRef);
+            if (questionSnap.exists()) {
+                const qData = questionSnap.data() as Question;
+                const isTeamA = !!playerInTeamA;
+                if ((isTeamA && qData.teamABettingEnabled === false) || (!isTeamA && qData.teamBBettingEnabled === false)) {
+                    return { error: `Betting for this question is currently suspended.` };
+                }
+            }
 
-            if ((teamAPrediction && !match.teamABettingEnabled) || (teamBPrediction && !match.teamBBettingEnabled)) {
+        } else {
+            // QnA mode
+            const questionId = predictions[0].questionId;
+            const questionRef = doc(db, `matches/${matchId}/questions`, questionId);
+            const questionSnap = await getDoc(questionRef);
+            
+            if (!questionSnap.exists()) {
+                return { error: 'Question not found.' };
+            }
+            
+            const qData = questionSnap.data() as Question;
+            const prediction = predictions[0].predictedAnswer;
+
+            // Check global match suspension
+            if ((prediction?.teamA && !match.teamABettingEnabled) || (prediction?.teamB && !match.teamBBettingEnabled)) {
                  return { error: `Betting is suspended for one of the selected teams.` };
+            }
+
+            // Check granular question suspension
+            if ((prediction?.teamA && qData.teamABettingEnabled === false) || (prediction?.teamB && qData.teamBBettingEnabled === false)) {
+                return { error: `Betting for this specific question is suspended.` };
             }
         }
         
