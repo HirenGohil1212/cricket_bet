@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -26,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Zap } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Badge } from "../ui/badge";
 
 interface GuessDialogProps {
   match: Match | null;
@@ -48,7 +48,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   
   const [currentPrediction, setCurrentPrediction] = useState<Prediction | null>(null);
   const [currentBetType, setCurrentBetType] = useState<'qna' | 'player'>('qna');
-  const [amount, setAmount] = setAmount<number>(0);
+  const [amount, setAmount] = useState<number>(0);
   
   const [qnaInputs, setQnaInputs] = useState<Record<string, { teamA: string, teamB: string }>>({});
   const [playerInputs, setPlayerInputs] = useState<Record<string, Record<string, string>>>({});
@@ -60,7 +60,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         setStep('list');
         setCurrentPrediction(null);
         
-        // Fetch both questions and the LATEST global settings
         const [fetchedQuestions, latestSettings] = await Promise.all([
             getQuestionsForMatch(match.id),
             getBettingSettings()
@@ -84,7 +83,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }, [match, open]);
 
   const betOptions = React.useMemo(() => {
-    // Prefer current settings if available, fallback to match snapshot
     const settingsSource = currentSettings || match?.bettingSettings;
     if (!settingsSource || !match) return null;
 
@@ -104,19 +102,16 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   const multiplier = React.useMemo(() => {
     if (!currentPrediction) return 1;
     
-    // Extract real question ID (stripping player name if needed)
     const qId = currentBetType === 'player' 
         ? currentPrediction.questionId.split(':')[1] 
         : currentPrediction.questionId;
     
     const question = questions.find(q => q.id === qId);
     
-    // 1. Priority: Individual Question Multiplier
     if (question && question.multiplier) {
         return question.multiplier;
     }
 
-    // 2. Fallback: Global Sport Settings
     const settingsSource = currentSettings || match?.bettingSettings;
     if (!settingsSource || !match) return 1;
 
@@ -132,7 +127,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     if (betOptions && betOptions.length > 0) {
       setAmount(betOptions[0].amount);
     } else {
-      setAmount(10); // Default starting amount for dynamic
+      setAmount(10);
     }
   }, [betOptions]);
 
@@ -159,7 +154,6 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
         return;
     }
 
-    // Question-level and match-wide side check
     const isTeamASuspended = !match?.teamABettingEnabled || question?.teamABettingEnabled === false;
     const isTeamBSuspended = !match?.teamBBettingEnabled || question?.teamBBettingEnabled === false;
 
