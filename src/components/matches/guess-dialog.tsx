@@ -255,14 +255,14 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
             <div className="p-6 space-y-6">
                 <DialogHeader className="flex flex-col items-center">
                     <DialogTitle className="font-headline text-3xl text-white mb-1 uppercase tracking-tighter">Play Your Game</DialogTitle>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                        <div className="flex items-center gap-1.5">
-                            <Image src={match.teamA.logoUrl} alt="" width={16} height={16} className="rounded-full" />
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-widest font-bold">
+                        <div className="flex items-center gap-2">
+                            <Image src={match.teamA.logoUrl} alt="" width={20} height={20} className="rounded-full" />
                             <span>{match.teamA.name}</span>
                         </div>
-                        <span className="text-primary font-black">•</span>
-                        <div className="flex items-center gap-1.5">
-                            <Image src={match.teamB.logoUrl} alt="" width={16} height={16} className="rounded-full" />
+                        <span className="text-primary font-black px-1">•</span>
+                        <div className="flex items-center gap-2">
+                            <Image src={match.teamB.logoUrl} alt="" width={20} height={20} className="rounded-full" />
                             <span>{match.teamB.name}</span>
                         </div>
                     </div>
@@ -274,20 +274,20 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full bg-[#1a2b24] rounded-xl" />)
                         ) : (
                             <>
-                                <div className="space-y-6">
+                                <div className="space-y-8">
                                     {teamQuestions.map((q) => {
                                         const isTeamASuspended = !match.teamABettingEnabled || q.teamABettingEnabled === false;
                                         const isTeamBSuspended = !match.teamBBettingEnabled || q.teamBBettingEnabled === false;
                                         const isRowSuspended = isTeamASuspended && isTeamBSuspended;
 
                                         return (
-                                            <div key={q.id} className="space-y-3">
+                                            <div key={q.id} className="space-y-4">
                                                 <div className="text-center flex items-center justify-center gap-2">
-                                                    <span className="text-lg font-black text-primary uppercase tracking-widest leading-none">
+                                                    <span className="text-xl font-black text-primary uppercase tracking-widest leading-none">
                                                         {q.question}
                                                     </span>
                                                     {q.multiplier && (
-                                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 h-5 px-1.5 text-[9px] font-black">
+                                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 h-5 px-1.5 text-[10px] font-black">
                                                             {q.multiplier}X
                                                         </Badge>
                                                     )}
@@ -330,7 +330,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                             <Button 
                                                                 size="sm"
                                                                 onClick={() => handleInitiateQnaBet(q.id)}
-                                                                className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[12px] h-12 px-4 rounded-xl uppercase shadow-xl transition-all active:scale-95 min-w-[85px]"
+                                                                className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-sm h-12 px-4 rounded-xl uppercase shadow-xl transition-all active:scale-95 min-w-[85px]"
                                                             >
                                                                 Play Now
                                                             </Button>
@@ -358,7 +358,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-xl font-black text-white font-headline tracking-wide leading-tight uppercase">{player.name}</span>
+                                                        <span className="text-2xl font-black text-white font-headline tracking-wide leading-tight uppercase">{player.name}</span>
                                                         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{player.teamName}</span>
                                                     </div>
                                                 </div>
@@ -397,7 +397,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                                     <Button 
                                                                         size="sm"
                                                                         onClick={() => handleInitiatePlayerBet(player.name, q.id)}
-                                                                        className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-[12px] h-10 px-4 rounded-lg uppercase shadow-lg"
+                                                                        className="bg-primary hover:bg-primary/80 text-primary-foreground font-black text-xs h-10 px-4 rounded-lg uppercase shadow-lg"
                                                                     >
                                                                         Play
                                                                     </Button>
