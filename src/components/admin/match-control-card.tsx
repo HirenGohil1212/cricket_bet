@@ -75,9 +75,18 @@ export function MatchControlCard({ match, onUpdate }: MatchControlCardProps) {
     React.useEffect(() => {
         setIsLoadingQuestions(true);
         getQuestionsForMatch(match.id).then(data => {
-            setQuestions(data);
+            // Sort questions: QNA first, then Player
+            const sortedData = [...data].sort((a, b) => {
+                const aType = a.type || 'qna';
+                const bType = b.type || 'qna';
+                if (aType === 'qna' && bType === 'player') return -1;
+                if (aType === 'player' && bType === 'qna') return 1;
+                return (a.order || 0) - (b.order || 0);
+            });
+
+            setQuestions(sortedData);
             const questionState: Record<string, { teamABettingEnabled: boolean, teamBBettingEnabled: boolean }> = {};
-            data.forEach(q => {
+            sortedData.forEach(q => {
                 questionState[q.id] = {
                     teamABettingEnabled: q.teamABettingEnabled ?? true,
                     teamBBettingEnabled: q.teamBBettingEnabled ?? true,
@@ -204,7 +213,7 @@ export function MatchControlCard({ match, onUpdate }: MatchControlCardProps) {
                                     {questions.map((q) => (
                                         <div key={q.id} className="space-y-2">
                                             <p className="text-xs font-black text-primary uppercase tracking-widest leading-none border-l-2 border-primary pl-2 mb-3">
-                                                {q.question} <span className="opacity-50 ml-1">({q.type})</span>
+                                                {q.question} <span className="opacity-50 ml-1">({(q.type || 'QNA').toUpperCase()})</span>
                                             </p>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <SettingToggle
