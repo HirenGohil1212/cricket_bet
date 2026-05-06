@@ -51,6 +51,7 @@ export async function createQuestionInBank(questionText: string, sport: Sport, t
             result: null,
             teamABettingEnabled: true,
             teamBBettingEnabled: true,
+            multiplier: null,
         }
         revalidatePath('/admin/q-and-a');
         return { success: 'Question added successfully.', newQuestion };
@@ -118,6 +119,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
                 playerResult: data.playerResult || null,
                 teamABettingEnabled: data.teamABettingEnabled ?? true,
                 teamBBettingEnabled: data.teamBBettingEnabled ?? true,
+                multiplier: data.multiplier || null,
             } as Question;
         });
     } catch (error) {
@@ -127,7 +129,7 @@ export async function getQuestionsForMatch(matchId: string): Promise<Question[]>
 }
 
 // Overwrites the questions for a specific match.
-export async function saveQuestionsForMatch(matchId: string, questions: { question: string; type?: 'qna' | 'player' }[]) {
+export async function saveQuestionsForMatch(matchId: string, questions: { question: string; type?: 'qna' | 'player'; multiplier?: number }[]) {
      if (!matchId) {
         return { error: 'A match ID must be provided.' };
     }
@@ -146,6 +148,7 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
             batch.set(questionRef, {
                 question: q.question,
                 type: q.type || 'qna',
+                multiplier: q.multiplier || null,
                 order: index, // Add order field
                 createdAt: Timestamp.now(),
                 status: 'active',
@@ -200,6 +203,7 @@ export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValue
                 batch.set(questionRef, {
                     question: q.question,
                     type: q.type || 'qna',
+                    multiplier: q.multiplier || null,
                     order: index, // Add order field
                     createdAt: Timestamp.now(),
                     status: 'active',

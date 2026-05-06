@@ -48,6 +48,8 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
              return { error: 'Match not found.' };
         }
 
+        let qData: Question | null = null;
+
         // --- VALIDATION LOGIC ---
         if (betType === 'player') {
             if (!match.isSpecialMatch) {
@@ -67,7 +69,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
             const questionRef = doc(db, `matches/${matchId}/questions`, questionId);
             const questionSnap = await getDoc(questionRef);
             if (questionSnap.exists()) {
-                const qData = questionSnap.data() as Question;
+                qData = questionSnap.data() as Question;
                 const isTeamA = !!playerInTeamA;
                 if ((isTeamA && qData.teamABettingEnabled === false) || (!isTeamA && qData.teamBBettingEnabled === false)) {
                     return { error: `Betting for this question is currently suspended.` };
@@ -84,7 +86,7 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
                 return { error: 'Question not found.' };
             }
             
-            const qData = questionSnap.data() as Question;
+            qData = questionSnap.data() as Question;
             const prediction = predictions[0].predictedAnswer;
 
             // Check global match suspension
@@ -108,9 +110,11 @@ export async function createBet({ userId, matchId, predictions, amount, betType,
         const isDynamicMode = sportSettings.mode === 'dynamic';
 
         if (isDynamicMode) {
-            const multiplier = betType === 'player' 
-                ? sportSettings.multipliers.player 
-                : sportSettings.multipliers.qna;
+            // Use question-specific multiplier if set, otherwise fallback to settings
+            const multiplier = (qData && qData.multiplier) 
+                ? qData.multiplier 
+                : (betType === 'player' ? sportSettings.multipliers.player : sportSettings.multipliers.qna);
+                
             potentialWin = amount * multiplier;
         } else {
             // Fixed mode

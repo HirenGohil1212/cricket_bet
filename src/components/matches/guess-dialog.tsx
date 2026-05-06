@@ -24,7 +24,7 @@ import { getBettingSettings } from "@/app/actions/settings.actions";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Zap } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface GuessDialogProps {
@@ -48,7 +48,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   
   const [currentPrediction, setCurrentPrediction] = useState<Prediction | null>(null);
   const [currentBetType, setCurrentBetType] = useState<'qna' | 'player'>('qna');
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = setAmount<number>(0);
   
   const [qnaInputs, setQnaInputs] = useState<Record<string, { teamA: string, teamB: string }>>({});
   const [playerInputs, setPlayerInputs] = useState<Record<string, Record<string, string>>>({});
@@ -102,6 +102,21 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
   }, [match, currentSettings, currentPrediction, currentBetType]);
 
   const multiplier = React.useMemo(() => {
+    if (!currentPrediction) return 1;
+    
+    // Extract real question ID (stripping player name if needed)
+    const qId = currentBetType === 'player' 
+        ? currentPrediction.questionId.split(':')[1] 
+        : currentPrediction.questionId;
+    
+    const question = questions.find(q => q.id === qId);
+    
+    // 1. Priority: Individual Question Multiplier
+    if (question && question.multiplier) {
+        return question.multiplier;
+    }
+
+    // 2. Fallback: Global Sport Settings
     const settingsSource = currentSettings || match?.bettingSettings;
     if (!settingsSource || !match) return 1;
 
@@ -111,7 +126,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
     return currentBetType === 'player' 
         ? (sportSettings.multipliers?.player || 2) 
         : (sportSettings.multipliers?.qna || 2);
-  }, [match, currentSettings, currentBetType]);
+  }, [match, currentSettings, currentBetType, currentPrediction, questions]);
 
   useEffect(() => {
     if (betOptions && betOptions.length > 0) {
@@ -273,10 +288,15 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
                                         return (
                                             <div key={q.id} className="space-y-3">
-                                                <div className="text-center">
+                                                <div className="text-center flex items-center justify-center gap-2">
                                                     <span className="text-lg font-black text-primary uppercase tracking-widest leading-none">
                                                         {q.question}
                                                     </span>
+                                                    {q.multiplier && (
+                                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 h-5 px-1.5 text-[9px] font-black">
+                                                            {q.multiplier}X
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-start gap-2">
                                                     <div className="flex-1 flex flex-col gap-1">
@@ -355,7 +375,14 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
 
                                                         return (
                                                             <div key={`${player.name}-${q.id}`} className="flex items-center gap-3">
-                                                                <div className="flex-1 text-base font-black text-primary uppercase tracking-wider leading-tight">{q.question}</div>
+                                                                <div className="flex-1 flex flex-col">
+                                                                    <div className="text-base font-black text-primary uppercase tracking-wider leading-tight">
+                                                                        {q.question}
+                                                                    </div>
+                                                                    {q.multiplier && (
+                                                                        <span className="text-[9px] font-black text-primary/50 uppercase tracking-widest">Rate: {q.multiplier}x</span>
+                                                                    )}
+                                                                </div>
                                                                 <div className="flex flex-col gap-0.5 items-center">
                                                                     <Input
                                                                         placeholder={isSuspended ? "---" : "..."}

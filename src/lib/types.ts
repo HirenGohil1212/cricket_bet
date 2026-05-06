@@ -158,6 +158,7 @@ export type WithdrawalRequest = {
 export type QnaFormItem = {
   question: string;
   type: 'qna' | 'player';
+  multiplier?: number;
 };
 
 // Represents the full schema for the template creation form
@@ -177,6 +178,7 @@ export type Question = {
   playerResult?: { teamA: string, teamB: string } | null;
   teamABettingEnabled?: boolean;
   teamBBettingEnabled?: boolean;
+  multiplier?: number | null;
 };
 
 export type Transaction = {

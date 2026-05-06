@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check, MessageSquare, Save } from "lucide-react";
+import { Calendar as CalendarIcon, UploadCloud, User, PlusCircle, Trash2, Search, ChevronsUpDown, Check, MessageSquare, Save, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import Image from "next/image";
@@ -127,7 +127,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                 allowOneSidedBets: match.allowOneSidedBets || false,
                 teamAPlayers: match.teamA.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath, bettingEnabled: p.bettingEnabled ?? true })) || [],
                 teamBPlayers: match.teamB.players?.map(p => ({ name: p.name, playerImageUrl: p.imageUrl, imagePath: p.imagePath, bettingEnabled: p.bettingEnabled ?? true })) || [],
-                questions: questions.length > 0 ? questions.map(q => ({ question: q.question, type: q.type })) : [],
+                questions: questions.length > 0 ? questions.map(q => ({ question: q.question, type: q.type, multiplier: q.multiplier || undefined })) : [],
                 dummyWinners: match.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})) || [],
             });
             setIsFormReady(true);
@@ -257,7 +257,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
             startTime: data.startTime,
             isSpecialMatch: data.isSpecialMatch,
             allowOneSidedBets: data.allowOneSidedBets,
-            questions: data.questions.map(q => ({ question: q.question, type: q.type })),
+            questions: data.questions.map(q => ({ question: q.question, type: q.type, multiplier: q.multiplier })),
             dummyWinners: data.dummyWinners?.map(dw => ({userId: dw.userId, amount: dw.amount})),
             teamA: {
                 name: data.teamA || (countryA ? countryA.name : ''),
@@ -499,40 +499,68 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
     const [open, setOpen] = React.useState(false);
     const [manualQuestionText, setManualQuestionText] = React.useState("");
     const [manualQuestionType, setManualQuestionType] = React.useState<'qna' | 'player'>('qna');
+    const [manualQuestionMultiplier, setManualQuestionMultiplier] = React.useState<string>("");
   
     const handleSelect = (q: Question) => {
       const isSelected = currentQuestions.some(cq => cq.question === q.question);
       if (isSelected) {
         removeQuestion(currentQuestions.findIndex(cq => cq.question === q.question));
       } else {
-        appendQuestion({ question: q.question, type: q.type });
+        appendQuestion({ question: q.question, type: q.type, multiplier: q.multiplier || undefined });
       }
     };
 
     const handleAddManual = () => {
         if (manualQuestionText.trim()) {
-            appendQuestion({ question: manualQuestionText.trim(), type: manualQuestionType });
+            appendQuestion({ 
+                question: manualQuestionText.trim(), 
+                type: manualQuestionType,
+                multiplier: manualQuestionMultiplier ? parseFloat(manualQuestionMultiplier) : undefined
+            });
             setManualQuestionText("");
+            setManualQuestionMultiplier("");
         }
     };
   
     return (
       <div className="space-y-4">
         {questionFields.map((field, index) => (
-          <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+          <div key={field.id} className="flex items-center gap-3 p-2.5 border rounded-xl bg-white/[0.02]">
              <Badge variant={field.type === 'player' ? 'secondary' : 'outline'} className="text-[10px] uppercase font-black px-1.5 shrink-0">
                 {field.type === 'player' ? 'Player' : 'QnA'}
             </Badge>
-            <span className="flex-1 text-sm">{field.question}</span>
-            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeQuestion(index)}>
-              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            <span className="flex-1 text-sm font-medium">{field.question}</span>
+            
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+                <Zap className="h-3 w-3 text-primary fill-primary" />
+                <FormField
+                    control={form.control}
+                    name={`questions.${index}.multiplier`}
+                    render={({ field }) => (
+                        <div className="flex items-center gap-1">
+                            <Input 
+                                type="number" 
+                                step="0.1" 
+                                placeholder="Auto" 
+                                className="w-14 h-7 text-xs font-black bg-transparent border-none focus-visible:ring-0 p-0 text-center" 
+                                {...field} 
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            />
+                            <span className="text-[10px] font-black text-primary/50">X</span>
+                        </div>
+                    )}
+                />
+            </div>
+
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => removeQuestion(index)}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         ))}
   
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
+            <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-11 rounded-xl border-dashed">
               {isLoadingQuestions ? "Loading questions..." : "Select from Question Bank"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -566,34 +594,50 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
           </PopoverContent>
         </Popover>
 
-        <div className="p-3 border rounded-md relative border-dashed space-y-3">
-             <div className="flex items-center gap-2">
-                <div className="flex-1 space-y-1">
-                    <Label htmlFor="manual-question" className="text-xs">New Question Text</Label>
+        <div className="p-4 border rounded-2xl bg-white/[0.01] border-dashed space-y-4">
+             <div className="flex flex-col gap-3">
+                <div className="space-y-1.5">
+                    <Label htmlFor="manual-question" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Manual Question Text</Label>
                     <Textarea 
                         id="manual-question"
-                        placeholder="Enter new question" 
+                        placeholder="e.g., Will there be a Six in first 5 overs?" 
                         value={manualQuestionText}
                         onChange={(e) => setManualQuestionText(e.target.value)}
-                        className="min-h-[60px]"
+                        className="min-h-[80px] bg-background/50 rounded-xl"
                     />
                 </div>
-                <div className="space-y-1">
-                    <Label className="text-xs">Type</Label>
-                    <Select value={manualQuestionType} onValueChange={(v: any) => setManualQuestionType(v)}>
-                        <SelectTrigger className="w-[100px] h-9">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="qna">QnA</SelectItem>
-                            <SelectItem value="player">Player</SelectItem>
-                        </SelectContent>
-                    </Select>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Type</Label>
+                        <Select value={manualQuestionType} onValueChange={(v: any) => setManualQuestionType(v)}>
+                            <SelectTrigger className="h-11 rounded-xl bg-background/50">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="qna">Team (QnA)</SelectItem>
+                                <SelectItem value="player">Player</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Multiplier (Optional)</Label>
+                        <div className="relative">
+                            <Input 
+                                type="number" 
+                                step="0.1" 
+                                placeholder="e.g. 2.5" 
+                                className="h-11 rounded-xl bg-background/50 pr-8"
+                                value={manualQuestionMultiplier}
+                                onChange={(e) => setManualQuestionMultiplier(e.target.value)}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-primary">X</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <Button type="button" size="sm" onClick={handleAddManual} className="w-full">
+            <Button type="button" size="sm" onClick={handleAddManual} className="w-full h-11 rounded-xl bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground border border-primary/30">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Question
+                Add to Match
             </Button>
         </div>
   
@@ -886,7 +930,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
         <Card>
             <CardHeader>
                 <CardTitle>Betting Questions</CardTitle>
-                <CardDescription>Select questions for this match from the bank, or add new ones manually.</CardDescription>
+                <CardDescription>Select questions for this match from the bank, or add new ones manually. You can set individual multipliers.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <QuestionManager />

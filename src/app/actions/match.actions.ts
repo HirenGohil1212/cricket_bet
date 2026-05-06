@@ -21,7 +21,7 @@ interface MatchServerPayload {
     startTime: Date;
     isSpecialMatch: boolean;
     allowOneSidedBets: boolean;
-    questions: { question: string; type: 'qna' | 'player' }[];
+    questions: { question: string; type: 'qna' | 'player'; multiplier?: number }[];
     dummyWinners?: { userId: string; amount: number }[];
 }
 
@@ -72,6 +72,7 @@ export async function createMatch(payload: MatchServerPayload) {
                 batch.set(questionRef, {
                     question: q.question,
                     type: q.type || 'qna',
+                    multiplier: q.multiplier || null,
                     order: index,
                     createdAt: Timestamp.now(),
                     status: 'active',
@@ -283,6 +284,7 @@ export async function updateMatch(matchId: string, payload: MatchServerPayload) 
                 batch.set(questionRef, {
                     question: q.question,
                     type: q.type || 'qna',
+                    multiplier: q.multiplier || null,
                     order: index, // Add order field
                     createdAt: Timestamp.now(),
                     status: 'active',
