@@ -541,6 +541,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                             <Input 
                                 type="number" 
                                 step="0.1" 
+                                min="1"
                                 placeholder="Auto" 
                                 className="w-14 h-7 text-xs font-black bg-transparent border-none focus-visible:ring-0 p-0 text-center" 
                                 {...field} 
@@ -625,6 +626,7 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                             <Input 
                                 type="number" 
                                 step="0.1" 
+                                min="1"
                                 placeholder="e.g. 2.5" 
                                 className="h-11 rounded-xl bg-background/50 pr-8"
                                 value={manualQuestionMultiplier}
@@ -716,6 +718,9 @@ export function EditMatchForm({ match }: EditMatchFormProps) {
                             date.setHours(parseInt(h), parseInt(m), parseInt(s));
                             field.onChange(date);
                          }}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
+                        }
                         initialFocus
                       />
                        <div className="p-2 border-t">
