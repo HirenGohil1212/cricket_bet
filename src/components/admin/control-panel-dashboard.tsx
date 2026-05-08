@@ -29,6 +29,18 @@ export function ControlPanelDashboard({
   
   const [matches, setMatches] = useState([...initialLive, ...initialUpcoming]);
   const [isLoading, setIsLoading] = useState(false);
+  const [now, setNow] = useState(new Date());
+
+  // SYNC PROPS TO STATE: Crucial for navigation stability
+  useEffect(() => {
+    setMatches([...initialLive, ...initialUpcoming]);
+  }, [initialLive, initialUpcoming]);
+
+  // UPDATE "NOW" PERIODICALLY: Ensures matches flip from Upcoming to Live in real-time
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const refreshMatches = useCallback(async (showLoader = true) => {
     if (showLoader) {
@@ -47,20 +59,33 @@ export function ControlPanelDashboard({
   }, []);
 
   useEffect(() => {
-    // Set up an interval to refresh the matches every 10 seconds
     const intervalId = setInterval(() => {
-        refreshMatches(false); // Refresh without showing the main loader
-    }, 10000); // 10 seconds
-
-    // Clear the interval when the component unmounts
+        refreshMatches(false);
+    }, 10000);
     return () => clearInterval(intervalId);
   }, [refreshMatches]);
 
   const { liveMatches, upcomingMatches } = useMemo(() => {
-    const live = matches.filter(m => m.status === 'Live');
-    const upcoming = matches.filter(m => m.status === 'Upcoming');
+    const live: Match[] = [];
+    const upcoming: Match[] = [];
+
+    matches.forEach(m => {
+        const startTime = new Date(m.startTime);
+        // Dynamic status check based on current time
+        let currentStatus = m.status;
+        if (currentStatus === 'Upcoming' && startTime <= now) {
+            currentStatus = 'Live';
+        }
+
+        if (currentStatus === 'Live') {
+            live.push({ ...m, status: 'Live' });
+        } else if (currentStatus === 'Upcoming') {
+            upcoming.push({ ...m, status: 'Upcoming' });
+        }
+    });
+
     return { liveMatches: live, upcomingMatches: upcoming };
-  }, [matches]);
+  }, [matches, now]);
 
   return (
     <Tabs defaultValue="live" className="w-full">
