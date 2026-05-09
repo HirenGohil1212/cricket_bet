@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -112,8 +113,8 @@ export function GameHistoryList() {
                 <span className="text-[9px] uppercase font-bold text-muted-foreground">None</span>
                 )}
             </TableCell>
-            <TableCell className="text-right font-black tabular-nums">
-                ₹{bet.amount.toFixed(0)}
+            <TableCell className="text-right font-black tabular-nums whitespace-nowrap">
+                INR {bet.amount.toFixed(0)}
             </TableCell>
             <TableCell className="text-right">
                 <Badge className={cn("text-[9px] font-black uppercase px-1.5 py-0.5", getStatusClass(bet.status))}>

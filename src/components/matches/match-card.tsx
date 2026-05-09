@@ -61,7 +61,7 @@ const PlayerList = ({ team }: { team: Team }) => {
 };
 
 const MatchInfoDialogContent = ({ match }: { match: Match }) => (
-    <DialogContent className="sm:max-w-3xl bg-[#0a140f] border-none text-foreground">
+    <DialogContent className="sm:max-w-[100vw] sm:max-h-[100vh] md:max-w-3xl bg-[#0a140f] border-none text-foreground overflow-y-auto">
         <DialogHeader>
             <DialogTitle className="font-headline text-3xl text-center text-primary uppercase italic">Match Info</DialogTitle>
              <DialogDescription asChild>
@@ -280,7 +280,7 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                                                 {win.name}
                                             </span>
                                         </div>
-                                        <span className="font-black tabular-nums text-white text-base">₹{win.payoutAmount.toFixed(0)}</span>
+                                        <span className="font-black tabular-nums text-white text-base">INR {win.payoutAmount.toFixed(0)}</span>
                                     </div>
                                 ))
                             ) : (
