@@ -4,17 +4,16 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import type { Match, Question, Winner } from '@/lib/types';
+import type { Match, Question } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { saveSingleQuestionResults, settleSingleQuestion } from '@/app/actions/qna.actions';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Info, CheckCircle2, Save, Send } from 'lucide-react';
+import { Info, CheckCircle2, Save, Send, ShieldAlert } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/auth-context';
-import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -25,17 +24,17 @@ const QuestionActions = ({
     onPublish, 
     isSaving, 
     isSettling, 
-    isSettled, 
+    isFullySettled,
     disabled 
 }: { 
     onSave: () => void, 
     onPublish: () => void, 
     isSaving: boolean, 
     isSettling: boolean, 
-    isSettled: boolean,
+    isFullySettled: boolean,
     disabled: boolean 
 }) => {
-    if (isSettled) {
+    if (isFullySettled) {
         return (
             <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 font-black text-[9px] px-3 py-1">
                 <CheckCircle2 className="h-3 w-3 mr-1" /> SETTLED
@@ -79,18 +78,26 @@ const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInp
         <div className="space-y-4">
             <h4 className="font-semibold text-primary/80 uppercase text-xs tracking-[0.2em] border-l-2 border-primary pl-3">{teamName} Player Results</h4>
             {playerSpecificQuestions.map((q: any) => {
-                const isSettled = q.status === 'settled';
+                const isSideSettled = (teamName === match.teamA.name ? q.teamABettingEnabled === false : q.teamBBettingEnabled === false);
+                const isFullySettled = q.status === 'settled';
+                const isDisabled = isSideSettled || isFullySettled || disabled;
+
                 return (
                     <div key={q.id} className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
                         <div className="flex items-center justify-between p-3 bg-white/5">
-                            <span className="text-[11px] font-black uppercase text-white/80">{q.question}</span>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[11px] font-black uppercase text-white/80">{q.question}</span>
+                                {isSideSettled && !isFullySettled && (
+                                    <Badge variant="outline" className="text-[8px] bg-blue-500/10 text-blue-400 border-blue-500/20">PARTIAL SETTLED</Badge>
+                                )}
+                            </div>
                             <QuestionActions 
                                 onSave={() => onSave(q.id, 'player')}
                                 onPublish={() => onPublish(q.id, 'player')}
                                 isSaving={actionStates[q.id]?.isSaving}
                                 isSettling={actionStates[q.id]?.isSettling}
-                                isSettled={isSettled}
-                                disabled={disabled}
+                                isFullySettled={isFullySettled}
+                                disabled={isDisabled}
                             />
                         </div>
                         <div className="p-4">
@@ -104,7 +111,7 @@ const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInp
                                             type="text"
                                             className="w-12 h-10 text-center px-1 text-sm bg-background/50 border-white/10 focus-visible:border-primary/50 focus-visible:ring-0 font-bold"
                                             placeholder="-"
-                                            disabled={disabled || isSettled}
+                                            disabled={isDisabled}
                                             value={results[`player_${q.id}`]?.[teamName === match.teamA.name ? 'teamA' : 'teamB']?.[p.name] || ''}
                                             onChange={(e) => onInputChange(`player_${q.id}.${teamName === match.teamA.name ? 'teamA' : 'teamB'}.${p.name}`, e.target.value)}
                                         />
@@ -136,16 +143,14 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: 
                 initialResults[q.id] = q.result || { teamA: '', teamB: '' };
                 initialActions[q.id] = { isSaving: false, isSettling: false };
 
-                if (match.isSpecialMatch) {
-                    const playerResultObject: Record<string, Record<string, string>> = { teamA: {}, teamB: {} };
-                    match.teamA.players?.forEach(p => {
-                        playerResultObject.teamA[p.name] = (q.playerResult as any)?.teamA?.[p.name] || '';
-                    });
-                    match.teamB.players?.forEach(p => {
-                        playerResultObject.teamB[p.name] = (q.playerResult as any)?.teamB?.[p.name] || '';
-                    });
-                    initialResults[`player_${q.id}`] = playerResultObject;
-                }
+                const playerResultObject: Record<string, Record<string, string>> = { teamA: {}, teamB: {} };
+                match.teamA.players?.forEach(p => {
+                    playerResultObject.teamA[p.name] = (q.playerResult as any)?.teamA?.[p.name] || '';
+                });
+                match.teamB.players?.forEach(p => {
+                    playerResultObject.teamB[p.name] = (q.playerResult as any)?.teamB?.[p.name] || '';
+                });
+                initialResults[`player_${q.id}`] = playerResultObject;
             });
             setResults(initialResults);
             setActionStates(initialActions);
@@ -166,46 +171,34 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: 
         });
     };
 
-    const updateActionState = (qId: string, state: Partial<{ isSaving: boolean, isSettling: boolean }>) => {
-        setActionStates(prev => ({
-            ...prev,
-            [qId]: { ...(prev[qId] || { isSaving: false, isSettling: false }), ...state }
-        }));
-    };
-    
     const handleSingleSave = async (qId: string, type: 'qna' | 'player') => {
         if (!isAdmin) return;
-        updateActionState(qId, { isSaving: true });
+        setActionStates(p => ({ ...p, [qId]: { ...p[qId], isSaving: true }}));
         
-        let result = type === 'qna' ? results[qId] : undefined;
-        let pResult = type === 'player' ? results[`player_${qId}`] : undefined;
+        let res = type === 'qna' ? results[qId] : undefined;
+        let pRes = type === 'player' ? results[`player_${qId}`] : undefined;
 
-        const actionResult = await saveSingleQuestionResults(match.id, qId, result, pResult);
+        const actionResult = await saveSingleQuestionResults(match.id, qId, res, pRes);
+        if (actionResult.error) toast({ variant: 'destructive', title: 'Error', description: actionResult.error });
+        else toast({ title: 'Success', description: 'Results saved as draft.' });
 
-        if (actionResult.error) {
-            toast({ variant: 'destructive', title: 'Save Failed', description: actionResult.error });
-        } else {
-            toast({ title: 'Result Saved', description: 'Question data updated successfully.' });
-        }
-        updateActionState(qId, { isSaving: false });
+        setActionStates(p => ({ ...p, [qId]: { ...p[qId], isSaving: false }}));
     };
 
     const handleSinglePublish = async (qId: string, type: 'qna' | 'player') => {
         if (!isAdmin) return;
-        updateActionState(qId, { isSettling: true });
+        setActionStates(p => ({ ...p, [qId]: { ...p[qId], isSettling: true }}));
 
-        let result = type === 'qna' ? results[qId] : undefined;
-        let pResult = type === 'player' ? results[`player_${qId}`] : undefined;
+        let res = type === 'qna' ? results[qId] : undefined;
+        let pRes = type === 'player' ? results[`player_${qId}`] : undefined;
 
-        const actionResult = await settleSingleQuestion(match.id, qId, type, result, pResult);
-
-        if (actionResult.error) {
-            toast({ variant: 'destructive', title: 'Publication Failed', description: actionResult.error });
-        } else {
-            toast({ title: 'Results Published!', description: 'Payouts have been processed for this question.' });
-            onClose(true); // Close and refresh to reflect settled state
+        const actionResult = await settleSingleQuestion(match.id, qId, type, res, pRes);
+        if (actionResult.error) toast({ variant: 'destructive', title: 'Error', description: actionResult.error });
+        else {
+            toast({ title: 'Published!', description: actionResult.success });
+            onClose(true);
         }
-        updateActionState(qId, { isSettling: false });
+        setActionStates(p => ({ ...p, [qId]: { ...p[qId], isSettling: false }}));
     };
     
     const teamQuestions = questions.filter(q => q.type === 'qna' || !q.type);
@@ -216,103 +209,110 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: 
                 <DialogHeader>
                     <DialogTitle className="text-primary font-headline text-2xl uppercase italic">Manage Results for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
                     <DialogDescription className="text-muted-foreground/60 uppercase text-[10px] font-bold tracking-widest">
-                       Process payouts for each question individually as the game progresses.
+                       Publish results individually. Empty sides will remain open for betting.
                     </DialogDescription>
                 </DialogHeader>
 
                 <ScrollArea className="max-h-[70vh] overflow-y-auto pr-4 mt-4">
                     <div className="space-y-10 pb-4">
-                        {questions.length > 0 ? (
-                            <div className="space-y-12">
-                                {/* Team Result Section */}
-                                {teamQuestions.length > 0 && (
-                                    <div className="space-y-4">
-                                        <h4 className="font-black text-primary uppercase text-xs tracking-[0.2em] border-l-2 border-primary pl-3">Team Results</h4>
-                                        <div className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
-                                            <Table>
-                                                <TableHeader className="bg-white/5">
-                                                    <TableRow className="border-white/10 hover:bg-transparent">
-                                                        <TableHead className="w-1/3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Question</TableHead>
-                                                        <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-primary">{match.teamA.name}</TableHead>
-                                                        <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-primary">{match.teamB.name}</TableHead>
-                                                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Actions</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {teamQuestions.map((q) => (
-                                                        <TableRow key={q.id} className="border-white/5 hover:bg-white/[0.02]">
-                                                            <TableCell className="font-bold text-[11px] text-white/80 uppercase tracking-tight">{q.question}</TableCell>
-                                                            <TableCell>
+                        {teamQuestions.length > 0 && (
+                            <div className="space-y-4">
+                                <h4 className="font-black text-primary uppercase text-xs tracking-[0.2em] border-l-2 border-primary pl-3">Team Results</h4>
+                                <div className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-white/5">
+                                            <TableRow className="border-white/10 hover:bg-transparent">
+                                                <TableHead className="w-1/3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Question</TableHead>
+                                                <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-primary">{match.teamA.name}</TableHead>
+                                                <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-primary">{match.teamB.name}</TableHead>
+                                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {teamQuestions.map((q) => {
+                                                const isA_Settled = q.teamABettingEnabled === false;
+                                                const isB_Settled = q.teamBBettingEnabled === false;
+                                                const isFullySettled = q.status === 'settled';
+
+                                                return (
+                                                    <TableRow key={q.id} className="border-white/5 hover:bg-white/[0.02]">
+                                                        <TableCell className="font-bold text-[11px] text-white/80 uppercase tracking-tight">
+                                                            {q.question}
+                                                            {(!isFullySettled && (isA_Settled || isB_Settled)) && (
+                                                                <span className="ml-2 text-[8px] text-blue-400 opacity-60">(Partial)</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-col gap-1 items-center">
                                                                 <Input 
                                                                     type="text" 
                                                                     className="min-w-[60px] max-w-[120px] mx-auto text-center h-10 bg-background/50 border-white/10 focus-visible:border-primary/50 focus-visible:ring-0 font-bold" 
                                                                     placeholder="---" 
-                                                                    disabled={q.status === 'settled'} 
+                                                                    disabled={isA_Settled || isFullySettled} 
                                                                     value={results[q.id]?.teamA || ''}
                                                                     onChange={(e) => handleInputChange(`${q.id}.teamA`, e.target.value)}
                                                                 />
-                                                            </TableCell>
-                                                            <TableCell>
+                                                                {isA_Settled && !isFullySettled && <span className="text-[7px] font-black uppercase text-green-500">PUBLISHED</span>}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-col gap-1 items-center">
                                                                 <Input 
                                                                     type="text" 
                                                                     className="min-w-[60px] max-w-[120px] mx-auto text-center h-10 bg-background/50 border-white/10 focus-visible:border-primary/50 focus-visible:ring-0 font-bold" 
                                                                     placeholder="---" 
-                                                                    disabled={q.status === 'settled'} 
+                                                                    disabled={isB_Settled || isFullySettled} 
                                                                     value={results[q.id]?.teamB || ''}
                                                                     onChange={(e) => handleInputChange(`${q.id}.teamB`, e.target.value)}
                                                                 />
-                                                            </TableCell>
-                                                            <TableCell className="text-right">
-                                                                <QuestionActions 
-                                                                    onSave={() => handleSingleSave(q.id, 'qna')}
-                                                                    onPublish={() => handleSinglePublish(q.id, 'qna')}
-                                                                    isSaving={actionStates[q.id]?.isSaving}
-                                                                    isSettling={actionStates[q.id]?.isSettling}
-                                                                    isSettled={q.status === 'settled'}
-                                                                    disabled={!isAdmin}
-                                                                />
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Player Performance Sections */}
-                                {match.isSpecialMatch && (
-                                    <div className="space-y-8">
-                                        <PlayerResultsGrid 
-                                            match={match}
-                                            teamName={match.teamA.name}
-                                            players={match.teamA.players}
-                                            questions={questions}
-                                            results={results}
-                                            onInputChange={handleInputChange}
-                                            onSave={handleSingleSave}
-                                            onPublish={handleSinglePublish}
-                                            actionStates={actionStates}
-                                            disabled={!isAdmin}
-                                        />
-                                        <PlayerResultsGrid 
-                                            match={match}
-                                            teamName={match.teamB.name}
-                                            players={match.teamB.players}
-                                            questions={questions}
-                                            results={results}
-                                            onInputChange={handleInputChange}
-                                            onSave={handleSingleSave}
-                                            onPublish={handleSinglePublish}
-                                            actionStates={actionStates}
-                                            disabled={!isAdmin}
-                                        />
-                                    </div>
-                                )}
+                                                                {isB_Settled && !isFullySettled && <span className="text-[7px] font-black uppercase text-green-500">PUBLISHED</span>}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <QuestionActions 
+                                                                onSave={() => handleSingleSave(q.id, 'qna')}
+                                                                onPublish={() => handleSinglePublish(q.id, 'qna')}
+                                                                isSaving={actionStates[q.id]?.isSaving}
+                                                                isSettling={actionStates[q.id]?.isSettling}
+                                                                isFullySettled={isFullySettled}
+                                                                disabled={!isAdmin}
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="py-20 text-center bg-white/[0.02] rounded-2xl border border-dashed border-white/10">
-                                <p className='text-muted-foreground uppercase font-black text-xs tracking-widest'>No questions found for this match.</p>
+                        )}
+
+                        {match.isSpecialMatch && (
+                            <div className="space-y-8">
+                                <PlayerResultsGrid 
+                                    match={match}
+                                    teamName={match.teamA.name}
+                                    players={match.teamA.players}
+                                    questions={questions}
+                                    results={results}
+                                    onInputChange={handleInputChange}
+                                    onSave={handleSingleSave}
+                                    onPublish={handleSinglePublish}
+                                    actionStates={actionStates}
+                                    disabled={!isAdmin}
+                                />
+                                <PlayerResultsGrid 
+                                    match={match}
+                                    teamName={match.teamB.name}
+                                    players={match.teamB.players}
+                                    questions={questions}
+                                    results={results}
+                                    onInputChange={handleInputChange}
+                                    onSave={handleSingleSave}
+                                    onPublish={handleSinglePublish}
+                                    actionStates={actionStates}
+                                    disabled={!isAdmin}
+                                />
                             </div>
                         )}
                     </div>
@@ -320,16 +320,17 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: 
 
                 <DialogFooter className="mt-8 flex-col sm:flex-row items-center sm:justify-between w-full gap-4 border-t border-white/5 pt-6">
                     <Alert className="sm:max-w-md text-left bg-primary/5 border-primary/20">
-                        <Info className="h-4 w-4 text-primary" />
+                        <ShieldAlert className="h-4 w-4 text-primary" />
                         <AlertDescription className="text-[10px] font-bold uppercase tracking-tight text-primary/80">
-                            Process individual questions as soon as they complete. Payouts are made instantly upon publishing.
+                            You can publish Team A result separately. This will suspend betting for Team A but keep Team B open.
                         </AlertDescription>
                     </Alert>
                     <div className="flex justify-end gap-3 w-full sm:w-auto">
-                        <Button type="button" variant="ghost" onClick={() => onClose(false)} className="font-bold uppercase text-xs">Close Dialog</Button>
+                        <Button type="button" variant="ghost" onClick={() => onClose(false)} className="font-bold uppercase text-xs">Close Lobby</Button>
                     </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+
