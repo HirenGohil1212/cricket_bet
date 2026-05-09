@@ -224,9 +224,18 @@ export async function settleSingleQuestion(
         let payouts = new Map<string, number>();
         let betUpdates: { ref: any, data: any }[] = [];
 
-        // Check which sides are being settled now
-        const settlingTeamA = type === 'qna' ? (!!result?.teamA && qData.teamABettingEnabled !== false) : (!!playerResult?.teamA);
-        const settlingTeamB = type === 'qna' ? (!!result?.teamB && qData.teamBBettingEnabled !== false) : (!!playerResult?.teamB);
+        // --- REFINED PARTIAL SETTLEMENT DETECTION ---
+        // Ensure a side is only settled if a result value is actually provided.
+        const hasTeamAVal = type === 'qna' 
+            ? (!!result?.teamA && String(result.teamA).trim() !== '')
+            : (!!playerResult?.teamA && Object.values(playerResult.teamA).some(val => !!val && String(val).trim() !== ''));
+
+        const hasTeamBVal = type === 'qna' 
+            ? (!!result?.teamB && String(result.teamB).trim() !== '')
+            : (!!playerResult?.teamB && Object.values(playerResult.teamB).some(val => !!val && String(val).trim() !== ''));
+
+        const settlingTeamA = hasTeamAVal && qData.teamABettingEnabled !== false;
+        const settlingTeamB = hasTeamBVal && qData.teamBBettingEnabled !== false;
 
         if (!settlingTeamA && !settlingTeamB) {
             return { error: 'Please enter at least one team result to publish.' };
@@ -334,10 +343,13 @@ export async function settleSingleQuestion(
 
         await batch.commit();
 
+        // Robust match finalization check
         if (isFullySettled) {
-            const allQuestions = await getQuestionsForMatch(matchId);
-            const remainingActive = allQuestions.filter(q => q.id !== questionId && q.status === 'active');
-            if (remainingActive.length === 0) {
+            const questionsRef = collection(db, `matches/${matchId}/questions`);
+            const activeQuestionsSnap = await getDocs(query(questionsRef, where('status', '==', 'active')));
+            
+            // If NO questions are currently active in the match, finish it.
+            if (activeQuestionsSnap.empty) {
                 await updateDoc(matchRef, { status: 'Finished' });
             }
         }
