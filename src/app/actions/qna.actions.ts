@@ -298,17 +298,21 @@ export async function settleMatchAndPayouts(matchId: string) {
 
         const activeQuestions = questionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as (Question & { id: string })[];
 
-        // Validate that all active questions have results
+        // Validate that all active questions have relevant results based on their type
         for (const q of activeQuestions) {
-             if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
-                return { error: `Question "${q.question}" is missing a valid team result. Please save all results before settling.` };
+             const qType = q.type || 'qna';
+             
+             if (qType === 'qna') {
+                 // QnA questions MUST have team results
+                 if (!q.result || typeof q.result.teamA !== 'string' || typeof q.result.teamB !== 'string') {
+                    return { error: `Question "${q.question}" is missing a valid team result. Please save all team results before settling.` };
+                 }
+             } else if (qType === 'player') {
+                 // Player questions MUST have player results
+                 if (!q.playerResult || typeof q.playerResult !== 'object' || Object.keys(q.playerResult).length === 0) {
+                    return { error: `Question "${q.question}" is missing player results. Please save player results before settling.` };
+                 }
              }
-
-             if (isSpecialMatch && q.type === 'player') {
-                if (!q.playerResult || typeof q.playerResult !== 'object' || Object.keys(q.playerResult).length === 0) {
-                    return { error: `Player results for question "${q.question}" are missing or invalid. Please save all player results before settling.` };
-                }
-            }
         }
         
         const betsRef = collection(db, 'bets');
