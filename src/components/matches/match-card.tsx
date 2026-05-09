@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Countdown } from '@/components/countdown';
 import type { Match, Team, Question } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Flame, Clock, Trophy, Star, Heart, Info, Calendar, MapPin, ClipboardList, Users, User } from 'lucide-react';
+import { Flame, Clock, Trophy, Heart, Info, Calendar, MapPin, ClipboardList, Users } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -121,7 +122,6 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
 
   const currentUserWon = status === 'Finished' && user && winners?.some(w => w.userId === user.uid);
 
-  // Group results for better separation
   const teamQuestions = questions?.filter(q => q.type === 'qna' || !q.type) || [];
   const playerQuestions = questions?.filter(q => q.type === 'player') || [];
 
@@ -246,78 +246,77 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                     <span>View Match Results</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="pt-4 pb-0 space-y-4">
-                    <ScrollArea className="h-56 pr-2">
-                      <div className="space-y-4">
-                        {/* 1. WINNERS ELEMENT */}
-                        {winners && winners.length > 0 ? (
-                             <div className="p-3.5 rounded-[1.2rem] bg-white/[0.04] border border-white/5 shadow-inner">
-                                <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2.5 flex items-center gap-1.5 opacity-80">
-                                    <Trophy className="h-3 w-3 text-primary fill-primary/20"/> Winners
-                                </p>
-                                <div className="space-y-2">
-                                    {winners.map((win, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-xs">
-                                            <span className={cn("font-bold", win.userId === user?.uid ? "text-primary" : "text-white/80")}>
-                                                {win.name}
-                                            </span>
-                                            <span className="font-black tabular-nums text-white">₹{win.payoutAmount.toFixed(0)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                             </div>
-                        ) : (
-                            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-dashed border-white/5 text-center">
-                                <p className="text-[10px] font-black text-muted-foreground uppercase italic opacity-40">No Winners Found</p>
+                <AccordionContent className="pt-4 pb-0">
+                  <ScrollArea className="h-72 pr-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
+                        {/* LEFT COLUMN: WINNERS */}
+                        <div className="space-y-2.5">
+                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em] px-1 flex items-center gap-1.5">
+                                <Users className="h-3 w-3"/> Winners
+                            </p>
+                            <div className="p-3.5 rounded-[1.2rem] bg-white/[0.04] border border-white/5 shadow-inner min-h-[100px]">
+                                {winners && winners.length > 0 ? (
+                                    <div className="space-y-2.5">
+                                        {winners.map((win, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-xs">
+                                                <div className="flex items-center gap-2">
+                                                    <Trophy className={cn("h-3 w-3", win.userId === user?.uid ? "text-primary" : "text-white/20")}/>
+                                                    <span className={cn("font-bold", win.userId === user?.uid ? "text-primary" : "text-white/80")}>
+                                                        {win.name}
+                                                    </span>
+                                                </div>
+                                                <span className="font-black tabular-nums text-white">₹{win.payoutAmount.toFixed(0)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full py-4 opacity-40 italic">
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase">No Winners</p>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
 
-                        {/* 2. MATCH RESULTS (TEAM) ELEMENT */}
-                        {teamQuestions.length > 0 && (
+                        {/* RIGHT COLUMN: MATCH RESULTS */}
+                        <div className="space-y-2.5">
+                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em] px-1">Statistics</p>
                             <div className="space-y-2.5">
-                                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em] px-1">Team Statistics</p>
                                 {teamQuestions.map((q) => (
-                                    <div key={q.id} className="p-3.5 rounded-[1.2rem] bg-black/40 border border-white/5 text-center shadow-lg">
-                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight mb-2 opacity-80">{q.question}</p>
+                                    <div key={q.id} className="p-3.5 rounded-[1.2rem] bg-black/40 border border-white/5 shadow-lg">
+                                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight mb-2 text-center opacity-70">{q.question}</p>
                                         {q.result && (
-                                            <div className="flex justify-around items-center border-t border-white/5 pt-2.5">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-0.5">{teamA.name}</span>
-                                                    <span className="text-sm font-black text-primary italic">{q.result?.teamA || 'N/A'}</span>
+                                            <div className="flex items-center border-t border-white/5 pt-2.5">
+                                                <div className="flex-1 text-center">
+                                                    <span className="text-[7px] font-black text-white/30 uppercase block mb-0.5 truncate px-1">{teamA.name}</span>
+                                                    <span className="text-xs font-black text-primary italic">{q.result?.teamA || '-'}</span>
                                                 </div>
-                                                <div className="w-[1px] h-4 bg-white/5" />
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-0.5">{teamB.name}</span>
-                                                    <span className="text-sm font-black text-primary italic">{q.result?.teamB || 'N/A'}</span>
+                                                <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                                                <div className="flex-1 text-center">
+                                                    <span className="text-[7px] font-black text-white/30 uppercase block mb-0.5 truncate px-1">{teamB.name}</span>
+                                                    <span className="text-xs font-black text-primary italic">{q.result?.teamB || '-'}</span>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ))}
-                            </div>
-                        )}
 
-                        {/* 3. PLAYER RESULTS ELEMENT */}
-                        {playerQuestions.length > 0 && (
-                            <div className="space-y-2.5">
-                                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.3em] px-1">Player Performances</p>
                                 {playerQuestions.map((q) => (
-                                    <div key={q.id} className="p-3.5 rounded-[1.2rem] bg-primary/5 border border-primary/10 text-center shadow-lg">
-                                        <p className="text-[10px] font-black text-primary/70 uppercase tracking-tight mb-2">{q.question}</p>
+                                    <div key={q.id} className="p-3.5 rounded-[1.2rem] bg-primary/5 border border-primary/10 shadow-lg">
+                                        <p className="text-[9px] font-black text-primary/60 uppercase tracking-tight mb-2 text-center">{q.question}</p>
                                         {q.playerResult && (
-                                            <div className="grid grid-cols-2 gap-3 border-t border-primary/10 pt-2.5">
-                                                <div className="space-y-1.5">
+                                            <div className="grid grid-cols-2 gap-2 border-t border-primary/10 pt-2.5">
+                                                <div className="space-y-1">
                                                     {Object.entries(q.playerResult.teamA || {}).map(([name, val]) => (
-                                                        <div key={name} className="flex justify-between items-center text-[10px] bg-black/20 p-1.5 rounded-lg border border-white/5">
-                                                            <span className="text-white/60 font-bold truncate pr-1">{name}</span>
+                                                        <div key={name} className="flex justify-between items-center text-[9px] bg-black/20 p-1 px-1.5 rounded-md">
+                                                            <span className="text-white/40 font-bold truncate pr-1">{name}</span>
                                                             <span className="text-primary font-black">{val || '-'}</span>
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <div className="space-y-1.5">
+                                                <div className="space-y-1">
                                                     {Object.entries(q.playerResult.teamB || {}).map(([name, val]) => (
-                                                        <div key={name} className="flex justify-between items-center text-[10px] bg-black/20 p-1.5 rounded-lg border border-white/5">
-                                                            <span className="text-white/60 font-bold truncate pr-1">{name}</span>
+                                                        <div key={name} className="flex justify-between items-center text-[9px] bg-black/20 p-1 px-1.5 rounded-md">
+                                                            <span className="text-white/40 font-bold truncate pr-1">{name}</span>
                                                             <span className="text-primary font-black">{val || '-'}</span>
                                                         </div>
                                                     ))}
@@ -327,8 +326,8 @@ export function MatchCard({ match, onBetNow, onViewMyBets, onCountdownEnd, onTog
                                     </div>
                                 ))}
                             </div>
-                        )}
-                      </div>
+                        </div>
+                    </div>
                     </ScrollArea>
                 </AccordionContent>
               </AccordionItem>
