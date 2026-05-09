@@ -168,104 +168,162 @@ export async function saveQuestionsForMatch(matchId: string, questions: { questi
     }
 }
 
-// THIS ACTION IS NO LONGER USED in the new admin flow but kept for potential future use.
-// Function to save a template and apply it to all upcoming/live matches
-export async function saveTemplateAndApply(sport: Sport, questions: QnaFormValues['questions']) {
-    const validatedQuestions = qnaFormSchema.safeParse({ questions });
-    if (!validatedQuestions.success) {
-      return { error: 'Invalid question data provided.' };
-    }
+// Function to save results for a single question
+export async function saveSingleQuestionResults(
+    matchId: string, 
+    questionId: string,
+    result?: { teamA: string, teamB: string },
+    playerResult?: any
+) {
+    if (!matchId || !questionId) return { error: 'Missing IDs' };
 
-    const templateRef = doc(db, 'questionTemplates', sport);
-    const matchesRef = collection(db, 'matches');
+    const questionRef = doc(db, `matches/${matchId}/questions`, questionId);
+    const updateData: { result?: any; playerResult?: any } = {};
     
+    if (result) updateData.result = result;
+    if (playerResult) updateData.playerResult = playerResult;
+
     try {
-        const batch = writeBatch(db);
-        // Save the template itself
-        batch.set(templateRef, { questions: validatedQuestions.data.questions });
-
-        const upcomingMatchesQuery = query(matchesRef, where('sport', '==', sport), where('status', 'in', ['Upcoming', 'Live']));
-        const matchesSnapshot = await getDocs(upcomingMatchesQuery);
-
-        // Apply template to all relevant matches
-        for (const matchDoc of matchesSnapshot.docs) {
-            const questionsCollectionRef = collection(db, `matches/${matchDoc.id}/questions`);
-            
-            // Clear existing questions
-            const existingQuestionsSnapshot = await getDocs(questionsCollectionRef);
-            existingQuestionsSnapshot.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            
-            // Add new questions from the template
-            validatedQuestions.data.questions.forEach((q, index) => {
-                const questionRef = doc(questionsCollectionRef);
-                batch.set(questionRef, {
-                    question: q.question,
-                    type: q.type || 'qna',
-                    multiplier: q.multiplier || null,
-                    order: index, // Add order field
-                    createdAt: Timestamp.now(),
-                    status: 'active',
-                    result: null,
-                    playerResult: null,
-                    teamABettingEnabled: true,
-                    teamBBettingEnabled: true,
-                });
-            });
-        }
-        
-        await batch.commit();
-
+        await updateDoc(questionRef, updateData);
         revalidatePath(`/admin/q-and-a`);
-        return { success: `Template for ${sport} saved and applied to ${matchesSnapshot.size} matches.` };
+        return { success: 'Result saved.' };
     } catch (error: any) {
-        console.error("Error saving template and applying to matches:", error);
-        return { error: error.message || 'Failed to save template.' };
+        console.error("Error saving single question result:", error);
+        return { error: error.message || 'Failed to save.' };
     }
 }
 
-// New Function to just save the results for questions
-export async function saveQuestionResults(
-    matchId: string, 
-    results: Record<string, { teamA: string, teamB: string }>,
-    playerResults?: Record<string, any>
+// Function to settle a single question and process payouts
+export async function settleSingleQuestion(
+    matchId: string,
+    questionId: string,
+    type: 'qna' | 'player',
+    result?: { teamA: string, teamB: string },
+    playerResult?: any
 ) {
-    if (!matchId) return { error: 'Match ID is required.' };
+    if (!matchId || !questionId) return { error: 'Missing IDs' };
 
-    const batch = writeBatch(db);
-    const questionsRef = collection(db, `matches/${matchId}/questions`);
-    
-    const allQuestionIds = new Set([...Object.keys(results), ...Object.keys(playerResults || {})]);
-
-    for (const questionId of allQuestionIds) {
-        const resultValue = results[questionId];
-        const playerResultValue = playerResults?.[questionId];
-        
-        const updateData: { result?: any; playerResult?: any } = {};
-        
-        if (resultValue && (resultValue.teamA?.trim() || resultValue.teamB?.trim())) {
-            updateData.result = resultValue;
-        }
-
-        if (playerResultValue && Object.keys(playerResultValue).length > 0) {
-            updateData.playerResult = playerResultValue;
-        }
-
-        if (Object.keys(updateData).length > 0) {
-            const questionRef = doc(questionsRef, questionId);
-            batch.update(questionRef, updateData);
-        }
-    }
-
+    const matchRef = doc(db, 'matches', matchId);
+    const questionRef = doc(db, `matches/${matchId}/questions`, questionId);
 
     try {
+        const [matchDoc, questionDoc] = await Promise.all([
+            getDoc(matchRef),
+            getDoc(questionRef)
+        ]);
+
+        if (!matchDoc.exists() || !questionDoc.exists()) return { error: 'Match or Question not found.' };
+        if (questionDoc.data().status === 'settled') return { error: 'Already settled.' };
+
+        const matchData = matchDoc.data();
+        
+        // Final validation of data before settling
+        if (type === 'qna' && (!result || typeof result.teamA !== 'string' || typeof result.teamB !== 'string')) {
+            return { error: 'Missing team results for QnA question.' };
+        }
+        if (type === 'player' && (!playerResult || typeof playerResult !== 'object')) {
+            return { error: 'Missing player results for Player question.' };
+        }
+
+        const betsRef = collection(db, 'bets');
+        const pendingBetsQuery = query(betsRef, where('matchId', '==', matchId), where('status', '==', 'Pending'));
+        const pendingBetsSnapshot = await getDocs(pendingBetsQuery);
+
+        let payouts = new Map<string, number>();
+        let betUpdates: { ref: any, data: any }[] = [];
+
+        if (!pendingBetsSnapshot.empty) {
+            for (const betDoc of pendingBetsSnapshot.docs) {
+                const betData = betDoc.data();
+                const betRef = doc(db, 'bets', betDoc.id);
+                
+                // Every bet only has one prediction in our current GuessDialog logic
+                const prediction = betData.predictions[0];
+                if (!prediction) continue;
+
+                // Check if this bet is for THIS question
+                let isMatchForThisQuestion = false;
+                if (type === 'player') {
+                    const [, qId] = prediction.questionId.split(':');
+                    if (qId === questionId) isMatchForThisQuestion = true;
+                } else {
+                    if (prediction.questionId === questionId) isMatchForThisQuestion = true;
+                }
+
+                if (!isMatchForThisQuestion) continue;
+
+                let isWinner = false;
+
+                if (type === 'player') {
+                    const [playerName] = prediction.questionId.split(':');
+                    let teamSide: 'teamA' | 'teamB' | null = null;
+                    if (matchData.teamA.players?.some((p: any) => p.name === playerName)) teamSide = 'teamA';
+                    else if (matchData.teamB.players?.some((p: any) => p.name === playerName)) teamSide = 'teamB';
+
+                    if (teamSide && playerResult) {
+                        const correctVal = String(playerResult[teamSide]?.[playerName] || '').trim().toLowerCase();
+                        const predictedVal = String(prediction.predictedAnswer?.[teamSide] || '').trim().toLowerCase();
+                        if (correctVal === predictedVal) isWinner = true;
+                    }
+                } else {
+                    const predA = (prediction.predictedAnswer?.teamA || '').trim().toLowerCase();
+                    const predB = (prediction.predictedAnswer?.teamB || '').trim().toLowerCase();
+                    const corrA = (result?.teamA || '').trim().toLowerCase();
+                    const corrB = (result?.teamB || '').trim().toLowerCase();
+                    
+                    // Logic: empty prediction means user didn't bet on that side
+                    const matchA = !predA || (predA === corrA);
+                    const matchB = !predB || (predB === corrB);
+                    if (matchA && matchB) isWinner = true;
+                }
+
+                if (isWinner) {
+                    betUpdates.push({ ref: betRef, data: { status: 'Won' }});
+                    const current = payouts.get(betData.userId) || 0;
+                    payouts.set(betData.userId, current + betData.potentialWin);
+                } else {
+                    betUpdates.push({ ref: betRef, data: { status: 'Lost' }});
+                }
+            }
+        }
+
+        const batch = writeBatch(db);
+        
+        // Update Bets
+        betUpdates.forEach(u => batch.update(u.ref, u.data));
+
+        // Update Question Status
+        batch.update(questionRef, { 
+            status: 'settled', 
+            ...(type === 'qna' ? { result } : { playerResult }) 
+        });
+
+        // Update User Balances
+        for (const [uid, amt] of payouts.entries()) {
+            if (amt > 0) {
+                batch.update(doc(db, 'users', uid), {
+                    walletBalance: increment(amt),
+                    totalWinnings: increment(amt)
+                });
+            }
+        }
+
         await batch.commit();
-        revalidatePath(`/admin/q-and-a`);
-        return { success: 'Results have been saved successfully.' };
+
+        // Check if all questions are now settled to potentially finish match
+        const allQuestions = await getQuestionsForMatch(matchId);
+        const remainingActive = allQuestions.filter(q => q.status === 'active');
+        if (remainingActive.length === 0) {
+            await updateDoc(matchRef, { status: 'Finished' });
+        }
+
+        revalidatePath('/admin/q-and-a');
+        revalidatePath('/');
+        return { success: 'Question settled and payouts processed.' };
+
     } catch (error: any) {
-        console.error("Error saving question results:", error);
-        return { error: error.message || 'Failed to save results.' };
+        console.error("Error settling single question:", error);
+        return { error: error.message || 'Failed to settle question.' };
     }
 }
 
@@ -441,7 +499,7 @@ export async function settleMatchAndPayouts(matchId: string) {
         if (finalWinners.length === 0 && matchData.dummyWinners && matchData.dummyWinners.length > 0) {
             const dummyUserIds = matchData.dummyWinners.map((dw: any) => dw.userId);
             if (dummyUserIds.length > 0) {
-                const dummyUsersQuery = query(collection(db, 'dummyUsers'), where(documentId(), 'in', dummyUserIds));
+                const dummyUsersQuery = query(collection(db, dummyUsers), where(documentId(), 'in', dummyUserIds));
                 const dummyUsersSnapshot = await getDocs(dummyUsersQuery);
                 const dummyUsersMap = new Map();
                 dummyUsersSnapshot.forEach(doc => {
