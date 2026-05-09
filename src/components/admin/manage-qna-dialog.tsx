@@ -21,31 +21,35 @@ type ResultState = Record<string, any>;
 const PlayerResultsGrid = ({ match, teamName, players, questions, results, onInputChange, disabled }: any) => {
     if (!players || players.length === 0) return null;
     
+    // Only show questions of type 'player' in this grid
+    const playerSpecificQuestions = questions.filter((q: any) => q.type === 'player');
+    if (playerSpecificQuestions.length === 0) return null;
+    
     return (
         <div className="space-y-2">
-            <h4 className="font-semibold">{teamName} Player Results</h4>
-            <div className="rounded-md border p-2">
+            <h4 className="font-semibold text-primary/80 uppercase text-xs tracking-widest">{teamName} Player Results</h4>
+            <div className="rounded-md border border-white/5 bg-white/[0.02] p-2">
                 <div 
                     className="grid items-center gap-x-1 gap-y-2"
-                    style={{ gridTemplateColumns: `minmax(80px, auto) repeat(${players.length}, 1fr)` }}
+                    style={{ gridTemplateColumns: `minmax(100px, auto) repeat(${players.length}, 1fr)` }}
                 >
                     {/* Header Row */}
                     <div />
                     {players.map((p: any) => (
-                        <div key={p.name} className="text-xs font-medium text-center truncate" title={p.name}>
+                        <div key={p.name} className="text-[10px] font-black uppercase text-center truncate px-1 text-muted-foreground" title={p.name}>
                             {p.name}
                         </div>
                     ))}
                     
                     {/* Data Rows */}
-                    {questions.map((q: any) => (
+                    {playerSpecificQuestions.map((q: any) => (
                         <React.Fragment key={q.id}>
-                            <div className="text-xs text-muted-foreground truncate pr-2" title={q.question}>{q.question}</div>
+                            <div className="text-[11px] font-medium text-white/60 truncate pr-2" title={q.question}>{q.question}</div>
                             {players.map((p: any) => (
                                 <Input
                                     key={p.name}
                                     type="text"
-                                    className="w-10 h-10 text-center px-1 text-sm mx-auto"
+                                    className="w-10 h-10 text-center px-1 text-sm mx-auto bg-background/50 border-white/10 focus-visible:border-primary/50 focus-visible:ring-0"
                                     placeholder="-"
                                     disabled={disabled}
                                     value={results[`player_${q.id}`]?.[teamName === match.teamA.name ? 'teamA' : 'teamB']?.[p.name] || ''}
@@ -103,8 +107,6 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: 
             let current = newResults;
             for (let i = 0; i < keys.length - 1; i++) {
                 if (!current[keys[i]]) {
-                  // If a nested path doesn't exist, create it.
-                  // This is crucial for player results which are nested two levels deep.
                   current[keys[i]] = {};
                 }
                 current = current[keys[i]];
@@ -170,107 +172,121 @@ export function ManageQnaDialog({ match, questions, isOpen, onClose }: { match: 
     };
     
     const hasActiveQuestions = questions.some(q => q.status === 'active');
-    
+    const teamQuestions = questions.filter(q => q.type === 'qna' || !q.type);
+
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
-                <DialogContent className="sm:max-w-5xl">
+                <DialogContent className="sm:max-w-5xl bg-[#0a140f] border-none text-foreground">
                     <DialogHeader>
-                        <DialogTitle>Manage Results for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-primary font-headline text-2xl uppercase italic">Manage Results for {match.teamA.name} vs {match.teamB.name}</DialogTitle>
+                        <DialogDescription className="text-muted-foreground/60 uppercase text-[10px] font-bold tracking-widest">
                            Enter and save the results for each question, then finalize to process payouts.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSave}>
-                        <ScrollArea className="max-h-[60vh] overflow-y-auto p-1 mt-4">
-                            <div className="space-y-6">
+                        <ScrollArea className="max-h-[65vh] overflow-y-auto pr-4 mt-4">
+                            <div className="space-y-8 pb-4">
                             {questions.length > 0 ? (
-                                    <div className="space-y-6">
-                                        {match.isSpecialMatch && (
-                                            <>
-                                                <PlayerResultsGrid 
-                                                    match={match}
-                                                    teamName={match.teamA.name}
-                                                    players={match.teamA.players}
-                                                    questions={questions}
-                                                    results={results}
-                                                    onInputChange={handleInputChange}
-                                                    disabled={isSaving || isSettling || match.status === 'Finished'}
-                                                />
-                                                <PlayerResultsGrid 
-                                                    match={match}
-                                                    teamName={match.teamB.name}
-                                                    players={match.teamB.players}
-                                                    questions={questions}
-                                                    results={results}
-                                                    onInputChange={handleInputChange}
-                                                    disabled={isSaving || isSettling || match.status === 'Finished'}
-                                                />
-                                                <Separator />
-                                            </>
-                                        )}
-                                        
-                                        {/* Team Result Grid */}
-                                        <div className="space-y-2">
-                                            <h4 className="font-semibold">Team Results</h4>
-                                            <div className="rounded-md border">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead className="w-1/2">Question</TableHead>
-                                                        <TableHead className="text-center">{match.teamA.name}</TableHead>
-                                                        <TableHead className="text-center">{match.teamB.name}</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {questions.map((q) => (
-                                                        <TableRow key={q.id}>
-                                                            <TableCell className="font-medium text-xs text-muted-foreground">{q.question}</TableCell>
-                                                            <TableCell>
-                                                                <Input 
-                                                                    type="text" 
-                                                                    className="min-w-[60px] max-w-[120px] mx-auto text-center" 
-                                                                    placeholder="Result" 
-                                                                    disabled={isSaving || isSettling || q.status === 'settled'} 
-                                                                    value={results[q.id]?.teamA || ''}
-                                                                    onChange={(e) => handleInputChange(`${q.id}.teamA`, e.target.value)}
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Input 
-                                                                    type="text" 
-                                                                    className="min-w-[60px] max-w-[120px] mx-auto text-center" 
-                                                                    placeholder="Result" 
-                                                                    disabled={isSaving || isSettling || q.status === 'settled'} 
-                                                                    value={results[q.id]?.teamB || ''}
-                                                                    onChange={(e) => handleInputChange(`${q.id}.teamB`, e.target.value)}
-                                                                />
-                                                            </TableCell>
+                                    <div className="space-y-8">
+                                        {/* Team Result Grid (NOW FIRST) */}
+                                        {teamQuestions.length > 0 && (
+                                            <div className="space-y-3">
+                                                <h4 className="font-black text-primary uppercase text-xs tracking-[0.2em] border-l-2 border-primary pl-3">Team Results</h4>
+                                                <div className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
+                                                <Table>
+                                                    <TableHeader className="bg-white/5">
+                                                        <TableRow className="border-white/10 hover:bg-transparent">
+                                                            <TableHead className="w-1/2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Question</TableHead>
+                                                            <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-primary">{match.teamA.name}</TableHead>
+                                                            <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-primary">{match.teamB.name}</TableHead>
                                                         </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {teamQuestions.map((q) => (
+                                                            <TableRow key={q.id} className="border-white/5 hover:bg-white/[0.02]">
+                                                                <TableCell className="font-bold text-[11px] text-white/80 uppercase tracking-tight">{q.question}</TableCell>
+                                                                <TableCell>
+                                                                    <Input 
+                                                                        type="text" 
+                                                                        className="min-w-[60px] max-w-[120px] mx-auto text-center h-10 bg-background/50 border-white/10 focus-visible:border-primary/50 focus-visible:ring-0 font-bold" 
+                                                                        placeholder="---" 
+                                                                        disabled={isSaving || isSettling || q.status === 'settled'} 
+                                                                        value={results[q.id]?.teamA || ''}
+                                                                        onChange={(e) => handleInputChange(`${q.id}.teamA`, e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Input 
+                                                                        type="text" 
+                                                                        className="min-w-[60px] max-w-[120px] mx-auto text-center h-10 bg-background/50 border-white/10 focus-visible:border-primary/50 focus-visible:ring-0 font-bold" 
+                                                                        placeholder="---" 
+                                                                        disabled={isSaving || isSettling || q.status === 'settled'} 
+                                                                        value={results[q.id]?.teamB || ''}
+                                                                        onChange={(e) => handleInputChange(`${q.id}.teamB`, e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {/* Player Results (NOW SECOND) */}
+                                        {match.isSpecialMatch && (
+                                            <div className="space-y-6">
+                                                <div className="relative flex justify-center items-center py-2">
+                                                    <Separator className="bg-white/5" />
+                                                    <div className="absolute bg-[#0a140f] px-4">
+                                                        <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.3em]">Player Performance</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="space-y-8">
+                                                    <PlayerResultsGrid 
+                                                        match={match}
+                                                        teamName={match.teamA.name}
+                                                        players={match.teamA.players}
+                                                        questions={questions}
+                                                        results={results}
+                                                        onInputChange={handleInputChange}
+                                                        disabled={isSaving || isSettling || match.status === 'Finished'}
+                                                    />
+                                                    <PlayerResultsGrid 
+                                                        match={match}
+                                                        teamName={match.teamB.name}
+                                                        players={match.teamB.players}
+                                                        questions={questions}
+                                                        results={results}
+                                                        onInputChange={handleInputChange}
+                                                        disabled={isSaving || isSettling || match.status === 'Finished'}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                             ) : (
-                                    <p className='text-center text-muted-foreground p-8'>No questions found for this match.</p>
+                                    <div className="py-20 text-center bg-white/[0.02] rounded-2xl border border-dashed border-white/10">
+                                        <p className='text-muted-foreground uppercase font-black text-xs tracking-widest'>No questions found for this match.</p>
+                                    </div>
                             )}
                             </div>
                         </ScrollArea>
-                        <DialogFooter className="mt-6 flex-col sm:flex-row items-center sm:justify-between w-full">
-                        <Alert className="sm:max-w-xs text-left">
-                                <Info className="h-4 w-4" />
-                                <AlertDescription className="text-xs">
+                        <DialogFooter className="mt-8 flex-col sm:flex-row items-center sm:justify-between w-full gap-4 border-t border-white/5 pt-6">
+                        <Alert className="sm:max-w-xs text-left bg-primary/5 border-primary/20">
+                                <Info className="h-4 w-4 text-primary" />
+                                <AlertDescription className="text-[10px] font-bold uppercase tracking-tight text-primary/80">
                                     Save results first, then Publish to process payouts. This action is irreversible.
                                 </AlertDescription>
                         </Alert>
-                        <div className="flex justify-end gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-                            <Button type="button" variant="ghost" onClick={() => onClose(false)} disabled={isSaving || isSettling}>Cancel</Button>
-                            <Button type="submit" variant="outline" disabled={isSaving || isSettling || match.status === 'Finished' || !isAdmin}>
+                        <div className="flex justify-end gap-3 w-full sm:w-auto">
+                            <Button type="button" variant="ghost" onClick={() => onClose(false)} disabled={isSaving || isSettling} className="font-bold uppercase text-xs">Cancel</Button>
+                            <Button type="submit" variant="outline" disabled={isSaving || isSettling || match.status === 'Finished' || !isAdmin} className="font-bold uppercase text-xs border-white/10 hover:bg-white/5">
                                 {isSaving ? 'Saving...' : 'Save Results'}
                             </Button>
-                            <Button type="button" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin}>
+                            <Button type="button" onClick={handleSettle} disabled={isSaving || isSettling || match.status === 'Finished' || !hasActiveQuestions || !isAdmin} className="bg-primary hover:bg-primary/80 text-primary-foreground font-black uppercase text-xs px-8">
                                 {isSettling ? 'Publishing...' : (match.status === 'Finished' ? 'Match Settled' : 'Publish Result')}
                             </Button>
                         </div>
