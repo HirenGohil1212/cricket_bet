@@ -257,12 +257,12 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                     <DialogTitle className="font-headline text-3xl text-white mb-1 uppercase tracking-tighter">Play Your Game</DialogTitle>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-widest font-bold">
                         <div className="flex items-center gap-2">
-                            <Image src={match.teamA.logoUrl} alt="" width={20} height={20} className="rounded-full" />
+                            <Image src={match.teamA.logoUrl} alt="" width={24} height={24} className="rounded-full h-6 w-6 object-cover" />
                             <span>{match.teamA.name}</span>
                         </div>
                         <span className="text-primary font-black px-1">•</span>
                         <div className="flex items-center gap-2">
-                            <Image src={match.teamB.logoUrl} alt="" width={20} height={20} className="rounded-full" />
+                            <Image src={match.teamB.logoUrl} alt="" width={24} height={24} className="rounded-full h-6 w-6 object-cover" />
                             <span>{match.teamB.name}</span>
                         </div>
                     </div>
@@ -324,7 +324,7 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                     <div className="pt-0">
                                                         {isRowSuspended ? (
                                                             <div className="flex items-center justify-center border-2 border-destructive/50 bg-destructive/10 rounded-xl h-12 px-3 min-w-[85px]">
-                                                                <span className="text-destructive font-black text-[10px] uppercase tracking-tighter">SUSPENDED</span>
+                                                                <span className="text-destructive font-black text-[10px] uppercase tracking-tighter">OFF</span>
                                                             </div>
                                                         ) : (
                                                             <Button 
@@ -353,8 +353,8 @@ export function GuessDialog({ match, open, onOpenChange }: GuessDialogProps) {
                                                             <AvatarImage src={player.imageUrl} className="object-cover" />
                                                             <AvatarFallback className="bg-primary/10 text-primary text-xs font-black">{player.name[0]}</AvatarFallback>
                                                         </Avatar>
-                                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#0a140f] overflow-hidden bg-white">
-                                                            <Image src={player.teamLogo} alt="" width={20} height={20} className="object-cover w-full h-full" />
+                                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[#0a140f] overflow-hidden bg-white">
+                                                            <Image src={player.teamLogo} alt="" width={24} height={24} className="object-cover w-full h-full" />
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col">
